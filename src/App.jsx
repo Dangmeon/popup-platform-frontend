@@ -1,12 +1,36 @@
 
-import { Routes, Route } from 'react-router-dom'
+import { useState } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
+
+import ReservationPage from './pages/ReservationPage'
+import ReservationConfirm from './pages/ReservationConfirm'
+import ReservationComplete from './pages/ReservationComplete'
 
 function Home() {
-  return <h1>POPQ 메인페이지</h1>
-}
+  const navigate = useNavigate()
 
-function ReservationPage() {
-  return <h1>POPQ 예약페이지</h1>
+  return (
+    <main style={{ padding: '40px' }}>
+      <h1>POPQ 메인페이지</h1>
+
+      <button
+        type="button"
+        onClick={() => navigate('/popups/1/reserve')}
+        style={{
+          marginTop: '16px',
+          padding: '8px 14px',
+          fontSize: '13px',
+          borderRadius: '6px',
+          border: '1px solid #ddd',
+          backgroundColor: '#fff',
+          color: '#222',
+          cursor: 'pointer',
+        }}
+      >
+        예약 화면 이동 →
+      </button>
+    </main>
+  )
 }
 
 function NotFound() {
@@ -14,10 +38,61 @@ function NotFound() {
 }
 
 function App() {
+  const navigate = useNavigate()
+
+  const [reservation, setReservation] = useState({
+    date: null,
+    time: null,
+  })
+
+  const handleReservationNext = (date, time) => {
+    setReservation({ date, time })
+    navigate('/reservations/confirm')
+  }
+
+  const handleReservationComplete = () => {
+    navigate('/reservations/complete')
+  }
+
+  const handleGoHome = () => {
+    setReservation({ date: null, time: null })
+    navigate('/')
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/popups/:popupId/reserve" element={<ReservationPage />} />
+
+      <Route
+        path="/popups/:popupId/reserve"
+        element={
+          <ReservationPage onNext={handleReservationNext} />
+        }
+      />
+
+      <Route
+        path="/reservations/confirm"
+        element={
+          <ReservationConfirm
+            selectedDate={reservation.date}
+            selectedTime={reservation.time}
+            onBack={() => navigate(-1)}
+            onConfirm={handleReservationComplete}
+          />
+        }
+      />
+
+      <Route
+        path="/reservations/complete"
+        element={
+          <ReservationComplete
+            selectedDate={reservation.date}
+            selectedTime={reservation.time}
+            onGoHome={handleGoHome}
+          />
+        }
+      />
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
