@@ -1,14 +1,19 @@
-
 import { Routes, Route } from 'react-router-dom'
 
+import AdminLayout from './components/admin/AdminLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
+
+// 메인 페이지
 function Home() {
   return <h1>POPQ 메인페이지</h1>
 }
 
+// 예약 페이지
 function ReservationPage() {
   return <h1>POPQ 예약페이지</h1>
 }
 
+// 404 페이지
 function NotFound() {
   return <h1>404 - 페이지를 찾을 수 없습니다.</h1>
 }
@@ -16,8 +21,21 @@ function NotFound() {
 function App() {
   return (
     <Routes>
+      {/* 메인 페이지 */}
       <Route path="/" element={<Home />} />
-      <Route path="/popups/:popupId/reserve" element={<ReservationPage />} />
+
+      {/* 예약 페이지 */}
+      <Route
+        path="/popups/:popupId/reserve"
+        element={<ReservationPage />}
+      />
+
+      {/* 관리자 페이지 */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
+      </Route>
+
+      {/* 404 페이지 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
