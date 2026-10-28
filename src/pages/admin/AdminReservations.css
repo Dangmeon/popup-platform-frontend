@@ -1,0 +1,210 @@
+/* 예약 관리 제목 */
+.admin-reservations .admin-page-heading h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+.admin-reservations .admin-page-heading p {
+  margin: 0;
+  color: #88786c;
+}
+
+/* 데모 안내 */
+.reservation-admin-demo {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border: 1px solid #eedfd0;
+  border-radius: 10px;
+  background: #fff3e6;
+  color: #88786c;
+  line-height: 1.6;
+}
+
+/* 검색 및 필터 */
+.reservation-admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.reservation-admin-filters label {
+  display: flex;
+  flex: 1 1 160px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  color: #88786c;
+  font-size: 13px;
+}
+
+.reservation-admin-filters label:first-child {
+  flex-grow: 2;
+}
+
+.reservation-admin-filters input,
+.reservation-admin-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+}
+
+/* 공통 버튼 */
+.reservation-admin-button {
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reservation-admin-button:hover:not(:disabled) {
+  background: #fff3e6;
+  border-color: #ff8066;
+}
+
+.reservation-admin-button.primary {
+  border-color: #ff8066;
+  background: #ff8066;
+  color: #302820;
+  font-weight: 700;
+}
+
+.reservation-admin-button.primary:hover:not(:disabled) {
+  background: #f4745b;
+}
+
+.reservation-admin-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reservation-admin-button:focus-visible,
+.reservation-admin-filters input:focus-visible,
+.reservation-admin-filters select:focus-visible {
+  outline: 3px solid #ff8066;
+  outline-offset: 3px;
+}
+
+/* 처리 안내 */
+.reservation-admin-notice {
+  margin: 16px 0;
+  color: #302820;
+  line-height: 1.6;
+}
+
+/* 예약 테이블 */
+.reservation-admin-table {
+  min-width: 850px;
+  font-size: 13px;
+}
+
+.reservation-admin-table th,
+.reservation-admin-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #eedfd0;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
+.reservation-admin-table th {
+  background: #fffaf4;
+  color: #88786c;
+  font-weight: 600;
+}
+
+.reservation-admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.reservation-admin-table .reservation-admin-empty {
+  padding: 40px 16px;
+  color: #88786c;
+  text-align: center;
+}
+
+/* 예약 상태 */
+.reservation-admin-status {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.reservation-admin-status.confirmed {
+  background: #fff3e6;
+  color: #9c5b42;
+}
+
+.reservation-admin-status.visited {
+  background: #e7f6ec;
+  color: #28764a;
+}
+
+.reservation-admin-status.cancelled {
+  background: #f4eeee;
+  color: #a64b4b;
+}
+
+/* 상세 정보 */
+.reservation-admin-detail {
+  margin-top: 24px;
+}
+
+.reservation-admin-info {
+  margin: 0;
+}
+
+.reservation-admin-info > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eedfd0;
+}
+
+.reservation-admin-info dt {
+  color: #88786c;
+}
+
+.reservation-admin-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.reservation-admin-help {
+  margin: 20px 0;
+  color: #88786c;
+  line-height: 1.6;
+}
+
+/* 접근성 안내 */
+.reservation-admin-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 좁은 화면 */
+@media (max-width: 600px) {
+  .reservation-admin-info > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

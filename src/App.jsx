@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminReservations from './pages/admin/AdminReservations'
 
 // 메인 페이지
 function Home() {
@@ -13,7 +14,7 @@ function ReservationPage() {
   return <h1>POPQ 예약페이지</h1>
 }
 
-// 404 페이지
+// 없는 페이지
 function NotFound() {
   return <h1>404 - 페이지를 찾을 수 없습니다.</h1>
 }
@@ -33,9 +34,10 @@ function App() {
       {/* 관리자 페이지 */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
+        <Route path="reservations" element={<AdminReservations />} />
       </Route>
 
-      {/* 404 페이지 */}
+      {/* 없는 페이지 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
