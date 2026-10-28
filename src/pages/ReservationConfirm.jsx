@@ -1,3 +1,6 @@
+
+import PopqLogo from "../components/reservation/PopqLogo";
+import "./ReservationPage.css";
 import "./ReservationConfirm.css";
 
 function ReservationConfirm({
@@ -8,12 +11,11 @@ function ReservationConfirm({
 }) {
   return (
     <main className="reservation-page">
-      {/* POPQ 로고 */}
+      {/* 예약 페이지 상단 */}
       <div className="reservation-hero">
         <div className="reservation-brand">
-          <span className="reservation-logo">
-            POP<span>Q</span>
-          </span>
+          <PopqLogo />
+
           <span className="reservation-brand-tag">
             POP-UP EXPERIENCE
           </span>
@@ -26,19 +28,22 @@ function ReservationConfirm({
       {/* 예약 진행 단계 */}
       <div className="reservation-steps">
         <div className="reservation-step">
-          <span>01</span>날짜 · 시간 선택
+          <span>01</span>
+          날짜 · 시간 선택
         </div>
 
         <span className="reservation-step-arrow">→</span>
 
         <div className="reservation-step active">
-          <span>02</span>예약 확인
+          <span>02</span>
+          예약 확인
         </div>
 
         <span className="reservation-step-arrow">→</span>
 
         <div className="reservation-step">
-          <span>03</span>예약 완료
+          <span>03</span>
+          예약 완료
         </div>
       </div>
 
@@ -61,6 +66,7 @@ function ReservationConfirm({
           <strong>{selectedTime}</strong>
         </div>
 
+        {/* 데모 안내 */}
         <p className="reservation-confirm-notice">
           현재는 테스트 화면입니다. 실제 예약 및 QR코드 발급은
           서버 연동 후 가능합니다.

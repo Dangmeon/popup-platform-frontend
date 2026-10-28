@@ -3,9 +3,9 @@
 .reservation-calendar {
   padding: 28px;
   background-color: #ffffff;
-  border: 1px solid #eae4f3;
+  border: 1px solid #eedfd0;
   border-radius: 20px;
-  box-shadow: 0 6px 24px rgba(121, 85, 217, 0.06);
+  box-shadow: 0 6px 24px rgba(100, 65, 40, 0.06);
 }
 
 /* 달력 헤더 */
@@ -18,7 +18,7 @@
 
 .calendar-header h3 {
   margin: 0;
-  color: #29243a;
+  color: #302820;
   font-size: 19px;
   font-weight: 700;
 }
@@ -31,7 +31,7 @@
 }
 
 .calendar-navigation span {
-  color: #29243a;
+  color: #302820;
   font-size: 17px;
   font-weight: 700;
 }
@@ -39,16 +39,18 @@
 .calendar-navigation button {
   width: 36px;
   height: 36px;
-  border: 1px solid #eae4f3;
+  border: 1px solid #eedfd0;
   border-radius: 50%;
-  background-color: #f5f1ff;
-  color: #7955d9;
+  background-color: #fff3e6;
+  color: #e76f51;
   font-size: 23px;
   cursor: pointer;
+  transition: 0.2s;
 }
 
 .calendar-navigation button:hover:not(:disabled) {
-  background-color: #e9dfff;
+  background-color: #ffe4d6;
+  border-color: #ffb49e;
 }
 
 .calendar-navigation button:disabled {
@@ -65,18 +67,18 @@
 
 .calendar-weekday {
   padding: 10px 0;
-  color: #777087;
+  color: #88786c;
   text-align: center;
   font-size: 13px;
   font-weight: 600;
 }
 
 .calendar-weekday:first-child {
-  color: #e66b8c;
+  color: #e76f51;
 }
 
 .calendar-weekday:nth-child(7) {
-  color: #7955d9;
+  color: #b08a6c;
 }
 
 .calendar-day {
@@ -86,38 +88,38 @@
   margin: 0 auto;
   border: 1px solid transparent;
   border-radius: 14px;
-  background-color: #f5f1ff;
-  color: #29243a;
+  background-color: #fff3e6;
+  color: #302820;
   font-size: 14px;
   cursor: pointer;
   transition: 0.2s;
 }
 
 .calendar-day:hover:not(:disabled) {
-  background-color: #e9dfff;
-  border-color: #a78bfa;
+  background-color: #ffe4d6;
+  border-color: #ffb49e;
 }
 
 /* 선택된 날짜 */
 .calendar-day.selected {
-  background-color: #7955d9;
-  border-color: #7955d9;
+  background-color: #ff8066;
+  border-color: #ff8066;
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(121, 85, 217, 0.25);
+  box-shadow: 0 4px 12px rgba(255, 128, 102, 0.25);
 }
 
 /* 예약 불가능한 날짜 */
 .calendar-day.unavailable {
-  background-color: #faf9fc;
-  color: #d1cbd9;
+  background-color: #faf7f3;
+  color: #c8bdb3;
   cursor: not-allowed;
 }
 
 /* 예약 안내 */
 .calendar-notice {
   margin: 22px 0 0;
-  color: #777087;
+  color: #88786c;
   font-size: 13px;
   line-height: 1.6;
   text-align: center;

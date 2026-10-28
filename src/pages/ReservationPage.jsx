@@ -2,6 +2,7 @@
 import { useState } from "react";
 import ReservationCalendar from "../components/reservation/ReservationCalendar";
 import TimeSlotSelector from "../components/reservation/TimeSlotSelector";
+import PopqLogo from "../components/reservation/PopqLogo";
 import "./ReservationPage.css";
 
 function ReservationPage({ onNext }) {
@@ -24,10 +25,11 @@ function ReservationPage({ onNext }) {
       {/* 예약 페이지 상단 */}
       <div className="reservation-hero">
         <div className="reservation-brand">
-          <span className="reservation-logo">
-            POP<span>Q</span>
+          <PopqLogo />
+
+          <span className="reservation-brand-tag">
+            POP-UP EXPERIENCE
           </span>
-          <span className="reservation-brand-tag">POP-UP EXPERIENCE</span>
         </div>
 
         <h1>설레는 팝업, 지금 예약하세요!</h1>
@@ -40,12 +42,16 @@ function ReservationPage({ onNext }) {
           <span>01</span>
           날짜 · 시간 선택
         </div>
+
         <span className="reservation-step-arrow">→</span>
+
         <div className="reservation-step">
           <span>02</span>
           예약 확인
         </div>
+
         <span className="reservation-step-arrow">→</span>
+
         <div className="reservation-step">
           <span>03</span>
           예약 완료
@@ -67,10 +73,12 @@ function ReservationPage({ onNext }) {
 
       {/* 예약 정보 */}
       {selectedDate && selectedTime && (
-        <div className="reservation-summary">
+        <section className="reservation-summary">
           <div className="reservation-summary-header">
             <h3>선택한 예약 정보</h3>
-            <span className="reservation-summary-badge">선택 완료</span>
+            <span className="reservation-summary-badge">
+              선택 완료
+            </span>
           </div>
 
           <div className="reservation-summary-row">
@@ -90,7 +98,7 @@ function ReservationPage({ onNext }) {
           >
             예약 정보 확인하기 →
           </button>
-        </div>
+        </section>
       )}
     </main>
   );

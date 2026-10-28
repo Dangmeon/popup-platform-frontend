@@ -1,19 +1,25 @@
 
-import "./ReservationComplete.css";
+import PopqLogo from "../components/reservation/PopqLogo";
 import ReservationTimer from "../components/reservation/ReservationTimer";
+import "./ReservationPage.css";
+import "./ReservationConfirm.css";
+import "./ReservationComplete.css";
 
-function ReservationComplete({ selectedDate, selectedTime, onGoHome }) {
-  // 실제 예약 번호와 QR코드는 추후 백엔드 API에서 받아옴
+function ReservationComplete({
+  selectedDate,
+  selectedTime,
+  onGoHome,
+}) {
+  // 실제 예약 번호는 추후 백엔드 API에서 받아옴
   const reservationNumber = "DEMO-000001";
 
   return (
     <main className="reservation-page">
-      {/* POPQ 로고 */}
+      {/* 예약 페이지 상단 */}
       <div className="reservation-hero">
         <div className="reservation-brand">
-          <span className="reservation-logo">
-            POP<span>Q</span>
-          </span>
+          <PopqLogo />
+
           <span className="reservation-brand-tag">
             POP-UP EXPERIENCE
           </span>
@@ -26,19 +32,22 @@ function ReservationComplete({ selectedDate, selectedTime, onGoHome }) {
       {/* 예약 진행 단계 */}
       <div className="reservation-steps">
         <div className="reservation-step">
-          <span>01</span>날짜 · 시간 선택
+          <span>01</span>
+          날짜 · 시간 선택
         </div>
 
         <span className="reservation-step-arrow">→</span>
 
         <div className="reservation-step">
-          <span>02</span>예약 확인
+          <span>02</span>
+          예약 확인
         </div>
 
         <span className="reservation-step-arrow">→</span>
 
         <div className="reservation-step active">
-          <span>03</span>예약 완료
+          <span>03</span>
+          예약 완료
         </div>
       </div>
 
@@ -93,13 +102,8 @@ function ReservationComplete({ selectedDate, selectedTime, onGoHome }) {
         {/* 메인페이지 이동 버튼 */}
         <button
           type="button"
-          className="reservation-next-button"
+          className="reservation-next-button reservation-home-button"
           onClick={onGoHome}
-          style={{
-            marginTop: '20px',
-            width: '100%',
-            cursor: 'pointer',
-          }}
         >
           메인페이지로 돌아가기 →
         </button>

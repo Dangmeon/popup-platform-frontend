@@ -1,34 +1,23 @@
 
-/* 기존 예약 화면 디자인 재사용 */
-@import "./ReservationPage.css";
-@import "./ReservationConfirm.css";
-
-/* ============================= */
 /* 예약 카운트다운 타이머 */
-/* ============================= */
-
 .reservation-timer {
   margin-top: 28px;
   padding: 28px 20px;
-
   background: linear-gradient(
     135deg,
-    #f4efff 0%,
-    #ebe2ff 100%
+    #fff8f1 0%,
+    #ffe9dc 100%
   );
-
-  border: 1px solid #dfd0ff;
+  border: 1px solid #eedfd0;
   border-radius: 16px;
-
   text-align: center;
-  box-shadow: 0 4px 16px rgba(121, 85, 217, 0.08);
+  box-shadow: 0 4px 16px rgba(100, 65, 40, 0.06);
 }
 
 /* 타이머 안내 문구 */
 .reservation-timer p {
   margin: 0 0 12px;
-
-  color: #76658f;
+  color: #88786c;
   font-size: 14px;
   font-weight: 500;
 }
@@ -36,46 +25,36 @@
 /* 남은 시간 숫자 */
 .reservation-timer h2 {
   margin: 0;
-
-  color: #7955d9;
+  color: #df634a;
   font-size: 32px;
   font-weight: 800;
   letter-spacing: 1px;
   line-height: 1.4;
-
   font-variant-numeric: tabular-nums;
 }
 
-/* ============================= */
 /* QR코드 영역 */
-/* ============================= */
-
 .reservation-qr-section {
   margin-top: 28px;
   padding: 32px 20px;
-
-  background: #f8f5ff;
-  border: 1px solid #e8ddff;
+  background-color: #fffaf4;
+  border: 1px solid #eedfd0;
   border-radius: 16px;
-
   text-align: center;
 }
 
 /* QR코드 임시 표시 영역 */
 .reservation-qr-placeholder {
-  width: 200px;
-  height: 200px;
-  margin: 0 auto 18px;
-
-  background: white;
-  border: 2px dashed #b9a5e8;
-  border-radius: 12px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
-  color: #7955d9;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 18px;
+  background-color: #ffffff;
+  border: 2px dashed #ffb49e;
+  border-radius: 12px;
+  color: #df634a;
   font-size: 15px;
   font-weight: 600;
 }
@@ -83,16 +62,17 @@
 /* QR코드 안내 문구 */
 .reservation-qr-section p {
   margin: 0;
-
-  color: #777084;
+  color: #88786c;
   font-size: 13px;
   line-height: 1.6;
 }
 
-/* ============================= */
-/* 모바일 화면 */
-/* ============================= */
+/* 메인페이지 이동 버튼 */
+.reservation-home-button {
+  margin-top: 20px;
+}
 
+/* 모바일 화면 */
 @media (max-width: 600px) {
   .reservation-timer {
     margin-top: 20px;

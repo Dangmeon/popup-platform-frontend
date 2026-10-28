@@ -1,0 +1,16 @@
+
+/* POPQ 공통 로고 */
+.reservation-logo-image {
+  display: block;
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* 모바일 */
+@media (max-width: 600px) {
+  .reservation-logo-image {
+    width: 120px;
+  }
+}
