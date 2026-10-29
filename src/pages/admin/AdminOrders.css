@@ -1,0 +1,221 @@
+/* 주문 관리 제목 */
+.admin-orders .admin-page-heading h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+.admin-orders .admin-page-heading p {
+  margin: 0;
+  color: #88786c;
+}
+
+/* 데모 안내 */
+.order-admin-demo {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border: 1px solid #eedfd0;
+  border-radius: 10px;
+  background: #fff3e6;
+  color: #88786c;
+  line-height: 1.6;
+}
+
+/* 검색 및 필터 */
+.order-admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.order-admin-filters label {
+  display: flex;
+  flex: 1 1 160px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  color: #88786c;
+  font-size: 13px;
+}
+
+.order-admin-filters label:first-child {
+  flex-grow: 2;
+}
+
+.order-admin-filters input,
+.order-admin-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+}
+
+/* 버튼 */
+.order-admin-button {
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.order-admin-button:hover {
+  border-color: #ff8066;
+  background: #fff3e6;
+}
+
+.order-admin-button:focus-visible,
+.order-admin-filters input:focus-visible,
+.order-admin-filters select:focus-visible {
+  outline: 3px solid #ff8066;
+  outline-offset: 3px;
+}
+
+/* 목록 및 상세 영역 */
+.order-admin-list,
+.order-admin-detail {
+  margin-top: 24px;
+}
+
+/* 주문 테이블 */
+.order-admin-table {
+  min-width: 800px;
+  font-size: 13px;
+}
+
+.order-admin-table th,
+.order-admin-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #eedfd0;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
+.order-admin-table th {
+  background: #fffaf4;
+  color: #88786c;
+  font-weight: 600;
+}
+
+.order-admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.order-admin-table .order-admin-empty {
+  padding: 40px 16px;
+  color: #88786c;
+  text-align: center;
+}
+
+/* 상태 표시 */
+.order-admin-status {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.order-admin-status.pending_payment,
+.order-admin-status.expired {
+  background: #fff3e6;
+  color: #9c5b42;
+}
+
+.order-admin-status.paid {
+  background: #e7f6ec;
+  color: #28764a;
+}
+
+.order-admin-status.cancelled,
+.order-admin-status.excluded {
+  background: #f4eeee;
+  color: #a64b4b;
+}
+
+.order-admin-status.included {
+  background: #f3eee8;
+  color: #635246;
+}
+
+/* 상세 정보 */
+.order-admin-info,
+.order-admin-amounts {
+  margin: 0;
+}
+
+.order-admin-info > div,
+.order-admin-amounts > div {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eedfd0;
+}
+
+.order-admin-info dt,
+.order-admin-amounts dt {
+  color: #88786c;
+}
+
+.order-admin-info dd,
+.order-admin-amounts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+/* 금액 정보 */
+.order-admin-amounts {
+  margin-top: 24px;
+}
+
+.order-admin-amounts dd {
+  text-align: right;
+}
+
+.order-admin-total dt,
+.order-admin-total dd {
+  color: #302820;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.order-admin-help {
+  margin: 16px 0;
+  color: #88786c;
+  line-height: 1.6;
+}
+
+/* 접근성 안내 */
+.order-admin-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 좁은 화면 */
+@media (max-width: 600px) {
+  .order-admin-info > div,
+  .order-admin-amounts > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .order-admin-amounts dd {
+    text-align: left;
+  }
+}

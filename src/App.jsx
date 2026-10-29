@@ -3,6 +3,8 @@ import { Routes, Route } from 'react-router-dom'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminReservations from './pages/admin/AdminReservations'
+import AdminMembers from './pages/admin/AdminMembers'
+import AdminOrders from './pages/admin/AdminOrders'
 
 // 메인 페이지
 function Home() {
@@ -35,6 +37,8 @@ function App() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="reservations" element={<AdminReservations />} />
+        <Route path="members" element={<AdminMembers />} />
+        <Route path="orders" element={<AdminOrders />} />
       </Route>
 
       {/* 없는 페이지 */}
