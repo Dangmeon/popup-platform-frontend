@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  getOrders,
+  getOrder,
+} from '../../api/admin/orderApi'
 import './AdminOrders.css'
 
-// 주문 상태
+// 나중에 확인할 부분: 서버의 주문 상태를 API 파일에서 화면 상태로 변환
 const orderStatuses = {
   PENDING_PAYMENT: '결제 대기',
   PAID: '결제 완료',
@@ -9,111 +13,11 @@ const orderStatuses = {
   EXPIRED: '결제 만료',
 }
 
-// 주문 항목 상태
+// 나중에 확인할 부분: 서버의 주문 항목 상태와 일치시키기
 const itemStatuses = {
   INCLUDED: '주문 포함',
   EXCLUDED: '주문 제외',
 }
-
-// 임시 주문 데이터
-const demoOrders = [
-  {
-    id: 1,
-    number: 'DEMO-ORD-000001',
-    memberName: '김팝큐',
-    createdAt: '2026-10-28T13:00:00+09:00',
-    paymentExpiresAt: '2026-10-28T13:10:00+09:00',
-    paidAt: null,
-    cancelledAt: null,
-    status: 'PENDING_PAYMENT',
-    items: [
-      {
-        id: 11,
-        name: 'POPQ 에코백',
-        unitPrice: 18000,
-        quantity: 1,
-        status: 'INCLUDED',
-        exclusionReason: '',
-      },
-      {
-        id: 12,
-        name: 'POPQ 스티커 세트',
-        unitPrice: 8000,
-        quantity: 2,
-        status: 'INCLUDED',
-        exclusionReason: '',
-      },
-      {
-        id: 13,
-        name: '한정판 키링',
-        unitPrice: 12000,
-        quantity: 1,
-        status: 'EXCLUDED',
-        exclusionReason: '결제 전 사용자 요청으로 제외',
-      },
-    ],
-  },
-  {
-    id: 2,
-    number: 'DEMO-ORD-000002',
-    memberName: '이하늘',
-    createdAt: '2026-10-28T11:00:00+09:00',
-    paymentExpiresAt: '2026-10-28T11:10:00+09:00',
-    paidAt: '2026-10-28T11:05:00+09:00',
-    cancelledAt: null,
-    status: 'PAID',
-    items: [
-      {
-        id: 21,
-        name: '캐릭터 인형',
-        unitPrice: 25000,
-        quantity: 1,
-        status: 'INCLUDED',
-        exclusionReason: '',
-      },
-    ],
-  },
-  {
-    id: 3,
-    number: 'DEMO-ORD-000003',
-    memberName: '박봄',
-    createdAt: '2026-10-28T10:00:00+09:00',
-    paymentExpiresAt: '2026-10-28T10:10:00+09:00',
-    paidAt: null,
-    cancelledAt: '2026-10-28T10:03:00+09:00',
-    status: 'CANCELLED',
-    items: [
-      {
-        id: 31,
-        name: 'POPQ 에코백',
-        unitPrice: 18000,
-        quantity: 1,
-        status: 'INCLUDED',
-        exclusionReason: '',
-      },
-    ],
-  },
-  {
-    id: 4,
-    number: 'DEMO-ORD-000004',
-    memberName: '최여름',
-    createdAt: '2026-10-28T09:00:00+09:00',
-    paymentExpiresAt: '2026-10-28T09:10:00+09:00',
-    paidAt: null,
-    cancelledAt: null,
-    status: 'EXPIRED',
-    items: [
-      {
-        id: 41,
-        name: 'POPQ 스티커 세트',
-        unitPrice: 8000,
-        quantity: 1,
-        status: 'INCLUDED',
-        exclusionReason: '',
-      },
-    ],
-  },
-]
 
 // 금액 표시
 function formatPrice(amount) {
@@ -124,6 +28,10 @@ function formatPrice(amount) {
 function formatDateTime(value) {
   if (!value) return '-'
 
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) return '-'
+
   return new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul',
     year: 'numeric',
@@ -132,57 +40,107 @@ function formatDateTime(value) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(new Date(value))
-}
-
-// 주문 금액 계산
-function calculateAmounts(items) {
-  const originalAmount = items.reduce(
-    (total, item) => total + item.unitPrice * item.quantity,
-    0
-  )
-
-  const excludedAmount = items
-    .filter((item) => item.status === 'EXCLUDED')
-    .reduce(
-      (total, item) => total + item.unitPrice * item.quantity,
-      0
-    )
-
-  return {
-    originalAmount,
-    excludedAmount,
-    finalAmount: originalAmount - excludedAmount,
-  }
+  }).format(date)
 }
 
 function AdminOrders() {
+  // 주문 목록
+  const [orders, setOrders] = useState([])
+  const [total, setTotal] = useState(0)
+  const [totalAll, setTotalAll] = useState(0)
+  const [listLoading, setListLoading] = useState(true)
+  const [listError, setListError] = useState('')
+
   // 검색 및 필터
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('')
 
-  // 상세 정보
+  // 주문 상세
   const [selectedId, setSelectedId] = useState(null)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState('')
 
-  const searchKeyword = keyword.trim().toLowerCase()
+  // 재조회
+  const [listRetryKey, setListRetryKey] = useState(0)
+  const [detailRetryKey, setDetailRetryKey] = useState(0)
 
-  const filteredOrders = demoOrders.filter((order) => {
-    const matchesKeyword =
-      order.number.toLowerCase().includes(searchKeyword) ||
-      order.memberName.toLowerCase().includes(searchKeyword)
+  // 주문 목록 조회
+  useEffect(() => {
+    let active = true
 
-    const matchesStatus = !status || order.status === status
+    async function loadOrders() {
+      setListLoading(true)
+      setListError('')
 
-    return matchesKeyword && matchesStatus
-  })
+      try {
+        const response = await getOrders({
+          keyword,
+          status,
+        })
 
-  const selectedOrder = demoOrders.find(
-    (order) => order.id === selectedId
-  )
+        if (!active) return
 
-  const selectedAmounts = selectedOrder
-    ? calculateAmounts(selectedOrder.items)
-    : null
+        setOrders(response.items)
+        setTotal(response.total)
+        setTotalAll(response.totalAll)
+      } catch (error) {
+        if (!active) return
+
+        setOrders([])
+        setTotal(0)
+        setTotalAll(0)
+        setListError(
+          error.message || '주문 목록을 불러오지 못했습니다.'
+        )
+      } finally {
+        if (active) setListLoading(false)
+      }
+    }
+
+    loadOrders()
+
+    return () => {
+      active = false
+    }
+  }, [keyword, status, listRetryKey])
+
+  // 주문 상세 조회
+  useEffect(() => {
+    let active = true
+
+    async function loadOrder() {
+      setSelectedOrder(null)
+      setDetailError('')
+
+      if (selectedId === null) {
+        setDetailLoading(false)
+        return
+      }
+
+      setDetailLoading(true)
+
+      try {
+        const response = await getOrder(selectedId)
+
+        if (active) setSelectedOrder(response)
+      } catch (error) {
+        if (active) {
+          setDetailError(
+            error.message || '주문 상세 정보를 불러오지 못했습니다.'
+          )
+        }
+      } finally {
+        if (active) setDetailLoading(false)
+      }
+    }
+
+    loadOrder()
+
+    return () => {
+      active = false
+    }
+  }, [selectedId, detailRetryKey])
 
   // 필터 초기화
   function handleReset() {
@@ -199,10 +157,11 @@ function AdminOrders() {
           <p>주문 상품과 결제 상태를 확인하세요.</p>
         </div>
 
+        {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
         <span className="admin-demo-badge">DEMO DATA</span>
       </div>
 
-      {/* 데모 안내 */}
+      {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 제거 */}
       <p className="order-admin-demo">
         고정된 가상 주문을 사용하는 조회 화면입니다.
         현재 시각과 관계없이 예시 상태를 표시하며, 실제 결제·취소·재고
@@ -248,46 +207,68 @@ function AdminOrders() {
       </section>
 
       {/* 주문 목록 */}
-      <section className="admin-panel order-admin-list">
+      <section
+        className="admin-panel order-admin-list"
+        aria-busy={listLoading}
+      >
         <div className="admin-panel-header">
           <h3>주문 목록</h3>
-          <span>
-            검색 {filteredOrders.length}건 / 전체 {demoOrders.length}건
-          </span>
+          {!listLoading && !listError && (
+            <span>
+              검색 {total}건 / 전체 {totalAll}건
+            </span>
+          )}
         </div>
 
-        <div className="admin-table-wrapper">
-          <table className="admin-table order-admin-table">
-            <caption className="order-admin-sr-only">
-              주문 검색 결과
-            </caption>
+        {listLoading && (
+          <p role="status">주문 목록을 불러오는 중입니다.</p>
+        )}
 
-            <thead>
-              <tr>
-                <th scope="col">주문번호</th>
-                <th scope="col">주문자</th>
-                <th scope="col">주문 생성일시</th>
-                <th scope="col">최종 주문 금액</th>
-                <th scope="col">상태</th>
-                <th scope="col">관리</th>
-              </tr>
-            </thead>
+        {listError && (
+          <div>
+            <p role="alert">{listError}</p>
+            <button
+              type="button"
+              className="order-admin-button"
+              onClick={() =>
+                setListRetryKey((previous) => previous + 1)
+              }
+            >
+              다시 불러오기
+            </button>
+          </div>
+        )}
 
-            <tbody>
-              {filteredOrders.map((order) => {
-                const amounts = calculateAmounts(order.items)
+        {!listLoading && !listError && (
+          <div className="admin-table-wrapper">
+            <table className="admin-table order-admin-table">
+              <caption className="order-admin-sr-only">
+                주문 검색 결과
+              </caption>
 
-                return (
+              <thead>
+                <tr>
+                  <th scope="col">주문번호</th>
+                  <th scope="col">주문자</th>
+                  <th scope="col">주문 생성일시</th>
+                  <th scope="col">최종 주문 금액</th>
+                  <th scope="col">상태</th>
+                  <th scope="col">관리</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {orders.map((order) => (
                   <tr key={order.id}>
                     <td>{order.number}</td>
                     <td>{order.memberName}</td>
                     <td>{formatDateTime(order.createdAt)}</td>
-                    <td>{formatPrice(amounts.finalAmount)}</td>
+                    <td>{formatPrice(order.amounts.finalAmount)}</td>
                     <td>
                       <span
                         className={`order-admin-status ${order.status.toLowerCase()}`}
                       >
-                        {orderStatuses[order.status]}
+                        {orderStatuses[order.status] || order.status}
                       </span>
                     </td>
                     <td>
@@ -303,27 +284,28 @@ function AdminOrders() {
                       </button>
                     </td>
                   </tr>
-                )
-              })}
+                ))}
 
-              {filteredOrders.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="order-admin-empty">
-                    검색 조건에 맞는 주문이 없습니다.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                {orders.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="order-admin-empty">
+                      검색 조건에 맞는 주문이 없습니다.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* 주문 상세 */}
       <div id="order-admin-detail">
-        {selectedOrder && (
+        {selectedId !== null && (
           <section
             className="admin-panel order-admin-detail"
             aria-labelledby="order-admin-detail-title"
+            aria-busy={detailLoading}
           >
             <div className="admin-panel-header">
               <h3 id="order-admin-detail-title">주문 상세</h3>
@@ -336,126 +318,151 @@ function AdminOrders() {
               </button>
             </div>
 
-            <dl className="order-admin-info">
-              <div>
-                <dt>주문번호</dt>
-                <dd>{selectedOrder.number}</dd>
-              </div>
-              <div>
-                <dt>주문자</dt>
-                <dd>{selectedOrder.memberName}</dd>
-              </div>
-              <div>
-                <dt>주문 상태</dt>
-                <dd>{orderStatuses[selectedOrder.status]}</dd>
-              </div>
-              <div>
-                <dt>주문 생성일시</dt>
-                <dd>{formatDateTime(selectedOrder.createdAt)}</dd>
-              </div>
-              <div>
-                <dt>결제 만료시각</dt>
-                <dd>
-                  {formatDateTime(selectedOrder.paymentExpiresAt)}
-                  {' '}(생성 후 10분)
-                </dd>
-              </div>
-              <div>
-                <dt>결제 완료일시</dt>
-                <dd>{formatDateTime(selectedOrder.paidAt)}</dd>
-              </div>
-              <div>
-                <dt>주문 취소일시</dt>
-                <dd>{formatDateTime(selectedOrder.cancelledAt)}</dd>
-              </div>
-            </dl>
+            {detailLoading && (
+              <p role="status">주문 정보를 불러오는 중입니다.</p>
+            )}
 
-            {/* 주문 상품 */}
-            <h4>주문 상품</h4>
-
-            <p className="order-admin-help">
-              ‘주문 포함’은 주문에 기록된 항목입니다.
-              주문 전체의 결제·취소·만료 상태와 함께 확인해 주세요.
-            </p>
-
-            <div className="admin-table-wrapper">
-              <table className="admin-table order-admin-table">
-                <caption className="order-admin-sr-only">
-                  선택한 주문의 상품 내역
-                </caption>
-
-                <thead>
-                  <tr>
-                    <th scope="col">상품명</th>
-                    <th scope="col">단가</th>
-                    <th scope="col">수량</th>
-                    <th scope="col">상품 금액</th>
-                    <th scope="col">항목 상태</th>
-                    <th scope="col">제외 사유</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {selectedOrder.items.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.name}</td>
-                      <td>{formatPrice(item.unitPrice)}</td>
-                      <td>{item.quantity}</td>
-                      <td>
-                        {formatPrice(item.unitPrice * item.quantity)}
-                      </td>
-                      <td>
-                        <span
-                          className={`order-admin-status ${item.status.toLowerCase()}`}
-                        >
-                          {itemStatuses[item.status]}
-                        </span>
-                      </td>
-                      <td>{item.exclusionReason || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* 주문 금액 */}
-            <dl className="order-admin-amounts">
+            {detailError && (
               <div>
-                <dt>제외 전 상품 합계</dt>
-                <dd>{formatPrice(selectedAmounts.originalAmount)}</dd>
+                <p role="alert">{detailError}</p>
+                <button
+                  type="button"
+                  className="order-admin-button"
+                  onClick={() =>
+                    setDetailRetryKey((previous) => previous + 1)
+                  }
+                >
+                  다시 불러오기
+                </button>
               </div>
-              <div>
-                <dt>제외 상품 금액</dt>
-                <dd>−{formatPrice(selectedAmounts.excludedAmount)}</dd>
-              </div>
-              <div className="order-admin-total">
-                <dt>최종 주문 금액</dt>
-                <dd>{formatPrice(selectedAmounts.finalAmount)}</dd>
-              </div>
-              <div>
-                <dt>결제 완료 금액</dt>
-                <dd>
-                  {formatPrice(
-                    selectedOrder.status === 'PAID'
-                      ? selectedAmounts.finalAmount
-                      : 0
-                  )}
-                </dd>
-              </div>
-            </dl>
+            )}
 
-            <p className="order-admin-help">
-              배송비·할인이 없는 상품 금액 예시입니다.
-              실제 API 연동 후에는 서버가 계산한 최종 금액과 결제 결과를
-              표시합니다.
-            </p>
+            {!detailLoading && !detailError && selectedOrder && (
+              <>
+                <dl className="order-admin-info">
+                  <div>
+                    <dt>주문번호</dt>
+                    <dd>{selectedOrder.number}</dd>
+                  </div>
+                  <div>
+                    <dt>주문자</dt>
+                    <dd>{selectedOrder.memberName}</dd>
+                  </div>
+                  <div>
+                    <dt>주문 상태</dt>
+                    <dd>
+                      {orderStatuses[selectedOrder.status] ||
+                        selectedOrder.status}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>주문 생성일시</dt>
+                    <dd>{formatDateTime(selectedOrder.createdAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>결제 만료시각</dt>
+                    <dd>
+                      {formatDateTime(selectedOrder.paymentExpiresAt)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>결제 완료일시</dt>
+                    <dd>{formatDateTime(selectedOrder.paidAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>주문 취소일시</dt>
+                    <dd>{formatDateTime(selectedOrder.cancelledAt)}</dd>
+                  </div>
+                </dl>
 
-            {selectedAmounts.excludedAmount > 0 && (
-              <p className="order-admin-demo">
-                한정판 키링만 제외된 예시입니다.
-                나머지 상품 34,000원의 결제 대기 상태는 유지됩니다.
-                재고 복구와 대기열 접근 권한 처리는 백엔드 연동 대상입니다.
-              </p>
+                {/* 주문 상품 */}
+                <h4>주문 상품</h4>
+
+                <p className="order-admin-help">
+                  ‘주문 포함’은 주문에 기록된 항목입니다.
+                  주문 전체의 결제·취소·만료 상태와 함께 확인해 주세요.
+                </p>
+
+                <div className="admin-table-wrapper">
+                  <table className="admin-table order-admin-table">
+                    <caption className="order-admin-sr-only">
+                      선택한 주문의 상품 내역
+                    </caption>
+
+                    <thead>
+                      <tr>
+                        <th scope="col">상품명</th>
+                        <th scope="col">단가</th>
+                        <th scope="col">수량</th>
+                        <th scope="col">상품 금액</th>
+                        <th scope="col">항목 상태</th>
+                        <th scope="col">제외 사유</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {selectedOrder.items.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.name}</td>
+                          <td>{formatPrice(item.unitPrice)}</td>
+                          <td>{item.quantity}</td>
+                          <td>
+                            {formatPrice(item.unitPrice * item.quantity)}
+                          </td>
+                          <td>
+                            <span
+                              className={`order-admin-status ${item.status.toLowerCase()}`}
+                            >
+                              {itemStatuses[item.status] || item.status}
+                            </span>
+                          </td>
+                          <td>{item.exclusionReason || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 주문 금액 */}
+                <dl className="order-admin-amounts">
+                  <div>
+                    <dt>제외 전 상품 합계</dt>
+                    <dd>
+                      {formatPrice(selectedOrder.amounts.originalAmount)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>제외 상품 금액</dt>
+                    <dd>
+                      −{formatPrice(selectedOrder.amounts.excludedAmount)}
+                    </dd>
+                  </div>
+                  <div className="order-admin-total">
+                    <dt>최종 주문 금액</dt>
+                    <dd>
+                      {formatPrice(selectedOrder.amounts.finalAmount)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>결제 완료 금액</dt>
+                    <dd>
+                      {formatPrice(selectedOrder.amounts.paidAmount)}
+                    </dd>
+                  </div>
+                </dl>
+
+                <p className="order-admin-help">
+                  금액과 결제 만료시각은 조회 응답을 기준으로 표시합니다.
+                  현재는 배송비·할인이 없는 더미 데이터입니다.
+                </p>
+
+                {selectedOrder.amounts.excludedAmount > 0 && (
+                  <p className="order-admin-help">
+                    제외된 상품은 최종 주문 금액에 포함되지 않습니다.
+                    나머지 상품의 진행 상태는 위 주문 상태에서 확인해 주세요.
+                  </p>
+                )}
+              </>
             )}
           </section>
         )}

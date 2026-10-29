@@ -1,86 +1,121 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  getMembers,
+  getMember,
+} from '../../api/admin/memberApi'
 import './AdminMembers.css'
 
-// 임시 회원 상태
+// 나중에 확인할 부분: 백엔드 회원 상태값과 일치시키기
 const memberStatuses = {
   ACTIVE: '정상',
   SUSPENDED: '이용 제한',
   WITHDRAWN: '탈퇴',
 }
 
-// 임시 회원 권한
+// 나중에 확인할 부분: 백엔드 회원 권한값과 일치시키기
 const memberRoles = {
   USER: '일반 회원',
   ADMIN: '관리자',
 }
 
-// 임시 회원 데이터
-const demoMembers = [
-  {
-    id: 1,
-    name: '김팝큐',
-    email: 'popq@example.com',
-    joinedAt: '2026-10-01',
-    status: 'ACTIVE',
-    role: 'USER',
-  },
-  {
-    id: 2,
-    name: '이하늘',
-    email: 'sky@example.com',
-    joinedAt: '2026-10-05',
-    status: 'ACTIVE',
-    role: 'USER',
-  },
-  {
-    id: 3,
-    name: '박봄',
-    email: 'spring@example.com',
-    joinedAt: '2026-10-10',
-    status: 'SUSPENDED',
-    role: 'USER',
-  },
-  {
-    id: 4,
-    name: '최여름',
-    email: 'summer@example.com',
-    joinedAt: '2026-10-12',
-    status: 'WITHDRAWN',
-    role: 'USER',
-  },
-  {
-    id: 5,
-    name: '운영관리자',
-    email: 'admin@example.com',
-    joinedAt: '2026-09-01',
-    status: 'ACTIVE',
-    role: 'ADMIN',
-  },
-]
-
 function AdminMembers() {
+  // 회원 목록
+  const [members, setMembers] = useState([])
+  const [total, setTotal] = useState(0)
+  const [totalAll, setTotalAll] = useState(0)
+  const [listLoading, setListLoading] = useState(true)
+  const [listError, setListError] = useState('')
+
   // 검색 및 필터
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('')
 
-  // 상세 정보
+  // 회원 상세
   const [selectedId, setSelectedId] = useState(null)
+  const [selectedMember, setSelectedMember] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState('')
 
-  const searchKeyword = keyword.trim().toLowerCase()
+  // 재조회
+  const [listRetryKey, setListRetryKey] = useState(0)
+  const [detailRetryKey, setDetailRetryKey] = useState(0)
 
-  const filteredMembers = demoMembers.filter((member) => {
-    const matchesKeyword =
-      member.name.toLowerCase().includes(searchKeyword) ||
-      member.email.toLowerCase().includes(searchKeyword)
+  // 회원 목록 조회
+  useEffect(() => {
+    let active = true
 
-    const matchesStatus = !status || member.status === status
+    async function loadMembers() {
+      setListLoading(true)
+      setListError('')
 
-    return matchesKeyword && matchesStatus
-  })
+      try {
+        const response = await getMembers({
+          keyword,
+          status,
+        })
 
-  const selectedMember = demoMembers.find(
-    (member) => member.id === selectedId
-  )
+        if (!active) return
+
+        setMembers(response.items)
+        setTotal(response.total)
+        setTotalAll(response.totalAll)
+      } catch (error) {
+        if (!active) return
+
+        setMembers([])
+        setTotal(0)
+        setTotalAll(0)
+        setListError(
+          error.message || '회원 목록을 불러오지 못했습니다.'
+        )
+      } finally {
+        if (active) setListLoading(false)
+      }
+    }
+
+    loadMembers()
+
+    return () => {
+      active = false
+    }
+  }, [keyword, status, listRetryKey])
+
+  // 회원 상세 조회
+  useEffect(() => {
+    let active = true
+
+    async function loadMember() {
+      setSelectedMember(null)
+      setDetailError('')
+
+      if (selectedId === null) {
+        setDetailLoading(false)
+        return
+      }
+
+      setDetailLoading(true)
+
+      try {
+        const response = await getMember(selectedId)
+
+        if (active) setSelectedMember(response)
+      } catch (error) {
+        if (active) {
+          setDetailError(
+            error.message || '회원 상세 정보를 불러오지 못했습니다.'
+          )
+        }
+      } finally {
+        if (active) setDetailLoading(false)
+      }
+    }
+
+    loadMember()
+
+    return () => {
+      active = false
+    }
+  }, [selectedId, detailRetryKey])
 
   // 필터 초기화
   function handleReset() {
@@ -97,10 +132,11 @@ function AdminMembers() {
           <p>회원 정보를 검색하고 가입 현황을 확인하세요.</p>
         </div>
 
+        {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
         <span className="admin-demo-badge">DEMO DATA</span>
       </div>
 
-      {/* 데모 안내 */}
+      {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 제거 */}
       <p className="member-admin-demo">
         가상 회원 정보를 사용하는 데모 화면입니다.
         회원 상태와 권한은 조회만 가능하며 실제 서버와 연결되지 않습니다.
@@ -145,80 +181,107 @@ function AdminMembers() {
       </section>
 
       {/* 회원 목록 */}
-      <section className="admin-panel member-admin-list">
+      <section
+        className="admin-panel member-admin-list"
+        aria-busy={listLoading}
+      >
         <div className="admin-panel-header">
           <h3>회원 목록</h3>
-          <span>
-            검색 {filteredMembers.length}명 / 전체 {demoMembers.length}명
-          </span>
+          {!listLoading && !listError && (
+            <span>
+              검색 {total}명 / 전체 {totalAll}명
+            </span>
+          )}
         </div>
 
-        <div className="admin-table-wrapper">
-          <table className="admin-table member-admin-table">
-            <caption className="member-admin-sr-only">
-              회원 검색 결과
-            </caption>
+        {listLoading && (
+          <p role="status">회원 목록을 불러오는 중입니다.</p>
+        )}
 
-            <thead>
-              <tr>
-                <th scope="col">회원번호</th>
-                <th scope="col">이름</th>
-                <th scope="col">이메일</th>
-                <th scope="col">가입일</th>
-                <th scope="col">상태</th>
-                <th scope="col">권한</th>
-                <th scope="col">관리</th>
-              </tr>
-            </thead>
+        {listError && (
+          <div>
+            <p role="alert">{listError}</p>
+            <button
+              type="button"
+              className="member-admin-button"
+              onClick={() =>
+                setListRetryKey((previous) => previous + 1)
+              }
+            >
+              다시 불러오기
+            </button>
+          </div>
+        )}
 
-            <tbody>
-              {filteredMembers.map((member) => (
-                <tr key={member.id}>
-                  <td>{member.id}</td>
-                  <td>{member.name}</td>
-                  <td>{member.email}</td>
-                  <td>{member.joinedAt}</td>
-                  <td>
-                    <span
-                      className={`member-admin-status ${member.status.toLowerCase()}`}
-                    >
-                      {memberStatuses[member.status]}
-                    </span>
-                  </td>
-                  <td>{memberRoles[member.role]}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="member-admin-button"
-                      aria-label={`${member.name} 회원 상세 보기`}
-                      aria-expanded={selectedId === member.id}
-                      aria-controls="member-admin-detail"
-                      onClick={() => setSelectedId(member.id)}
-                    >
-                      상세 보기
-                    </button>
-                  </td>
-                </tr>
-              ))}
+        {!listLoading && !listError && (
+          <div className="admin-table-wrapper">
+            <table className="admin-table member-admin-table">
+              <caption className="member-admin-sr-only">
+                회원 검색 결과
+              </caption>
 
-              {filteredMembers.length === 0 && (
+              <thead>
                 <tr>
-                  <td colSpan={7} className="member-admin-empty">
-                    검색 조건에 맞는 회원이 없습니다.
-                  </td>
+                  <th scope="col">회원번호</th>
+                  <th scope="col">이름</th>
+                  <th scope="col">이메일</th>
+                  <th scope="col">가입일</th>
+                  <th scope="col">상태</th>
+                  <th scope="col">권한</th>
+                  <th scope="col">관리</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {members.map((member) => (
+                  <tr key={member.id}>
+                    <td>{member.id}</td>
+                    <td>{member.name}</td>
+                    <td>{member.email}</td>
+                    <td>{member.joinedAt}</td>
+                    <td>
+                      <span
+                        className={`member-admin-status ${member.status.toLowerCase()}`}
+                      >
+                        {memberStatuses[member.status] || member.status}
+                      </span>
+                    </td>
+                    <td>{memberRoles[member.role] || member.role}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="member-admin-button"
+                        aria-label={`${member.name} 회원 상세 보기`}
+                        aria-expanded={selectedId === member.id}
+                        aria-controls="member-admin-detail"
+                        onClick={() => setSelectedId(member.id)}
+                      >
+                        상세 보기
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {members.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="member-admin-empty">
+                      검색 조건에 맞는 회원이 없습니다.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* 회원 상세 */}
       <div id="member-admin-detail">
-        {selectedMember && (
+        {selectedId !== null && (
           <section
             className="admin-panel member-admin-detail"
             aria-labelledby="member-admin-detail-title"
+            aria-busy={detailLoading}
           >
             <div className="admin-panel-header">
               <h3 id="member-admin-detail-title">회원 상세</h3>
@@ -231,32 +294,59 @@ function AdminMembers() {
               </button>
             </div>
 
-            <dl className="member-admin-info">
+            {detailLoading && (
+              <p role="status">회원 정보를 불러오는 중입니다.</p>
+            )}
+
+            {detailError && (
               <div>
-                <dt>회원번호</dt>
-                <dd>{selectedMember.id}</dd>
+                <p role="alert">{detailError}</p>
+                <button
+                  type="button"
+                  className="member-admin-button"
+                  onClick={() =>
+                    setDetailRetryKey((previous) => previous + 1)
+                  }
+                >
+                  다시 불러오기
+                </button>
               </div>
-              <div>
-                <dt>이름</dt>
-                <dd>{selectedMember.name}</dd>
-              </div>
-              <div>
-                <dt>이메일</dt>
-                <dd>{selectedMember.email}</dd>
-              </div>
-              <div>
-                <dt>가입일</dt>
-                <dd>{selectedMember.joinedAt}</dd>
-              </div>
-              <div>
-                <dt>회원 상태</dt>
-                <dd>{memberStatuses[selectedMember.status]}</dd>
-              </div>
-              <div>
-                <dt>권한</dt>
-                <dd>{memberRoles[selectedMember.role]}</dd>
-              </div>
-            </dl>
+            )}
+
+            {!detailLoading && !detailError && selectedMember && (
+              <dl className="member-admin-info">
+                <div>
+                  <dt>회원번호</dt>
+                  <dd>{selectedMember.id}</dd>
+                </div>
+                <div>
+                  <dt>이름</dt>
+                  <dd>{selectedMember.name}</dd>
+                </div>
+                <div>
+                  <dt>이메일</dt>
+                  <dd>{selectedMember.email}</dd>
+                </div>
+                <div>
+                  <dt>가입일</dt>
+                  <dd>{selectedMember.joinedAt}</dd>
+                </div>
+                <div>
+                  <dt>회원 상태</dt>
+                  <dd>
+                    {memberStatuses[selectedMember.status] ||
+                      selectedMember.status}
+                  </dd>
+                </div>
+                <div>
+                  <dt>권한</dt>
+                  <dd>
+                    {memberRoles[selectedMember.role] ||
+                      selectedMember.role}
+                  </dd>
+                </div>
+              </dl>
+            )}
           </section>
         )}
       </div>
