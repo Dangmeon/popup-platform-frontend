@@ -21,6 +21,9 @@ export default function MyPage(){
     <div className="container">
       <div className="page-title">마이페이지</div>
       <p className="card-sub">{app.currentUser.name}님 ({app.currentUser.email})</p>
+      <Link to="/mypage/account" className="btn btn-outline" style={{ display:'inline-block', marginTop:12 }}>
+        내 정보 관리
+      </Link>
 
       <div className="tabs" style={{marginTop:24}}>
         <button className={'tab-btn'+(tab==='reservations'?' active':'')} onClick={()=>setTab('reservations')}>내 예약</button>

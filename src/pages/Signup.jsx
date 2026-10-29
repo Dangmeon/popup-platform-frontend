@@ -21,7 +21,6 @@ export default function Signup(){
       <h2>회원가입</h2>
       <div className="form-switch">
         <button type="button" className={type==='user'?'active':''} onClick={()=>setType('user')}>일반회원</button>
-        <button type="button" className={type==='brand'?'active':''} onClick={()=>setType('brand')}>브랜드회원</button>
       </div>
       <form onSubmit={handleSubmit}>
         <div className="form-group">

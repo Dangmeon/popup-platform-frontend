@@ -3,10 +3,12 @@ import { useParams, Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import CongestionBar from '../components/common/CongestionBar.jsx'
 import GoodsCard from '../components/common/GoodsCard.jsx'
+import FeaturedPopupDetail from './FeaturedPopupDetail.jsx'
+import { featuredPopups } from '../data/featuredPopups.js'
 
 const TIME_SLOTS = ['11:00', '13:00', '15:00', '17:00']
 
-export default function PopupDetail(){
+function BasicPopupDetail(){
   const { id } = useParams()
   const app = useApp()
   const popup = app.popups.find(p => String(p.id) === String(id))
@@ -19,7 +21,7 @@ export default function PopupDetail(){
     return <div className="container empty-state">존재하지 않는 팝업입니다. <Link to="/popups">목록으로</Link></div>
   }
 
-  const liked = app.likedPopups.includes(popup.id)
+ 
   const popupGoods = app.products.filter(g => g.popupId === popup.id)
   const myReservation = app.reservations.find(r => r.id === myReservationId)
   const myWaiting = app.waitings.find(w => w.id === myWaitingId)
@@ -48,13 +50,7 @@ export default function PopupDetail(){
           <h1 style={{ fontSize:28, fontWeight:800, margin:'12px 0 8px' }}>{popup.title}</h1>
           <p className="card-sub">{popup.location}</p>
           <p className="card-sub">{popup.startDate} ~ {popup.endDate}</p>
-
-          <button
-            className="btn btn-outline"
-            style={{ marginTop:12 }}
-            onClick={()=>app.toggleLikePopup(popup.id)}
-          >{liked ? '♥ 찜 완료' : '♡ 찜하기'} ({popup.likes + (liked?1:0)})</button>
-
+          
           <div style={{ marginTop:24 }}>
             <div className="card-sub" style={{ marginBottom:6 }}>현재 혼잡도</div>
             <CongestionBar reserved={popup.reserved} capacity={popup.capacity} />
@@ -121,4 +117,11 @@ export default function PopupDetail(){
       )}
     </div>
   )
+  
+}
+export default function PopupDetail(){
+  const params = useParams()
+  const key = params.id ?? params.popupId
+  const featured = featuredPopups.find(f => String(f.id) === String(key))
+  return featured ? <FeaturedPopupDetail popup={featured} /> : <BasicPopupDetail />
 }

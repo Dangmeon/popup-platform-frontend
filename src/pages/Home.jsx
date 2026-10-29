@@ -1,45 +1,70 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React from 'react'
 import { useApp } from '../context/AppContext.jsx'
+import { Link } from 'react-router-dom'
 import PopupCard from '../components/common/PopupCard.jsx'
-import GoodsCard from '../components/common/GoodsCard.jsx'
+import HeroWide from '../components/common/HeroWide.jsx'
+import { featuredCards, featuredGoods } from '../data/featuredPopups.js'
 import '../styles/Home.css'
+import '../styles/FeaturedPopupDetail.css'
+
+// 인기 굿즈로 보여줄 상품 id (원하는 대로 바꾸세요)
+const POPULAR_GOODS_IDS = [
+  'loopy-1', 'loopy-4',
+  'chiikawa-1', 'chiikawa-3',
+  'gal-1', 'gal-6', 'gal-4', 'gal-8',
+]
 
 export default function Home(){
-  
+
   const app = useApp()
-  const [heroIndex, setHeroIndex] = useState(0)
 
-  const heroSlides = [...app.popups].sort((a,b)=>b.likes-a.likes).slice(0,3)
-  const popular = [...app.popups].sort((a,b)=>b.likes-a.likes).slice(0,8)
-  const soon = [...app.popups].sort((a,b)=> new Date(a.endDate)-new Date(b.endDate)).slice(0,8)
-  const goods = app.products.slice(0,4)
+  // 배너: 루피, 치이카와, GAL
+  const heroSlides = [
+    {
+      id: 'loopy',
+      image: '/poster-loopy.png',
+      poster: true,
+      tag: '잔망루피 POP-UP STORE',
+      title: '잔망루피는 못 말려!',
+      place: '롯데월드몰 1F 아트리움 팝업존',
+      period: '2026.12.01 ~ 12.31 · 10:00 ~ 20:00',
+      to: '/popups/loopy',
+    },
+    {
+      id: 'chiikawa',
+      image: '/chiikawa/poster.png',
+      poster: true,
+      tag: '치이카와 POP-UP STORE',
+      title: '치이카와는 귀여워!',
+      place: 'IFC몰 서울 L1 팝업존',
+      period: '2027.02.02 ~ 02.28 · 10:00 ~ 20:00',
+      to: '/popups/chiikawa',
+    },
+    {
+      id: 'gal',
+      image: '/gal/poster.png',
+      poster: true,
+      tag: 'GAL POP-UP STORE',
+      title: 'GAL POP-UP STORE',
+      place: '장소 미정',                         // TODO: 실제 장소
+      period: '2027.03.01 ~ 03.31 · 10:00 ~ 20:00', // TODO: 실제 일정
+      to: '/popups/gal',
+    },
+  ]
 
-  const hero = heroSlides[heroIndex] || heroSlides[0]
+  // 지금 인기 있는 팝업: 루피, 치이카와, GAL
+  const popular = featuredCards.filter(c => ['loopy', 'chiikawa', 'gal'].includes(c.id))
+
+  // 인기 굿즈: 위 id 순서대로
+  const goods = POPULAR_GOODS_IDS
+    .map(id => featuredGoods.find(g => g.id === id))
+    .filter(Boolean)
+
+  const soon = []
 
   return (
     <div>
-      {hero && (
-        <section className="hero-slide" style={{ backgroundImage: `url(${hero.image})` }}>
-          <Link to={`/popups/${hero.id}`} className="hero-slide-link">
-            <div className="hero-slide-overlay">
-              <span className="badge">{hero.category}</span>
-              <h1>{hero.title}</h1>
-              <p>{hero.location} · {hero.startDate} ~ {hero.endDate}</p>
-            </div>
-          </Link>
-          <div className="hero-dots">
-            {heroSlides.map((s,i)=>(
-              <button
-                key={s.id}
-                className={'hero-dot'+(i===heroIndex?' active':'')}
-                onClick={()=>setHeroIndex(i)}
-                aria-label={`슬라이드 ${i+1}`}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <HeroWide slides={heroSlides} />
 
       <div className="container">
         <div className="section-title">🔥 지금 인기 있는 팝업</div>
@@ -47,14 +72,29 @@ export default function Home(){
           {popular.map(p => <PopupCard key={p.id} popup={p} />)}
         </div>
 
-        <div className="section-title">⏰ 마감 임박 팝업</div>
+       <div className="section-title">⏰ 마감 임박 팝업</div>
+        {soon.length > 0 ? (
         <div className="grid-4">
-          {soon.map(p => <PopupCard key={p.id} popup={p} />)}
+        {soon.map(p => <PopupCard key={p.id} popup={p} />)}
         </div>
+        ) : (
+          <div className="empty-state">마감 임박 팝업이 없어요</div>
+          )}
 
         <div className="section-title">🛍️ 인기 굿즈</div>
         <div className="grid-4">
-          {goods.map(g => <GoodsCard key={g.id} item={g} />)}
+          {goods.map(g => (
+            <Link key={g.id} to={`/popups/${g.popupId}`} className="fpd-good" style={{ display:'block' }}>
+              <div className="fpd-good-img">
+                {g.limited && <span className="fpd-good-badge">한정판</span>}
+                <img src={g.image} alt={g.name} style={g.imageFit ? { objectFit: g.imageFit } : undefined} />
+              </div>
+              <div className="fpd-good-body">
+                <div className="fpd-good-name">{g.name}</div>
+                <div className="fpd-good-price">{g.price > 0 ? `${g.price.toLocaleString()}원` : '가격 미정'}</div>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

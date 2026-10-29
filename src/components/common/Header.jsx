@@ -35,7 +35,6 @@ export default function Header(){
           />
         </form>
         <div className="header-actions">
-          <Link to="/wishlist" className="icon-btn">찜</Link>
           <Link to="/cart" className="icon-btn">장바구니</Link>
           <Link to="/mypage" className="icon-btn">마이페이지</Link>
           {app.currentUser ? (
@@ -60,7 +59,6 @@ export default function Header(){
 
       <div className="container header-nav">
         <Link to="/popups">팝업 발견</Link>
-        <Link to="/wishlist">마이플리</Link>
       </div>
     </header>
   )

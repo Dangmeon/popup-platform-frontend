@@ -1,0 +1,39 @@
+.fpd { padding-bottom: 60px; }
+
+.fpd-top { display: grid; grid-template-columns: 380px 1fr; gap: 40px; margin-top: 32px; align-items: start; }
+.fpd-poster { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.fpd-poster img { width: 100%; display: block; }
+
+.fpd-info { display: flex; flex-direction: column; gap: 18px; }
+.fpd-tag { align-self: flex-start; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--primary); color: var(--primary-dark); background: #fff; font-size: 12px; font-weight: 700; }
+.fpd-title { margin: 0; font-size: 36px; font-weight: 800; line-height: 1.2; word-break: keep-all; }
+
+.fpd-meta { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.fpd-meta div { display: flex; gap: 14px; align-items: baseline; }
+.fpd-meta dt { flex: 0 0 52px; padding: 3px 0; text-align: center; border-radius: 999px; background: var(--bg-soft); color: var(--primary-dark); font-size: 12px; font-weight: 700; }
+.fpd-meta dd { margin: 0; font-size: 16px; }
+
+.fpd-zones { display: flex; flex-wrap: wrap; gap: 8px; }
+.fpd-zone { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: #fff; font-size: 12px; font-weight: 700; color: var(--text-sub); }
+
+.fpd-reserve { display: block; text-align: center; margin-top: 8px; padding: 16px; font-size: 16px; }
+
+.fpd-goods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.fpd-good { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s; }
+.fpd-good:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.fpd-good-img { position: relative; aspect-ratio: 1 / 1; background: var(--bg-soft); }
+.fpd-good-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fpd-good-no { position: absolute; top: 10px; left: 10px; z-index: 1; width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 1px solid var(--border); display: grid; place-items: center; font-size: 13px; font-weight: 800; }
+.fpd-good-badge { position: absolute; top: 10px; right: 10px; z-index: 1; padding: 4px 10px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; }
+.fpd-good-body { padding: 14px 16px; }
+.fpd-good-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.fpd-good-price { color: var(--primary-dark); font-weight: 800; }
+
+.fpd-guide { width: 100%; max-width: 560px; display: block; margin: 0 auto; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+
+@media (max-width: 1024px) { .fpd-goods { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) {
+  .fpd-top { grid-template-columns: 1fr; gap: 24px; }
+  .fpd-poster { max-width: 360px; margin: 0 auto; }
+  .fpd-title { font-size: 26px; }
+}

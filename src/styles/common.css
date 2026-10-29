@@ -19,7 +19,7 @@ a { color:inherit; text-decoration:none; }
 button { font-family:inherit; }
 .container { max-width:1200px; margin:0 auto; padding:0 24px; }
 
-.header { background:var(--bg); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:50; }
+.header { background:var(--bg); border-bottom:1px solid var(--border); position:relative; z-index:50; }
 .header-top { display:flex; align-items:center; gap:20px; padding:16px 24px; }
 .logo-link { display:inline-flex; align-items:center; height:40px; overflow:hidden; }
 .logo { font-weight:800; font-size:26px; color:var(--primary); }
