@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  getReservations,
+  getReservation,
+  visitReservation,
+} from '../../api/admin/reservationApi'
 import './AdminReservations.css'
 
-// 예약 상태
+// 나중에 확인할 부분: 백엔드 예약 상태값과 일치시키기
 const reservationStatuses = {
   CONFIRMED: '예약 확정',
   VISITED: '방문 완료',
@@ -17,95 +22,109 @@ function formatDate(date) {
   return `${year}-${month}-${day}`
 }
 
-// 임시 예약 데이터
-function createDemoReservations() {
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(today.getDate() + 1)
-
-  return [
-    {
-      id: 1,
-      number: 'DEMO-000001',
-      popupName: '성수 POPQ 팝업',
-      memberName: '김팝큐',
-      visitDate: formatDate(today),
-      visitTime: '13:00',
-      people: 1,
-      status: 'CONFIRMED',
-    },
-    {
-      id: 2,
-      number: 'DEMO-000002',
-      popupName: '홍대 캐릭터 팝업',
-      memberName: '이하늘',
-      visitDate: formatDate(today),
-      visitTime: '14:00',
-      people: 2,
-      status: 'CONFIRMED',
-    },
-    {
-      id: 3,
-      number: 'DEMO-000003',
-      popupName: '성수 POPQ 팝업',
-      memberName: '박봄',
-      visitDate: formatDate(today),
-      visitTime: '11:00',
-      people: 1,
-      status: 'VISITED',
-    },
-    {
-      id: 4,
-      number: 'DEMO-000004',
-      popupName: '강남 굿즈 팝업',
-      memberName: '최여름',
-      visitDate: formatDate(tomorrow),
-      visitTime: '15:00',
-      people: 2,
-      status: 'CANCELLED',
-    },
-    {
-      id: 5,
-      number: 'DEMO-000005',
-      popupName: '강남 굿즈 팝업',
-      memberName: '정가을',
-      visitDate: formatDate(tomorrow),
-      visitTime: '16:00',
-      people: 1,
-      status: 'CONFIRMED',
-    },
-  ]
-}
-
 function AdminReservations() {
-  // 예약 데이터
-  const [reservations, setReservations] = useState(createDemoReservations)
+  // 예약 목록
+  const [reservations, setReservations] = useState([])
+  const [total, setTotal] = useState(0)
+  const [totalAll, setTotalAll] = useState(0)
+  const [listLoading, setListLoading] = useState(true)
+  const [listError, setListError] = useState('')
 
   // 검색 및 필터
   const [keyword, setKeyword] = useState('')
   const [visitDate, setVisitDate] = useState('')
   const [status, setStatus] = useState('')
 
-  // 상세 정보 및 안내
+  // 예약 상세
   const [selectedId, setSelectedId] = useState(null)
+  const [selectedReservation, setSelectedReservation] = useState(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState('')
+
+  // 방문 처리 및 재조회
+  const [visitLoading, setVisitLoading] = useState(false)
   const [notice, setNotice] = useState('')
+  const [visitError, setVisitError] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [detailRetryKey, setDetailRetryKey] = useState(0)
 
-  const normalizedKeyword = keyword.trim().toLowerCase()
+  // 예약 목록 조회
+  useEffect(() => {
+    let active = true
 
-  const filteredReservations = reservations.filter((reservation) => {
-    const matchesKeyword =
-      reservation.number.toLowerCase().includes(normalizedKeyword) ||
-      reservation.memberName.toLowerCase().includes(normalizedKeyword)
+    async function loadReservations() {
+      setListLoading(true)
+      setListError('')
 
-    const matchesDate = !visitDate || reservation.visitDate === visitDate
-    const matchesStatus = !status || reservation.status === status
+      try {
+        const response = await getReservations({
+          keyword,
+          visitDate,
+          status,
+        })
 
-    return matchesKeyword && matchesDate && matchesStatus
-  })
+        if (!active) return
 
-  const selectedReservation = reservations.find(
-    (reservation) => reservation.id === selectedId
-  )
+        setReservations(response.items)
+        setTotal(response.total)
+        setTotalAll(response.totalAll)
+      } catch (error) {
+        if (!active) return
+
+        setReservations([])
+        setTotal(0)
+        setTotalAll(0)
+        setListError(
+          error.message || '예약 목록을 불러오지 못했습니다.'
+        )
+      } finally {
+        if (active) setListLoading(false)
+      }
+    }
+
+    loadReservations()
+
+    return () => {
+      active = false
+    }
+  }, [keyword, visitDate, status, refreshKey])
+
+  // 예약 상세 조회
+  useEffect(() => {
+    let active = true
+
+    async function loadReservation() {
+      setSelectedReservation(null)
+      setDetailError('')
+
+      if (selectedId === null) {
+        setDetailLoading(false)
+        return
+      }
+
+      setDetailLoading(true)
+
+      try {
+        const response = await getReservation(selectedId)
+
+        if (active) setSelectedReservation(response)
+      } catch (error) {
+        if (active) {
+          setDetailError(
+            error.message || '예약 상세 정보를 불러오지 못했습니다.'
+          )
+        }
+      } finally {
+        if (active) setDetailLoading(false)
+      }
+    }
+
+    loadReservation()
+
+    return () => {
+      active = false
+    }
+  }, [selectedId, refreshKey, detailRetryKey])
 
   // 필터 초기화
   function handleReset() {
@@ -114,36 +133,74 @@ function AdminReservations() {
     setStatus('')
   }
 
+  // 상세 정보 열기
+  function handleOpenDetail(id) {
+    if (visitLoading) return
+
+    setNotice('')
+    setVisitError('')
+    setSelectedId(id)
+  }
+
+  // 상세 정보 닫기
+  function handleCloseDetail() {
+    if (visitLoading) return
+
+    setSelectedId(null)
+    setNotice('')
+    setVisitError('')
+  }
+
   // 방문 처리
-  function handleVisit(reservationId) {
-    const reservation = reservations.find(
-      (item) => item.id === reservationId
-    )
+  async function handleVisit() {
+    if (
+      visitLoading ||
+      !selectedReservation ||
+      selectedReservation.status !== 'CONFIRMED'
+    ) {
+      return
+    }
 
-    if (!reservation || reservation.status !== 'CONFIRMED') return
+    setNotice('')
+    setVisitError('')
 
-    const today = formatDate(new Date())
-
-    if (reservation.visitDate !== today) {
-      setNotice('방문 처리는 예약된 방문 날짜에만 가능합니다.')
+    // 나중에 확인할 부분: 방문 가능 날짜와 시간은 서버 정책을 기준으로 검증
+    if (selectedReservation.visitDate !== formatDate(new Date())) {
+      setVisitError('방문 처리는 예약된 방문 날짜에만 가능합니다.')
       return
     }
 
     const confirmed = window.confirm(
-      `${reservation.number}\n${reservation.memberName}님의 방문을 완료 처리할까요?`
+      `${selectedReservation.number}\n${selectedReservation.memberName}님의 방문을 완료 처리할까요?`
     )
 
     if (!confirmed) return
 
-    setReservations((previous) =>
-      previous.map((item) =>
-        item.id === reservationId && item.status === 'CONFIRMED'
-          ? { ...item, status: 'VISITED' }
-          : item
-      )
-    )
+    setVisitLoading(true)
 
-    setNotice(`${reservation.number} 예약의 데모 방문 처리가 완료됐습니다.`)
+    try {
+      const updatedReservation = await visitReservation(
+        selectedReservation.id
+      )
+
+      setSelectedReservation(updatedReservation)
+      setNotice(
+        `${updatedReservation.number} 예약의 방문 처리가 완료됐습니다.`
+      )
+
+      // 목록과 상세 정보 갱신
+      setRefreshKey((previous) => previous + 1)
+    } catch (error) {
+      setVisitError(
+        error.message ||
+          '방문 처리 결과를 확인하지 못했습니다. 상세 정보를 다시 조회해 주세요.'
+      )
+
+      // 처리 결과 재확인
+      setRefreshKey((previous) => previous + 1)
+    } finally {
+      setVisitLoading(false)
+    }
   }
 
   return (
@@ -155,10 +212,11 @@ function AdminReservations() {
           <p>예약번호를 조회하고 방문 정보를 확인하세요.</p>
         </div>
 
+        {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
         <span className="admin-demo-badge">DEMO DATA</span>
       </div>
 
-      {/* 데모 안내 */}
+      {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 제거 */}
       <p className="reservation-admin-demo">
         임시 데이터로 동작합니다. 방문 처리 결과는 서버에 저장되지 않으며,
         새로고침하면 초기화됩니다.
@@ -216,149 +274,205 @@ function AdminReservations() {
         {notice}
       </p>
 
+      {visitError && (
+        <p className="reservation-admin-notice" role="alert">
+          {visitError}
+        </p>
+      )}
+
       {/* 예약 목록 */}
-      <section className="admin-panel">
+      <section className="admin-panel" aria-busy={listLoading}>
         <div className="admin-panel-header">
           <h3>예약 목록</h3>
-          <span>
-            검색 {filteredReservations.length}건 / 전체 {reservations.length}건
-          </span>
+          {!listLoading && !listError && (
+            <span>
+              검색 {total}건 / 전체 {totalAll}건
+            </span>
+          )}
         </div>
 
-        <div className="admin-table-wrapper">
-          <table className="admin-table reservation-admin-table">
-            <caption className="reservation-admin-sr-only">
-              예약 검색 결과
-            </caption>
+        {listLoading && (
+          <p role="status">예약 목록을 불러오는 중입니다.</p>
+        )}
 
-            <thead>
-              <tr>
-                <th scope="col">예약번호</th>
-                <th scope="col">팝업명</th>
-                <th scope="col">예약자</th>
-                <th scope="col">방문 날짜·시간</th>
-                <th scope="col">인원</th>
-                <th scope="col">상태</th>
-                <th scope="col">관리</th>
-              </tr>
-            </thead>
+        {listError && (
+          <div>
+            <p role="alert">{listError}</p>
+            <button
+              type="button"
+              className="reservation-admin-button"
+              onClick={() => setRefreshKey((previous) => previous + 1)}
+            >
+              다시 불러오기
+            </button>
+          </div>
+        )}
 
-            <tbody>
-              {filteredReservations.map((reservation) => (
-                <tr key={reservation.id}>
-                  <td>{reservation.number}</td>
-                  <td>{reservation.popupName}</td>
-                  <td>{reservation.memberName}</td>
-                  <td>
-                    {reservation.visitDate}
-                    <br />
-                    {reservation.visitTime}
-                  </td>
-                  <td>{reservation.people}명</td>
-                  <td>
-                    <span
-                      className={`reservation-admin-status ${reservation.status.toLowerCase()}`}
-                    >
-                      {reservationStatuses[reservation.status]}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="reservation-admin-button"
-                      aria-expanded={selectedId === reservation.id}
-                      aria-controls="reservation-admin-detail"
-                      aria-label={`${reservation.number} 상세 보기`}
-                      onClick={() => {
-                        setSelectedId(reservation.id)
-                        setNotice('')
-                      }}
-                    >
-                      상세 보기
-                    </button>
-                  </td>
-                </tr>
-              ))}
+        {!listLoading && !listError && (
+          <div className="admin-table-wrapper">
+            <table className="admin-table reservation-admin-table">
+              <caption className="reservation-admin-sr-only">
+                예약 검색 결과
+              </caption>
 
-              {filteredReservations.length === 0 && (
+              <thead>
                 <tr>
-                  <td colSpan={7} className="reservation-admin-empty">
-                    검색 조건에 맞는 예약이 없습니다.
-                  </td>
+                  <th scope="col">예약번호</th>
+                  <th scope="col">팝업명</th>
+                  <th scope="col">예약자</th>
+                  <th scope="col">방문 날짜·시간</th>
+                  <th scope="col">인원</th>
+                  <th scope="col">상태</th>
+                  <th scope="col">관리</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {reservations.map((reservation) => (
+                  <tr key={reservation.id}>
+                    <td>{reservation.number}</td>
+                    <td>{reservation.popupName}</td>
+                    <td>{reservation.memberName}</td>
+                    <td>
+                      {reservation.visitDate}
+                      <br />
+                      {reservation.visitTime}
+                    </td>
+                    <td>{reservation.people}명</td>
+                    <td>
+                      <span
+                        className={`reservation-admin-status ${reservation.status.toLowerCase()}`}
+                      >
+                        {reservationStatuses[reservation.status] ||
+                          reservation.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="reservation-admin-button"
+                        disabled={visitLoading}
+                        aria-expanded={selectedId === reservation.id}
+                        aria-controls="reservation-admin-detail"
+                        aria-label={`${reservation.number} 상세 보기`}
+                        onClick={() => handleOpenDetail(reservation.id)}
+                      >
+                        상세 보기
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {reservations.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="reservation-admin-empty">
+                      검색 조건에 맞는 예약이 없습니다.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* 예약 상세 */}
       <div id="reservation-admin-detail">
-        {selectedReservation && (
+        {selectedId !== null && (
           <section
             className="admin-panel reservation-admin-detail"
             aria-labelledby="reservation-admin-detail-title"
+            aria-busy={detailLoading}
           >
             <div className="admin-panel-header">
               <h3 id="reservation-admin-detail-title">예약 상세</h3>
               <button
                 type="button"
                 className="reservation-admin-button"
-                onClick={() => setSelectedId(null)}
+                disabled={visitLoading}
+                onClick={handleCloseDetail}
               >
                 닫기
               </button>
             </div>
 
-            <dl className="reservation-admin-info">
-              <div>
-                <dt>예약번호</dt>
-                <dd>{selectedReservation.number}</dd>
-              </div>
-              <div>
-                <dt>팝업명</dt>
-                <dd>{selectedReservation.popupName}</dd>
-              </div>
-              <div>
-                <dt>예약자</dt>
-                <dd>{selectedReservation.memberName}</dd>
-              </div>
-              <div>
-                <dt>방문 날짜·시간</dt>
-                <dd>
-                  {selectedReservation.visitDate} {selectedReservation.visitTime}
-                </dd>
-              </div>
-              <div>
-                <dt>예약 인원</dt>
-                <dd>{selectedReservation.people}명</dd>
-              </div>
-              <div>
-                <dt>예약 상태</dt>
-                <dd>
-                  {reservationStatuses[selectedReservation.status]}
-                </dd>
-              </div>
-            </dl>
+            {detailLoading && (
+              <p role="status">예약 정보를 불러오는 중입니다.</p>
+            )}
 
-            <p className="reservation-admin-help">
-              직원이 예약번호와 방문 정보를 확인한 뒤 방문 처리해 주세요.
-              데모에서는 방문 당일의 확정 예약만 처리할 수 있습니다.
-            </p>
+            {detailError && (
+              <div>
+                <p role="alert">{detailError}</p>
+                <button
+                  type="button"
+                  className="reservation-admin-button"
+                  onClick={() =>
+                    setDetailRetryKey((previous) => previous + 1)
+                  }
+                >
+                  다시 불러오기
+                </button>
+              </div>
+            )}
 
-            <button
-              type="button"
-              className="reservation-admin-button primary"
-              disabled={
-                selectedReservation.status !== 'CONFIRMED' ||
-                selectedReservation.visitDate !== formatDate(new Date())
-              }
-              onClick={() => handleVisit(selectedReservation.id)}
-            >
-              {selectedReservation.status === 'VISITED'
-                ? '방문 처리 완료'
-                : '방문 완료 처리'}
-            </button>
+            {!detailLoading && !detailError && selectedReservation && (
+              <>
+                <dl className="reservation-admin-info">
+                  <div>
+                    <dt>예약번호</dt>
+                    <dd>{selectedReservation.number}</dd>
+                  </div>
+                  <div>
+                    <dt>팝업명</dt>
+                    <dd>{selectedReservation.popupName}</dd>
+                  </div>
+                  <div>
+                    <dt>예약자</dt>
+                    <dd>{selectedReservation.memberName}</dd>
+                  </div>
+                  <div>
+                    <dt>방문 날짜·시간</dt>
+                    <dd>
+                      {selectedReservation.visitDate}{' '}
+                      {selectedReservation.visitTime}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>예약 인원</dt>
+                    <dd>{selectedReservation.people}명</dd>
+                  </div>
+                  <div>
+                    <dt>예약 상태</dt>
+                    <dd>
+                      {reservationStatuses[selectedReservation.status] ||
+                        selectedReservation.status}
+                    </dd>
+                  </div>
+                </dl>
+
+                <p className="reservation-admin-help">
+                  직원이 예약번호와 방문 정보를 확인한 뒤 방문 처리해 주세요.
+                  데모에서는 방문 당일의 확정 예약만 처리할 수 있습니다.
+                </p>
+
+                <button
+                  type="button"
+                  className="reservation-admin-button primary"
+                  disabled={
+                    visitLoading ||
+                    selectedReservation.status !== 'CONFIRMED' ||
+                    selectedReservation.visitDate !== formatDate(new Date())
+                  }
+                  onClick={handleVisit}
+                >
+                  {visitLoading
+                    ? '방문 처리 중…'
+                    : selectedReservation.status === 'VISITED'
+                      ? '방문 처리 완료'
+                      : '방문 완료 처리'}
+                </button>
+              </>
+            )}
           </section>
         )}
       </div>
