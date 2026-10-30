@@ -109,3 +109,24 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+
+/* POPQ 전체 화면 너비 제한 해제 */
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  display: block;
+  min-width: 320px;
+}
+
+#root {
+  max-width: none;
+  padding: 0;
+  text-align: left;
+}
