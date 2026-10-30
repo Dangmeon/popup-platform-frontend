@@ -1,0 +1,197 @@
+/* 굿즈 관리 제목 */
+.admin-products .admin-page-heading h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+.admin-products .admin-page-heading p {
+  margin: 0;
+  color: #88786c;
+}
+
+/* 데모 안내 */
+.product-admin-demo {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border: 1px solid #eedfd0;
+  border-radius: 10px;
+  background: #fff3e6;
+  color: #88786c;
+  line-height: 1.6;
+}
+
+/* 검색 및 필터 */
+.product-admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.product-admin-filters label {
+  display: flex;
+  flex: 1 1 160px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  color: #88786c;
+  font-size: 13px;
+}
+
+.product-admin-filters label:first-child {
+  flex-grow: 2;
+}
+
+.product-admin-filters input,
+.product-admin-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+}
+
+/* 버튼 */
+.product-admin-button {
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.product-admin-button:hover {
+  border-color: #ff8066;
+  background: #fff3e6;
+}
+
+.product-admin-button:focus-visible,
+.product-admin-filters input:focus-visible,
+.product-admin-filters select:focus-visible {
+  outline: 3px solid #ff8066;
+  outline-offset: 3px;
+}
+
+/* 목록 및 상세 */
+.product-admin-list,
+.product-admin-detail {
+  margin-top: 24px;
+}
+
+/* 상품 테이블 */
+.product-admin-table {
+  min-width: 850px;
+  font-size: 13px;
+}
+
+.product-admin-table th,
+.product-admin-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #eedfd0;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
+.product-admin-table th {
+  background: #fffaf4;
+  color: #88786c;
+  font-weight: 600;
+}
+
+.product-admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.product-admin-table .product-admin-empty {
+  padding: 40px 16px;
+  color: #88786c;
+  text-align: center;
+}
+
+/* 판매 상태 */
+.product-admin-status {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.product-admin-status.on_sale {
+  background: #e7f6ec;
+  color: #28764a;
+}
+
+.product-admin-status.sold_out {
+  background: #f4eeee;
+  color: #a64b4b;
+}
+
+.product-admin-status.ended {
+  background: #f3eee8;
+  color: #635246;
+}
+
+/* 재고 안내 */
+.product-admin-stock-warning {
+  display: block;
+  color: #a64b4b;
+  font-size: 11px;
+}
+
+/* 상세 정보 */
+.product-admin-info {
+  margin: 0;
+}
+
+.product-admin-info > div {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eedfd0;
+}
+
+.product-admin-info dt {
+  color: #88786c;
+}
+
+.product-admin-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-weight: 600;
+}
+
+.product-admin-help {
+  margin: 20px 0 0;
+  color: #88786c;
+  line-height: 1.6;
+}
+
+/* 접근성 안내 */
+.product-admin-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 좁은 화면 */
+@media (max-width: 600px) {
+  .product-admin-info > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

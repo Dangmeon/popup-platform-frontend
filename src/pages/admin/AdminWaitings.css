@@ -1,0 +1,192 @@
+/* 웨이팅 관리 제목 */
+.admin-waitings .admin-page-heading h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+.admin-waitings .admin-page-heading p {
+  margin: 0;
+  color: #88786c;
+}
+
+/* 데모 안내 */
+.waiting-admin-demo {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border: 1px solid #eedfd0;
+  border-radius: 10px;
+  background: #fff3e6;
+  color: #88786c;
+  line-height: 1.6;
+}
+
+/* 검색 및 필터 */
+.waiting-admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.waiting-admin-filters label {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  color: #88786c;
+  font-size: 13px;
+}
+
+.waiting-admin-filters input,
+.waiting-admin-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+}
+
+/* 버튼 */
+.waiting-admin-button {
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid #eedfd0;
+  border-radius: 8px;
+  background: white;
+  color: #302820;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.waiting-admin-button:hover:not(:disabled) {
+  border-color: #ff8066;
+  background: #fff3e6;
+}
+
+.waiting-admin-button:disabled,
+.waiting-admin-filters input:disabled,
+.waiting-admin-filters select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.waiting-admin-button:focus-visible,
+.waiting-admin-filters input:focus-visible,
+.waiting-admin-filters select:focus-visible {
+  outline: 3px solid #ff8066;
+  outline-offset: 3px;
+}
+
+/* 목록 및 상세 */
+.waiting-admin-list,
+.waiting-admin-detail {
+  margin-top: 24px;
+}
+
+/* 웨이팅 테이블 */
+.waiting-admin-table {
+  min-width: 760px;
+  font-size: 13px;
+}
+
+.waiting-admin-table th,
+.waiting-admin-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #eedfd0;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
+.waiting-admin-table th {
+  background: #fffaf4;
+  color: #88786c;
+  font-weight: 600;
+}
+
+.waiting-admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.waiting-admin-table .waiting-admin-empty {
+  padding: 40px 16px;
+  color: #88786c;
+  text-align: center;
+}
+
+/* 대기 상태 */
+.waiting-admin-status {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.waiting-admin-status.waiting {
+  background: #fff3e6;
+  color: #9c5b42;
+}
+
+.waiting-admin-status.called {
+  background: #e8effc;
+  color: #365a96;
+}
+
+.waiting-admin-status.entered {
+  background: #e7f6ec;
+  color: #28764a;
+}
+
+.waiting-admin-status.cancelled,
+.waiting-admin-status.expired {
+  background: #f4eeee;
+  color: #a64b4b;
+}
+
+/* 상세 정보 */
+.waiting-admin-info {
+  margin: 0;
+}
+
+.waiting-admin-info > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eedfd0;
+}
+
+.waiting-admin-info dt {
+  color: #88786c;
+}
+
+.waiting-admin-info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+/* 접근성 안내 */
+.waiting-admin-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 좁은 화면 */
+@media (max-width: 600px) {
+  .waiting-admin-info > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

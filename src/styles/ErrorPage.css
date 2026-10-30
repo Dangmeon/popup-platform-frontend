@@ -1,0 +1,21 @@
+.error-page {
+  padding: 100px 20px;
+}
+.error-mascot {
+  width: 160px;
+  margin-bottom: 12px;
+}
+.error-mascot-shake {
+  animation: errorShake 1.8s ease-in-out infinite;
+}
+@keyframes errorShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-4deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(4deg); }
+}
+.error-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 8px 0 4px;
+}

@@ -1,0 +1,112 @@
+
+/* 시간 선택 영역 */
+.time-slot-selector {
+  margin-top: 24px;
+  padding: 28px;
+  background-color: #ffffff;
+  border: 1px solid #eedfd0;
+  border-radius: 20px;
+  box-shadow: 0 6px 24px rgba(100, 65, 40, 0.06);
+}
+
+.time-slot-selector h3 {
+  margin: 0 0 22px;
+  color: #302820;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+/* 시간 버튼 배치 */
+.time-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* 시간 버튼 */
+.time-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  background-color: #ffffff;
+  border: 1px solid #eedfd0;
+  border-radius: 14px;
+  color: #302820;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+}
+
+.time-slot:hover:not(:disabled) {
+  background-color: #fff3e6;
+  border-color: #ffb49e;
+  transform: translateY(-2px);
+}
+
+/* 선택된 시간 */
+.time-slot.selected {
+  background-color: #fff0e9;
+  border: 2px solid #ff8066;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(255, 128, 102, 0.12);
+}
+
+.time-slot.selected .time-slot-time {
+  color: #df634a;
+}
+
+.time-slot-time {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.time-slot-remaining {
+  color: #df634a;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 예약 마감 */
+.time-slot:disabled {
+  background-color: #faf7f3;
+  border-color: #eee5dc;
+  color: #b7aaa0;
+  cursor: not-allowed;
+}
+
+.time-slot:disabled .time-slot-remaining {
+  color: #b7aaa0;
+}
+
+/* 날짜 선택 안내 */
+.time-slot-notice {
+  margin: 0;
+  padding: 20px;
+  background-color: #fff3e6;
+  border-radius: 12px;
+  color: #88786c;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* 모바일 화면 */
+@media (max-width: 600px) {
+  .time-slot-selector {
+    padding: 18px;
+  }
+
+  .time-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .time-slot {
+    padding: 14px;
+  }
+
+  .time-slot.selected {
+    padding: 13px;
+  }
+}
