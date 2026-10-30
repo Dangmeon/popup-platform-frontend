@@ -5,6 +5,9 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminReservations from './pages/admin/AdminReservations'
 import AdminMembers from './pages/admin/AdminMembers'
 import AdminOrders from './pages/admin/AdminOrders'
+import AdminProducts from './pages/admin/AdminProducts'
+import AdminPopups from './pages/admin/AdminPopups'
+import AdminWaitings from './pages/admin/AdminWaitings'
 
 // 메인 페이지
 function Home() {
@@ -39,6 +42,9 @@ function App() {
         <Route path="reservations" element={<AdminReservations />} />
         <Route path="members" element={<AdminMembers />} />
         <Route path="orders" element={<AdminOrders />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="popups" element={<AdminPopups />} />
+        <Route path="waiting" element={<AdminWaitings />} />
       </Route>
 
       {/* 없는 페이지 */}
