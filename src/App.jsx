@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Routes,
   Route,
@@ -58,10 +58,10 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   // 예약 정보
-  const [reservation, setReservation] = useState({
-    date: null,
-    time: null,
-  })
+  const [reservation, setReservation] = useState(null)
+
+  // 완료 처리 기록
+  const completedIds = useRef(new Set())
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200)
@@ -70,24 +70,87 @@ function App() {
   }, [])
 
   // 예약 정보 확인
-  function handleReservationNext(date, time) {
-    setReservation({ date, time })
+  function handleReservationNext(date, time, details = {}) {
+    const { popupId, peopleCount } = details
+
+    if (
+      !date ||
+      !time ||
+      !popupId ||
+      !Number.isSafeInteger(peopleCount) ||
+      peopleCount < 1
+    ) {
+      app.showToast('예약 날짜·시간·인원을 확인해 주세요.')
+      return
+    }
+
+    // 나중에 바꿀 부분: 실제 API가 발급한 예약번호 사용
+    const id = `DEMO-${crypto.randomUUID()}`
+
+    setReservation({
+      id,
+      popupId,
+      date,
+      time,
+      peopleCount,
+      completed: false,
+    })
+
     navigate('/reservations/confirm')
   }
 
   // 데모 예약 완료
   function handleReservationComplete() {
-    navigate('/reservations/complete')
+    if (!reservation) return
+
+    if (completedIds.current.has(reservation.id)) {
+      navigate('/reservations/complete')
+      return
+    }
+
+    if (!app.currentUser) {
+      app.showToast('로그인 후 예약 확인 화면에서 다시 진행해 주세요.')
+      navigate('/login')
+      return
+    }
+
+    try {
+      // 나중에 바꿀 부분: 실제 예약 API 호출 및 성공 응답 처리
+      app.addDemoReservation({
+        id: reservation.id,
+        popupId: reservation.popupId,
+        visitDate: reservation.date,
+        timeSlot: reservation.time,
+        peopleCount: reservation.peopleCount,
+      })
+
+      completedIds.current.add(reservation.id)
+
+      setReservation((previous) => ({
+        ...previous,
+        completed: true,
+      }))
+
+      app.showToast('데모 예약 내역을 저장했습니다. 실제 예약은 아닙니다.')
+      navigate('/reservations/complete')
+    } catch (error) {
+      app.showToast(
+        error.message || '데모 예약 내역을 저장하지 못했습니다.'
+      )
+    }
   }
 
   // 메인 이동
   function handleGoHome() {
-    setReservation({ date: null, time: null })
+    setReservation(null)
     navigate('/')
   }
 
   const hasReservation = Boolean(
-    reservation.date && reservation.time
+    reservation?.date &&
+      reservation?.time &&
+      reservation?.popupId &&
+      reservation?.peopleCount
   )
 
   if (loading) {
@@ -122,6 +185,7 @@ function App() {
                 <ReservationConfirm
                   selectedDate={reservation.date}
                   selectedTime={reservation.time}
+                  peopleCount={reservation.peopleCount}
                   onBack={() => navigate(-1)}
                   onConfirm={handleReservationComplete}
                 />
@@ -135,14 +199,23 @@ function App() {
           <Route
             path="/reservations/complete"
             element={
-              hasReservation ? (
+              hasReservation && reservation.completed ? (
                 <ReservationComplete
                   selectedDate={reservation.date}
                   selectedTime={reservation.time}
+                  peopleCount={reservation.peopleCount}
+                  reservationNumber={reservation.id}
                   onGoHome={handleGoHome}
                 />
               ) : (
-                <Navigate to="/popups" replace />
+                <Navigate
+                  to={
+                    hasReservation
+                      ? '/reservations/confirm'
+                      : '/popups'
+                  }
+                  replace
+                />
               )
             }
           />
@@ -173,8 +246,6 @@ function App() {
           <Route path="products" element={<AdminProducts />} />
           <Route path="popups" element={<AdminPopups />} />
           <Route path="waiting" element={<AdminWaitings />} />
-
-          {/* 없는 관리자 페이지 */}
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

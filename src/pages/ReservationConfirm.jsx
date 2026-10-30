@@ -1,11 +1,11 @@
-
-import PopqLogo from "../components/reservation/PopqLogo";
-import "./ReservationPage.css";
-import "./ReservationConfirm.css";
+import PopqLogo from '../components/reservation/PopqLogo'
+import './ReservationPage.css'
+import './ReservationConfirm.css'
 
 function ReservationConfirm({
   selectedDate,
   selectedTime,
+  peopleCount,
   onBack,
   onConfirm,
 }) {
@@ -22,7 +22,7 @@ function ReservationConfirm({
         </div>
 
         <h1>예약 정보를 확인해 주세요</h1>
-        <p>선택하신 날짜와 시간이 맞는지 확인해 주세요.</p>
+        <p>선택하신 날짜와 시간, 인원이 맞는지 확인해 주세요.</p>
       </div>
 
       {/* 예약 진행 단계 */}
@@ -66,9 +66,15 @@ function ReservationConfirm({
           <strong>{selectedTime}</strong>
         </div>
 
-        {/* 데모 안내 */}
+        <div className="reservation-summary-row">
+          <span>예약 인원</span>
+          <strong>{peopleCount}명</strong>
+        </div>
+
+        {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 교체 */}
         <p className="reservation-confirm-notice">
-          현재는 테스트 화면입니다. 실제 예약 및 QR코드 발급은
+          현재는 테스트 화면입니다. 로그인 후 진행하면 마이페이지에
+          데모 예약 내역이 기록됩니다. 실제 예약 및 QR코드 발급은
           서버 연동 후 가능합니다.
         </p>
 
@@ -92,7 +98,7 @@ function ReservationConfirm({
         </div>
       </section>
     </main>
-  );
+  )
 }
 
-export default ReservationConfirm;
+export default ReservationConfirm

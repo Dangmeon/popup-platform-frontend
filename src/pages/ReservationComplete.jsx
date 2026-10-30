@@ -1,18 +1,16 @@
-
-import PopqLogo from "../components/reservation/PopqLogo";
-import ReservationTimer from "../components/reservation/ReservationTimer";
-import "./ReservationPage.css";
-import "./ReservationConfirm.css";
-import "./ReservationComplete.css";
+import PopqLogo from '../components/reservation/PopqLogo'
+import ReservationTimer from '../components/reservation/ReservationTimer'
+import './ReservationPage.css'
+import './ReservationConfirm.css'
+import './ReservationComplete.css'
 
 function ReservationComplete({
   selectedDate,
   selectedTime,
+  peopleCount,
+  reservationNumber,
   onGoHome,
 }) {
-  // 실제 예약 번호는 추후 백엔드 API에서 받아옴
-  const reservationNumber = "DEMO-000001";
-
   return (
     <main className="reservation-page">
       {/* 예약 페이지 상단 */}
@@ -26,7 +24,7 @@ function ReservationComplete({
         </div>
 
         <h1>예약 확인증</h1>
-        <p>방문 시 직원에게 예약 확인증을 보여주세요.</p>
+        <p>데모 예약 정보를 확인해 주세요.</p>
       </div>
 
       {/* 예약 진행 단계 */}
@@ -71,8 +69,20 @@ function ReservationComplete({
         </div>
 
         <div className="reservation-summary-row">
-          <span>예약 번호</span>
-          <strong>{reservationNumber}</strong>
+          <span>예약 인원</span>
+          <strong>{peopleCount}명</strong>
+        </div>
+
+        <div className="reservation-summary-row">
+          <span>데모 예약번호</span>
+          <strong
+            style={{
+              minWidth: 0,
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {reservationNumber}
+          </strong>
         </div>
 
         {/* 예약 시작까지 남은 시간 */}
@@ -88,18 +98,18 @@ function ReservationComplete({
           </div>
 
           <p>
-            실제 QR코드는 백엔드 예약 API 연동 후
-            표시됩니다.
+            실제 QR코드는 백엔드 예약 API 연동 후 표시됩니다.
           </p>
         </div>
 
-        {/* 데모 안내 */}
+        {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 교체 */}
         <p className="reservation-confirm-notice">
-          ※ 현재는 프론트엔드 테스트용 화면입니다.
-          실제 예약은 생성되지 않았습니다.
+          현재는 프론트엔드 테스트용 화면입니다.
+          데모 내역은 이 브라우저에만 저장되며 실제 예약은 생성되지
+          않았습니다. 입장용으로 사용할 수 없습니다.
         </p>
 
-        {/* 메인페이지 이동 버튼 */}
+        {/* 메인 이동 */}
         <button
           type="button"
           className="reservation-next-button reservation-home-button"
@@ -109,7 +119,7 @@ function ReservationComplete({
         </button>
       </section>
     </main>
-  );
+  )
 }
 
-export default ReservationComplete;
+export default ReservationComplete

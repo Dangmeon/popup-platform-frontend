@@ -1,24 +1,48 @@
+import { useState } from 'react'
+import { useLocation, useParams } from 'react-router-dom'
+import ReservationCalendar from '../components/reservation/ReservationCalendar'
+import TimeSlotSelector from '../components/reservation/TimeSlotSelector'
+import PopqLogo from '../components/reservation/PopqLogo'
+import './ReservationPage.css'
 
-import { useState } from "react";
-import ReservationCalendar from "../components/reservation/ReservationCalendar";
-import TimeSlotSelector from "../components/reservation/TimeSlotSelector";
-import PopqLogo from "../components/reservation/PopqLogo";
-import "./ReservationPage.css";
+// 초기 인원 확인
+function getInitialPeopleCount(value) {
+  return Number.isSafeInteger(value) && value >= 1 ? value : 1
+}
 
 function ReservationPage({ onNext }) {
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
+  const { popupId } = useParams()
+  const location = useLocation()
+
+  // 날짜 및 시간
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [selectedTime, setSelectedTime] = useState(null)
+
+  // 예약 인원
+  const [peopleCount, setPeopleCount] = useState(() =>
+    getInitialPeopleCount(location.state?.peopleCount)
+  )
 
   // 날짜 선택
-  const handleDateSelect = (date) => {
-    setSelectedDate(date);
-    setSelectedTime(null);
-  };
+  function handleDateSelect(date) {
+    setSelectedDate(date)
+    setSelectedTime(null)
+  }
 
   // 시간 선택
-  const handleTimeSelect = (time) => {
-    setSelectedTime(time);
-  };
+  function handleTimeSelect(time) {
+    setSelectedTime(time)
+  }
+
+  // 예약 정보 전달
+  function handleNext() {
+    if (!selectedDate || !selectedTime) return
+
+    onNext(selectedDate, selectedTime, {
+      popupId,
+      peopleCount,
+    })
+  }
 
   return (
     <main className="reservation-page">
@@ -26,7 +50,6 @@ function ReservationPage({ onNext }) {
       <div className="reservation-hero">
         <div className="reservation-brand">
           <PopqLogo />
-
           <span className="reservation-brand-tag">
             POP-UP EXPERIENCE
           </span>
@@ -71,6 +94,40 @@ function ReservationPage({ onNext }) {
         onTimeSelect={handleTimeSelect}
       />
 
+      {/* 예약 인원 */}
+      <section className="reservation-summary">
+        <div className="reservation-summary-header">
+          <h3>예약 인원</h3>
+        </div>
+
+        <div className="reservation-summary-row">
+          <label htmlFor="reservation-people-count">방문 인원</label>
+
+          <select
+            id="reservation-people-count"
+            value={peopleCount}
+            onChange={(event) =>
+              setPeopleCount(Number(event.target.value))
+            }
+          >
+            {/* 나중에 바꿀 부분: 서버의 예약 인원 제한으로 교체 */}
+            {Array.from(
+              { length: Math.max(10, peopleCount) },
+              (_, index) => index + 1
+            ).map((count) => (
+              <option key={count} value={count}>
+                {count}명
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <p>
+          데모에서는 기본 1~10명을 선택할 수 있습니다.
+          실제 예약 가능 인원은 서버 연동 시 확인합니다.
+        </p>
+      </section>
+
       {/* 예약 정보 */}
       {selectedDate && selectedTime && (
         <section className="reservation-summary">
@@ -91,17 +148,22 @@ function ReservationPage({ onNext }) {
             <strong>{selectedTime}</strong>
           </div>
 
+          <div className="reservation-summary-row">
+            <span>예약 인원</span>
+            <strong>{peopleCount}명</strong>
+          </div>
+
           <button
             type="button"
             className="reservation-next-button"
-            onClick={() => onNext(selectedDate, selectedTime)}
+            onClick={handleNext}
           >
             예약 정보 확인하기 →
           </button>
         </section>
       )}
     </main>
-  );
+  )
 }
 
-export default ReservationPage;
+export default ReservationPage
