@@ -1,55 +1,77 @@
+import { getSlotUnavailableReason } from '../../utils/reservationAvailability'
+import './TimeSlotSelector.css'
 
-import "./TimeSlotSelector.css";
-
-function TimeSlotSelector({ selectedDate, selectedTime, onTimeSelect }) {
-  // 임시 예약 시간 데이터
-  const timeSlots = [
-    { time: "10:00", remaining: 12 },
-    { time: "11:00", remaining: 8 },
-    { time: "12:00", remaining: 5 },
-    { time: "13:00", remaining: 18 },
-    { time: "14:00", remaining: 0 },
-    { time: "15:00", remaining: 10 },
-    { time: "16:00", remaining: 7 },
-    { time: "17:00", remaining: 3 },
-  ];
+function TimeSlotSelector({
+  selectedDate,
+  selectedTimeSlotId,
+  onTimeSelect,
+  timeSlots = [],
+  peopleCount = 1,
+  now = Date.now(),
+  loading = false,
+  disabled = false,
+}) {
+  // 선택 날짜의 회차
+  const dateSlots = timeSlots
+    .filter((slot) => slot.slotDate === selectedDate)
+    .sort((first, second) =>
+      first.startTime.localeCompare(second.startTime)
+    )
 
   return (
-    <div className="time-slot-selector">
+    <div className="time-slot-selector" aria-busy={loading}>
       <h3>예약 시간 선택</h3>
 
-      {!selectedDate ? (
+      {loading ? (
+        <p className="time-slot-notice" role="status">
+          예약 회차를 불러오는 중입니다.
+        </p>
+      ) : !selectedDate ? (
         <p className="time-slot-notice">
-          먼저 예약 날짜를 선택해주세요.
+          먼저 예약 날짜를 선택해 주세요.
+        </p>
+      ) : dateSlots.length === 0 ? (
+        <p className="time-slot-notice" role="status">
+          선택한 날짜에 등록된 회차가 없습니다.
         </p>
       ) : (
-        <>
-          {/* 예약 시간 */}
-          <div className="time-slot-grid">
-            {timeSlots.map((slot) => (
+        <div className="time-slot-grid">
+          {dateSlots.map((slot) => {
+            const unavailableReason = getSlotUnavailableReason(
+              slot,
+              peopleCount,
+              now
+            )
+
+            const selected =
+              selectedTimeSlotId === slot.timeSlotId
+
+            return (
               <button
                 type="button"
-                key={slot.time}
-                disabled={slot.remaining === 0}
+                key={slot.timeSlotId}
+                disabled={disabled || Boolean(unavailableReason)}
+                aria-pressed={selected}
                 className={`time-slot ${
-                  selectedTime === slot.time ? "selected" : ""
+                  selected ? 'selected' : ''
                 }`}
-                onClick={() => onTimeSelect(slot.time)}
+                onClick={() => onTimeSelect(slot)}
               >
-                <span className="time-slot-time">{slot.time}</span>
+                <span className="time-slot-time">
+                  {slot.startTime} ~ {slot.endTime}
+                </span>
 
                 <span className="time-slot-remaining">
-                  {slot.remaining === 0
-                    ? "예약 마감"
-                    : `잔여 ${slot.remaining}명`}
+                  {unavailableReason ||
+                    `잔여 ${slot.remaining}명`}
                 </span>
               </button>
-            ))}
-          </div>
-        </>
+            )
+          })}
+        </div>
       )}
     </div>
-  );
+  )
 }
 
-export default TimeSlotSelector;
+export default TimeSlotSelector
