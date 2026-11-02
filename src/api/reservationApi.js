@@ -14,7 +14,18 @@ function validateServerAddress() {
   }
 }
 
-// 나중에 확인할 부분: 기존 목록 API의 실제 경로와 사용 여부
+// 예약 인원 확인
+function validatePeopleCount(peopleCount) {
+  if (
+    !Number.isSafeInteger(peopleCount) ||
+    peopleCount < 1 ||
+    peopleCount > 3
+  ) {
+    throw new Error('예약 인원은 1~3명으로 선택해 주세요.')
+  }
+}
+
+// 나중에 바꿀 부분: 내 예약 목록 API 확정 후 연결
 export const getReservations = () =>
   axiosInstance.get('/api/reservations')
 
@@ -25,14 +36,7 @@ export async function createHoldReservation({
 }) {
   validateServerAddress()
   validateId(timeSlotId, '회차 ID')
-
-  if (
-    !Number.isSafeInteger(peopleCount) ||
-    peopleCount < 1 ||
-    peopleCount > 3
-  ) {
-    throw new Error('예약 인원은 1~3명으로 선택해 주세요.')
-  }
+  validatePeopleCount(peopleCount)
 
   const response = await axiosInstance.post('/api/reservations', {
     timeSlotId,
@@ -64,6 +68,40 @@ export async function confirmReservation({ reservationId }) {
   )
 
   // 화면에서 CONFIRMED와 EXPIRED를 구분
+  return response.data
+}
+
+// 예약 변경
+export async function updateReservation({
+  reservationId,
+  timeSlotId,
+  peopleCount,
+}) {
+  validateServerAddress()
+  validateId(reservationId, '예약 ID')
+  validateId(timeSlotId, '회차 ID')
+  validatePeopleCount(peopleCount)
+
+  const response = await axiosInstance.patch(
+    `/api/reservations/${reservationId}`,
+    {
+      timeSlotId,
+      peopleCount,
+    }
+  )
+
+  return response.data
+}
+
+// 예약 취소
+export async function cancelReservation({ reservationId }) {
+  validateServerAddress()
+  validateId(reservationId, '예약 ID')
+
+  const response = await axiosInstance.patch(
+    `/api/reservations/${reservationId}/cancel`
+  )
+
   return response.data
 }
 

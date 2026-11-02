@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import PopqLogo from '../components/reservation/PopqLogo'
 import ReservationTimer from '../components/reservation/ReservationTimer'
 import { getReservationQr } from '../api/reservationApi'
@@ -54,9 +54,19 @@ function ReservationComplete({
   peopleCount,
   reservationNumber,
   reservationStatus,
+  qrVersion = 0,
+  busy = false,
+  error = '',
+  onChange,
+  onCancel,
+  onCheckStatus,
   onGoHome,
 }) {
   const [retryKey, setRetryKey] = useState(0)
+  const [cancelPending, setCancelPending] = useState(false)
+  const [actionError, setActionError] = useState('')
+  const cancelLock = useRef(false)
+
   const [qrState, setQrState] = useState({
     scope: '',
     loading: false,
@@ -68,8 +78,15 @@ function ReservationComplete({
   const isValidId =
     Number.isSafeInteger(reservationId) && reservationId > 0
   const isConfirmed = reservationStatus === 'CONFIRMED'
+  const isBusy = busy || cancelPending
   const canLoadQr = isConfirmed && isValidId
-  const qrScope = `${reservationStatus}:${reservationNumber}:${retryKey}`
+
+  const qrScope = [
+    reservationStatus,
+    reservationNumber,
+    qrVersion,
+    retryKey,
+  ].join(':')
 
   const currentQr =
     qrState.scope === qrScope
@@ -108,14 +125,14 @@ function ReservationComplete({
           url: objectUrl,
           error: '',
         })
-      } catch (error) {
+      } catch (requestError) {
         if (!active) return
 
         setQrState({
           scope: qrScope,
           loading: false,
           url: '',
-          error: getQrErrorMessage(error),
+          error: getQrErrorMessage(requestError),
         })
       }
     }
@@ -132,13 +149,45 @@ function ReservationComplete({
     }
   }, [canLoadQr, reservationId, qrScope])
 
+  // 예약 취소 확인
+  async function handleCancel() {
+    if (
+      isBusy ||
+      cancelLock.current ||
+      !isConfirmed ||
+      typeof onCancel !== 'function'
+    ) {
+      return
+    }
+
+    const confirmed = window.confirm(
+      '예약을 취소하시겠습니까? 취소된 예약의 QR코드는 사용할 수 없습니다.'
+    )
+
+    if (!confirmed) return
+
+    cancelLock.current = true
+    setCancelPending(true)
+    setActionError('')
+
+    try {
+      await onCancel()
+    } catch (requestError) {
+      setActionError(
+        requestError.message || '예약 취소 요청을 처리하지 못했습니다.'
+      )
+    } finally {
+      cancelLock.current = false
+      setCancelPending(false)
+    }
+  }
+
   return (
-    <main className="reservation-page">
+    <main className="reservation-page" aria-busy={isBusy}>
       {/* 예약 페이지 상단 */}
       <div className="reservation-hero">
         <div className="reservation-brand">
           <PopqLogo />
-
           <span className="reservation-brand-tag">
             POP-UP EXPERIENCE
           </span>
@@ -233,10 +282,10 @@ function ReservationComplete({
           ) : currentQr.error ? (
             <>
               <p role="alert">{currentQr.error}</p>
-
               <button
                 type="button"
                 className="reservation-next-button"
+                disabled={isBusy}
                 onClick={() => setRetryKey((previous) => previous + 1)}
               >
                 QR코드 다시 불러오기
@@ -258,11 +307,68 @@ function ReservationComplete({
                   backgroundColor: '#fff',
                 }}
               />
-
               <p>방문 시 직원에게 예약번호와 QR코드를 보여주세요.</p>
             </>
           ) : null}
         </div>
+
+        {/* 요청 결과 */}
+        {(error || actionError) && (
+          <p className="reservation-confirm-notice" role="alert">
+            {error || actionError}
+          </p>
+        )}
+
+        {isBusy && <p role="status">예약 정보를 처리하고 있습니다.</p>}
+
+        {/* 예약 관리 */}
+        {isConfirmed && (
+          <>
+            <p className="reservation-confirm-notice">
+              예약 취소는 방문 시작 1시간 전까지만 가능합니다.
+              변경·취소 가능 여부는 서버에서 최종 확인합니다.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              <button
+                type="button"
+                className="reservation-next-button"
+                style={{ flex: '1 1 180px' }}
+                disabled={isBusy || typeof onChange !== 'function'}
+                onClick={onChange}
+              >
+                예약 변경
+              </button>
+
+              <button
+                type="button"
+                className="reservation-next-button"
+                style={{ flex: '1 1 180px' }}
+                disabled={isBusy || typeof onCancel !== 'function'}
+                onClick={handleCancel}
+              >
+                {cancelPending ? '취소 처리 중…' : '예약 취소'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {typeof onCheckStatus === 'function' && (
+          <button
+            type="button"
+            className="reservation-next-button"
+            disabled={isBusy}
+            onClick={onCheckStatus}
+          >
+            예약 상태 다시 조회
+          </button>
+        )}
 
         {/* 예약 안내 */}
         <p className="reservation-confirm-notice">
@@ -274,6 +380,7 @@ function ReservationComplete({
         <button
           type="button"
           className="reservation-next-button reservation-home-button"
+          disabled={isBusy}
           onClick={onGoHome}
         >
           메인페이지로 돌아가기 →

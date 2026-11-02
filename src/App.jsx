@@ -16,6 +16,8 @@ import {
   createHoldReservation,
   confirmReservation,
   getReservation,
+  updateReservation,
+  cancelReservation,
 } from './api/reservationApi'
 
 import Home from './pages/Home.jsx'
@@ -31,6 +33,7 @@ import NotFound from './pages/NotFound.jsx'
 import ReservationPage from './pages/ReservationPage'
 import ReservationConfirm from './pages/ReservationConfirm'
 import ReservationComplete from './pages/ReservationComplete'
+import ReservationEdit from './pages/ReservationEdit'
 
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -41,7 +44,7 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
 import AdminWaitings from './pages/admin/AdminWaitings'
 
-// 예약 상태 확인
+// 예약 상태
 const reservationStatuses = new Set([
   'HOLD',
   'CONFIRMED',
@@ -50,8 +53,35 @@ const reservationStatuses = new Set([
   'USED',
 ])
 
+// 사용자별 저장 키
+function getStorageKey(owner) {
+  return `popQ_reservation_api:${encodeURIComponent(owner)}`
+}
+
+// 예약번호 조회
+function readSavedReservation(owner) {
+  const value = sessionStorage.getItem(getStorageKey(owner))
+
+  if (!value) return null
+
+  const saved = JSON.parse(value)
+
+  if (saved.pendingCreation === true) {
+    return { pendingCreation: true }
+  }
+
+  if (
+    !Number.isSafeInteger(saved.reservationId) ||
+    saved.reservationId < 1
+  ) {
+    throw new Error('저장된 예약번호를 확인할 수 없습니다.')
+  }
+
+  return { reservationId: saved.reservationId }
+}
+
 // 서버 응답 변환
-function mapReservation(response, previous) {
+function mapReservation(response, previous = {}) {
   if (
     !response ||
     !Number.isSafeInteger(response.reservationId) ||
@@ -65,7 +95,7 @@ function mapReservation(response, previous) {
     previous.reservationId &&
     response.reservationId !== previous.reservationId
   ) {
-    throw new Error('요청한 예약과 서버 응답의 예약번호가 다릅니다.')
+    throw new Error('요청한 예약과 응답의 예약번호가 다릅니다.')
   }
 
   return {
@@ -93,7 +123,11 @@ function getReservationError(error) {
   }
 
   if (status === 403) {
-    return '이 예약을 처리할 권한이 없습니다.'
+    return '이 예약을 조회하거나 처리할 권한이 없습니다.'
+  }
+
+  if (status === 404) {
+    return '예약을 찾을 수 없습니다. 예약번호를 확인해 주세요.'
   }
 
   if (typeof message === 'string' && message.trim()) {
@@ -101,7 +135,7 @@ function getReservationError(error) {
   }
 
   if (!error.response && error.request) {
-    return '서버 응답을 받지 못했습니다. 요청이 처리되었을 수 있으므로 상태를 확인해 주세요.'
+    return '서버 응답을 받지 못했습니다. 서버 연결을 확인한 뒤 예약 상태를 다시 조회해 주세요.'
   }
 
   return error.message || '예약 요청을 처리하지 못했습니다.'
@@ -112,13 +146,98 @@ function UserLayout() {
   return (
     <div className="app">
       <Header />
-
       <div className="user-content">
         <Outlet />
       </div>
-
       <Footer />
     </div>
+  )
+}
+
+// 예약 복원 화면
+function ReservationRecovery({
+  loading,
+  error,
+  onRetry,
+  onRecover,
+  onLogin,
+}) {
+  const [reservationId, setReservationId] = useState('')
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    onRecover(reservationId)
+  }
+
+  return (
+    <main className="reservation-page">
+      <section className="reservation-summary">
+        <h2>예약 정보 불러오기</h2>
+
+        {loading ? (
+          <p role="status">서버에서 예약 정보를 확인하고 있습니다.</p>
+        ) : (
+          <>
+            <p>
+              예약번호를 입력하면 로그인한 회원의 예약을
+              서버에서 다시 조회합니다.
+            </p>
+
+            {error && <p role="alert">{error}</p>}
+
+            <form onSubmit={handleSubmit}>
+              <label htmlFor="restore-reservation-id">
+                예약번호
+              </label>
+
+              <input
+                id="restore-reservation-id"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]+"
+                value={reservationId}
+                onChange={(event) =>
+                  setReservationId(event.target.value)
+                }
+                required
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginTop: '12px',
+                  padding: '12px',
+                  border: '1px solid #EEDFD0',
+                  borderRadius: '10px',
+                }}
+              />
+
+              <button
+                type="submit"
+                className="reservation-next-button"
+              >
+                예약번호로 조회
+              </button>
+            </form>
+
+            <button
+              type="button"
+              className="reservation-next-button"
+              onClick={onRetry}
+            >
+              저장된 예약 다시 조회
+            </button>
+
+            <button
+              type="button"
+              className="reservation-next-button"
+              onClick={onLogin}
+            >
+              로그인 화면으로 이동
+            </button>
+          </>
+        )}
+      </section>
+    </main>
   )
 }
 
@@ -134,12 +253,23 @@ function App() {
   const [reservationError, setReservationError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
+  const [managing, setManaging] = useState(false)
+  const [qrVersion, setQrVersion] = useState(0)
 
-  // 중복 요청 방지
+  // 예약 복원
+  const [restoreKey, setRestoreKey] = useState(0)
+  const [recovery, setRecovery] = useState({
+    owner: null,
+    status: 'idle',
+    error: '',
+  })
+
+  // 요청 관리
   const requestLock = useRef(false)
   const uncertainCreation = useRef(false)
+  const reservationRef = useRef(reservation)
+  reservationRef.current = reservation
 
-  // 현재 인증 정보
   const username = app.isAuthenticated
     ? app.currentUser?.username
     : null
@@ -149,9 +279,103 @@ function App() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200)
-
     return () => clearTimeout(timer)
   }, [])
+
+  // 새로고침 후 서버 예약 조회
+  useEffect(() => {
+    if (!username) return
+
+    let active = true
+
+    setRecovery({
+      owner: username,
+      status: 'loading',
+      error: '',
+    })
+
+    async function restoreReservation() {
+      try {
+        const existing = reservationRef.current
+        const saved =
+          existing?.owner === username
+            ? { reservationId: existing.reservationId }
+            : readSavedReservation(username)
+
+        if (!saved) {
+          if (!active) return
+
+          uncertainCreation.current = false
+          setReservation(null)
+          setRecovery({
+            owner: username,
+            status: 'ready',
+            error: '',
+          })
+          return
+        }
+
+        if (saved.pendingCreation) {
+          uncertainCreation.current = true
+          throw new Error(
+            '이전 예약 생성 결과가 확인되지 않았습니다. 예약번호가 있다면 아래에서 조회해 주세요. 번호를 받지 못했다면 서버의 예약 내역 확인이 필요합니다.'
+          )
+        }
+
+        const response = await getReservation({
+          reservationId: saved.reservationId,
+        })
+
+        const restored = mapReservation(response, {
+          owner: username,
+          reservationId: saved.reservationId,
+        })
+
+        if (!active) return
+
+        uncertainCreation.current = false
+        setReservation(restored)
+        setReservationError('')
+
+        sessionStorage.setItem(
+          getStorageKey(username),
+          JSON.stringify({
+            reservationId: restored.reservationId,
+          })
+        )
+
+        setRecovery({
+          owner: username,
+          status: 'ready',
+          error: '',
+        })
+      } catch (error) {
+        if (!active) return
+
+        setRecovery({
+          owner: username,
+          status: 'error',
+          error: getReservationError(error),
+        })
+      }
+    }
+
+    restoreReservation()
+
+    return () => {
+      active = false
+    }
+  }, [username, restoreKey])
+
+  const restoring = Boolean(
+    username &&
+      (recovery.owner !== username ||
+        recovery.status === 'loading')
+  )
+
+  const recoveryFailed =
+    recovery.owner === username &&
+    recovery.status === 'error'
 
   const hasReservation = Boolean(
     username &&
@@ -159,15 +383,90 @@ function App() {
       reservation?.reservationId
   )
 
+  // 예약번호 보관
+  function rememberReservation(nextReservation) {
+    try {
+      sessionStorage.setItem(
+        getStorageKey(nextReservation.owner),
+        JSON.stringify({
+          reservationId: nextReservation.reservationId,
+        })
+      )
+    } catch {
+      app.showToast(
+        '예약은 처리됐지만 예약번호를 보관하지 못했습니다. 예약번호를 기록해 주세요.'
+      )
+    }
+  }
+
   // 예약 상태 반영
   function applyReservation(nextReservation) {
+    rememberReservation(nextReservation)
     setReservation(nextReservation)
     setReservationError('')
+    setQrVersion((previous) => previous + 1)
 
     if (nextReservation.reservationStatus === 'CONFIRMED') {
       navigate('/reservations/complete', { replace: true })
     } else {
       navigate('/reservations/confirm', { replace: true })
+    }
+  }
+
+  // 예약번호로 복원
+  async function handleRecoverById(value) {
+    if (!username || requestLock.current) return
+
+    const reservationId = Number(value)
+
+    if (
+      !/^\d+$/.test(value.trim()) ||
+      !Number.isSafeInteger(reservationId) ||
+      reservationId < 1
+    ) {
+      setRecovery({
+        owner: username,
+        status: 'error',
+        error: '예약번호는 1 이상의 정수로 입력해 주세요.',
+      })
+      return
+    }
+
+    const owner = username
+    requestLock.current = true
+
+    setRecovery({
+      owner,
+      status: 'loading',
+      error: '',
+    })
+
+    try {
+      const response = await getReservation({ reservationId })
+      const restored = mapReservation(response, {
+        owner,
+        reservationId,
+      })
+
+      if (currentUsername.current !== owner) return
+
+      uncertainCreation.current = false
+      setRecovery({
+        owner,
+        status: 'ready',
+        error: '',
+      })
+      applyReservation(restored)
+    } catch (error) {
+      if (currentUsername.current === owner) {
+        setRecovery({
+          owner,
+          status: 'error',
+          error: getReservationError(error),
+        })
+      }
+    } finally {
+      requestLock.current = false
     }
   }
 
@@ -186,7 +485,10 @@ function App() {
       throw new Error('실제 회원 계정으로 로그인해 주세요.')
     }
 
-    // 기존 임시 예약 유지
+    if (restoring || recoveryFailed) {
+      throw new Error('기존 예약 정보를 먼저 확인해 주세요.')
+    }
+
     if (
       hasReservation &&
       reservation.reservationStatus === 'HOLD'
@@ -197,18 +499,27 @@ function App() {
 
     if (uncertainCreation.current) {
       throw new Error(
-        '이전 예약 생성 결과가 확인되지 않았습니다. 중복 생성을 막기 위해 서버의 예약 내역 확인이 필요합니다.'
+        '이전 예약 생성 결과가 확인되지 않았습니다. 서버 예약 내역 확인이 필요합니다.'
       )
     }
 
     const owner = username
     requestLock.current = true
+    let receivedResponse = false
 
     try {
+      // 응답 유실에 대비한 생성 기록
+      sessionStorage.setItem(
+        getStorageKey(owner),
+        JSON.stringify({ pendingCreation: true })
+      )
+
       const response = await createHoldReservation({
         timeSlotId,
         peopleCount,
       })
+
+      receivedResponse = true
 
       const nextReservation = mapReservation(response, {
         owner,
@@ -220,16 +531,33 @@ function App() {
         endTime,
       })
 
+      // 계정 변경 시에도 생성된 예약번호 보관
+      rememberReservation(nextReservation)
+
       if (currentUsername.current !== owner) return
 
+      uncertainCreation.current = false
       applyReservation(nextReservation)
     } catch (error) {
-      // 응답 유실 시 재생성 방지
-      if (
-        (!error.response && error.request) ||
+      const unknownResult =
+        receivedResponse ||
+        (!error.response && Boolean(error.request)) ||
         error.response?.status >= 500
-      ) {
+
+      if (unknownResult) {
         uncertainCreation.current = true
+      } else {
+        try {
+          if (
+            reservationRef.current?.owner === owner
+          ) {
+            rememberReservation(reservationRef.current)
+          } else {
+            sessionStorage.removeItem(getStorageKey(owner))
+          }
+        } catch {
+          // 기존 서버 예약 유지
+        }
       }
 
       throw new Error(getReservationError(error))
@@ -291,7 +619,6 @@ function App() {
     setReservationError('')
 
     try {
-      // 재시도 전에 서버 상태 확인
       const latestResponse = await getReservation({
         reservationId: currentReservation.reservationId,
       })
@@ -313,6 +640,8 @@ function App() {
           nextReservation
         )
       }
+
+      rememberReservation(nextReservation)
 
       if (currentUsername.current !== owner) return
 
@@ -337,6 +666,135 @@ function App() {
     }
   }
 
+  // 변경 화면 진입
+  async function handleOpenEdit() {
+    if (!hasReservation || requestLock.current) return
+
+    const owner = username
+    requestLock.current = true
+    setManaging(true)
+    setReservationError('')
+
+    try {
+      const response = await getReservation({
+        reservationId: reservation.reservationId,
+      })
+      const latest = mapReservation(response, reservation)
+
+      if (currentUsername.current !== owner) return
+
+      applyReservation(latest)
+
+      if (latest.reservationStatus === 'CONFIRMED') {
+        navigate('/reservations/edit')
+      } else {
+        setReservationError('현재 예약 상태에서는 변경할 수 없습니다.')
+      }
+    } catch (error) {
+      if (currentUsername.current === owner) {
+        setReservationError(getReservationError(error))
+      }
+    } finally {
+      requestLock.current = false
+      setManaging(false)
+    }
+  }
+
+  // 예약 변경 및 취소
+  async function handleManageReservation(action, changes = {}) {
+    if (!hasReservation || requestLock.current) return
+
+    const owner = username
+    const currentReservation = reservation
+    let mutationStarted = false
+    let mutationFinished = false
+
+    requestLock.current = true
+    setManaging(true)
+    setReservationError('')
+
+    try {
+      // 변경 전 서버 상태 확인
+      const response = await getReservation({
+        reservationId: currentReservation.reservationId,
+      })
+      const latest = mapReservation(response, currentReservation)
+
+      if (currentUsername.current !== owner) return
+
+      if (latest.reservationStatus !== 'CONFIRMED') {
+        applyReservation(latest)
+        setReservationError('현재 예약 상태에서는 변경하거나 취소할 수 없습니다.')
+        return
+      }
+
+      mutationStarted = true
+
+      const result = action === 'update'
+        ? await updateReservation({
+            reservationId: latest.reservationId,
+            timeSlotId: changes.timeSlotId,
+            peopleCount: changes.peopleCount,
+          })
+        : await cancelReservation({
+            reservationId: latest.reservationId,
+          })
+
+      mutationFinished = true
+      const changed = mapReservation(result, latest)
+      rememberReservation(changed)
+
+      // 변경된 방문 정보 다시 조회
+      const detail = await getReservation({
+        reservationId: changed.reservationId,
+      })
+      const refreshed = mapReservation(detail, changed)
+
+      if (currentUsername.current !== owner) return
+
+      applyReservation(refreshed)
+
+      const expectedStatus = action === 'update'
+        ? 'CONFIRMED'
+        : 'CANCELLED'
+
+      if (refreshed.reservationStatus === expectedStatus) {
+        app.showToast(
+          action === 'update'
+            ? '예약이 변경되었습니다.'
+            : '예약이 취소되었습니다.'
+        )
+      } else {
+        setReservationError('서버에서 반환한 최신 예약 상태를 확인해 주세요.')
+      }
+    } catch (error) {
+      if (currentUsername.current !== owner) return
+
+      const message = getReservationError(error)
+      const unknownResult = mutationStarted && (
+        mutationFinished ||
+        (!error.response && Boolean(error.request)) ||
+        error.response?.status >= 500
+      )
+
+      if (unknownResult) {
+        // 결과 확인 전 중복 변경 방지
+        setRecovery({
+          owner,
+          status: 'error',
+          error: `${message} 요청이 처리되었을 수 있으므로 저장된 예약을 다시 조회해 주세요.`,
+        })
+      } else {
+        setReservationError(message)
+      }
+
+      throw new Error(message)
+    } finally {
+      requestLock.current = false
+      setManaging(false)
+    }
+  }
+
   // 회차 다시 선택
   function handleSelectAgain() {
     if (
@@ -348,8 +806,16 @@ function App() {
       return
     }
 
-    const popId = reservation.popId
-    const peopleCount = reservation.peopleCount
+    try {
+      sessionStorage.removeItem(getStorageKey(username))
+    } catch {
+      setReservationError(
+        '저장된 예약번호를 정리하지 못했습니다. 다시 시도해 주세요.'
+      )
+      return
+    }
+
+    const { popId, peopleCount } = reservation
 
     setReservation(null)
     setReservationError('')
@@ -359,9 +825,44 @@ function App() {
     })
   }
 
-  // 메인 이동
-  function handleGoHome() {
-    navigate('/')
+  // 변경 요청
+  function handleUpdateReservation(changes) {
+    return handleManageReservation('update', changes)
+  }
+
+  // 취소 요청
+  function handleCancelReservation() {
+    return handleManageReservation('cancel')
+  }
+
+  // 예약 복원 안내
+  function renderRecovery() {
+    return (
+      <ReservationRecovery
+        loading={restoring}
+        error={recoveryFailed ? recovery.error : ''}
+        onRetry={() => setRestoreKey((previous) => previous + 1)}
+        onRecover={handleRecoverById}
+        onLogin={() => navigate('/login')}
+      />
+    )
+  }
+
+  // 예약 화면 진입 확인
+  function guardReservationPage(element, requireReservation = false) {
+    if (!username) {
+      return <Navigate to="/login" replace />
+    }
+
+    if (
+      restoring ||
+      recoveryFailed ||
+      (requireReservation && !hasReservation)
+    ) {
+      return renderRecovery()
+    }
+
+    return element
   }
 
   if (loading) {
@@ -383,82 +884,92 @@ function App() {
           {/* 예약 날짜 및 시간 선택 */}
           <Route
             path="/popups/:popupId/reserve"
-            element={
-              <ReservationPage
-                onCreateHold={handleCreateHold}
-              />
-            }
+            element={guardReservationPage(
+              <ReservationPage onCreateHold={handleCreateHold} />
+            )}
           />
 
           {/* 예약 정보 확인 */}
           <Route
             path="/reservations/confirm"
-            element={
-              !username ? (
-                <Navigate to="/login" replace />
-              ) : hasReservation ? (
-                reservation.reservationStatus ===
-                'CONFIRMED' ? (
-                  <Navigate
-                    to="/reservations/complete"
-                    replace
-                  />
-                ) : (
-                  <ReservationConfirm
-                    reservationId={reservation.reservationId}
-                    reservationStatus={
-                      reservation.reservationStatus
-                    }
-                    expiresAt={reservation.expiresAt}
-                    selectedDate={reservation.date}
-                    selectedTime={reservation.time}
-                    peopleCount={reservation.peopleCount}
-                    submitting={submitting}
-                    checkingStatus={checkingStatus}
-                    error={reservationError}
-                    onBack={handleSelectAgain}
-                    onConfirm={handleReservationComplete}
-                    onCheckStatus={handleCheckStatus}
-                  />
-                )
+            element={guardReservationPage(
+              reservation?.reservationStatus === 'CONFIRMED' ? (
+                <Navigate
+                  to="/reservations/complete"
+                  replace
+                />
               ) : (
-                <Navigate to="/popups" replace />
-              )
-            }
+                <ReservationConfirm
+                  reservationId={reservation?.reservationId}
+                  reservationStatus={
+                    reservation?.reservationStatus
+                  }
+                  expiresAt={reservation?.expiresAt}
+                  selectedDate={reservation?.date}
+                  selectedTime={reservation?.time}
+                  peopleCount={reservation?.peopleCount}
+                  submitting={submitting}
+                  checkingStatus={checkingStatus}
+                  error={reservationError}
+                  onBack={handleSelectAgain}
+                  onConfirm={handleReservationComplete}
+                  onCheckStatus={handleCheckStatus}
+                />
+              ),
+              true
+            )}
           />
 
           {/* 예약 완료 */}
           <Route
             path="/reservations/complete"
-            element={
-              !username ? (
-                <Navigate to="/login" replace />
-              ) : hasReservation &&
-                reservation.reservationStatus ===
-                  'CONFIRMED' ? (
+            element={guardReservationPage(
+              reservation?.reservationStatus === 'CONFIRMED' ? (
                 <ReservationComplete
-                  selectedDate={reservation.date}
-                  selectedTime={reservation.time}
-                  peopleCount={reservation.peopleCount}
+                  selectedDate={reservation?.date}
+                  selectedTime={reservation?.time}
+                  peopleCount={reservation?.peopleCount}
                   reservationNumber={
-                    reservation.reservationId
+                    reservation?.reservationId
                   }
                   reservationStatus={
-                    reservation.reservationStatus
+                    reservation?.reservationStatus
                   }
-                  onGoHome={handleGoHome}
+                  qrVersion={qrVersion}
+                  busy={managing || checkingStatus}
+                  error={reservationError}
+                  onChange={handleOpenEdit}
+                  onCancel={handleCancelReservation}
+                  onCheckStatus={handleCheckStatus}
+                  onGoHome={() => navigate('/')}
                 />
               ) : (
                 <Navigate
-                  to={
-                    hasReservation
-                      ? '/reservations/confirm'
-                      : '/popups'
-                  }
+                  to="/reservations/confirm"
                   replace
                 />
-              )
-            }
+              ),
+              true
+            )}
+          />
+
+          {/* 예약 변경 */}
+          <Route
+            path="/reservations/edit"
+            element={guardReservationPage(
+              reservation?.reservationStatus === 'CONFIRMED' ? (
+                <ReservationEdit
+                  key={`${reservation?.owner}:${reservation?.reservationId}:${qrVersion}`}
+                  reservation={reservation}
+                  busy={managing || checkingStatus}
+                  onSave={handleUpdateReservation}
+                  onBack={handleCheckStatus}
+                />
+              ) : (
+                <Navigate to="/reservations/confirm" replace />
+              ),
+              true
+            )}
           />
 
           {/* 회원 및 장바구니 */}
@@ -484,15 +995,9 @@ function App() {
           />
           <Route path="members" element={<AdminMembers />} />
           <Route path="orders" element={<AdminOrders />} />
-          <Route
-            path="products"
-            element={<AdminProducts />}
-          />
+          <Route path="products" element={<AdminProducts />} />
           <Route path="popups" element={<AdminPopups />} />
-          <Route
-            path="waiting"
-            element={<AdminWaitings />}
-          />
+          <Route path="waiting" element={<AdminWaitings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
