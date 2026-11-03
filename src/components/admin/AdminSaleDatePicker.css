@@ -1,0 +1,243 @@
+/* 판매일 달력 */
+.admin-sale-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid #eedfd0;
+  border-radius: 18px;
+  background: #fffaf4;
+}
+
+.admin-sale-picker legend {
+  padding: 0 10px;
+  color: #302820;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 선택 날짜 */
+.admin-sale-picker-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 62px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #eedfd0;
+  border-radius: 12px;
+  background: white;
+}
+
+.admin-sale-picker-summary strong {
+  color: #302820;
+  font-size: 17px;
+}
+
+.admin-sale-picker-summary span {
+  color: #88786c;
+  font-size: 12px;
+}
+
+/* 달 이동 */
+.admin-sale-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-sale-picker-header strong {
+  color: #302820;
+  font-size: 18px;
+}
+
+.admin-sale-picker-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #eedfd0;
+  border-radius: 12px;
+  background: white;
+  color: #302820;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+/* 요일과 날짜 배치 */
+.admin-sale-picker-weekdays,
+.admin-sale-picker-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.admin-sale-picker-weekdays {
+  margin-bottom: 8px;
+}
+
+.admin-sale-picker-weekdays span {
+  padding: 9px 0;
+  color: #88786c;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* 날짜 버튼 */
+.admin-sale-picker-day,
+.admin-sale-picker-empty {
+  min-width: 0;
+  min-height: 46px;
+}
+
+.admin-sale-picker-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 2px;
+  border: 1px solid #f0e6dc;
+  border-radius: 10px;
+  background: white;
+  color: #302820;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-sale-picker-weekdays .sunday,
+.admin-sale-picker-day.sunday {
+  color: #b84936;
+}
+
+.admin-sale-picker-weekdays .saturday,
+.admin-sale-picker-day.saturday {
+  color: #426b9d;
+}
+
+.admin-sale-picker-day.today {
+  border: 2px solid #b75b43;
+}
+
+.admin-sale-picker-day.selected {
+  border-color: #ff8066;
+  background: #ff8066;
+  color: #302820;
+  font-weight: 800;
+}
+
+.admin-sale-picker-day:hover:not(:disabled):not(.selected),
+.admin-sale-picker-arrow:hover:not(:disabled) {
+  border-color: #ff8066;
+  background: #ffe8de;
+}
+
+/* 달력 하단 */
+.admin-sale-picker-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-sale-picker-footer > span {
+  color: #88786c;
+  font-size: 11px;
+}
+
+.admin-sale-picker-today {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #eedfd0;
+  border-radius: 10px;
+  background: white;
+  color: #635246;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-sale-picker-today:hover:not(:disabled) {
+  background: #ffe8de;
+}
+
+/* 시간 선택 */
+.admin-sale-picker-time {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #eedfd0;
+}
+
+.admin-sale-picker-time label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  color: #635246;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-sale-picker-time select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #eedfd0;
+  border-radius: 10px;
+  background: white;
+  color: #302820;
+  font: inherit;
+  font-size: 16px;
+}
+
+.admin-sale-picker-colon {
+  padding-bottom: 12px;
+  color: #88786c;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* 키보드 선택 */
+.admin-sale-picker button:focus-visible,
+.admin-sale-picker select:focus-visible {
+  outline: 3px solid #ffb49e;
+  outline-offset: 3px;
+}
+
+/* 처리 중 */
+.admin-sale-picker:disabled button,
+.admin-sale-picker:disabled select {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 좁은 화면 */
+@media (max-width: 450px) {
+  .admin-sale-picker {
+    padding: 12px;
+  }
+
+  .admin-sale-picker-weekdays,
+  .admin-sale-picker-days {
+    gap: 3px;
+  }
+
+  .admin-sale-picker-day,
+  .admin-sale-picker-empty {
+    min-height: 40px;
+  }
+}

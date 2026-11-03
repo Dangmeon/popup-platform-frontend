@@ -3,11 +3,13 @@ import {
   getProducts,
   getProduct,
 } from '../../api/admin/productApi'
+import AdminProductForm from '../../components/admin/AdminProductForm'
 import './AdminProducts.css'
 
 // 나중에 확인할 부분: 서버의 판매 상태값과 일치시키기
 const saleStatuses = {
   ON_SALE: '판매 중',
+  UPCOMING: '판매 예정',
   SOLD_OUT: '품절',
   ENDED: '판매 종료',
 }
@@ -60,6 +62,10 @@ function AdminProducts() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState('')
+
+  // 상품 등록
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [notice, setNotice] = useState('')
 
   // 재조회
   const [listRetryKey, setListRetryKey] = useState(0)
@@ -145,6 +151,46 @@ function AdminProducts() {
     setSaleStatus('')
   }
 
+  // 등록 화면 열기
+  function handleOpenCreate() {
+    setNotice('')
+    setShowCreateForm(true)
+  }
+
+  // 등록 성공
+  function handleCreateSuccess(product) {
+    setShowCreateForm(false)
+    setKeyword('')
+    setSaleStatus('')
+    setSelectedProduct(null)
+    setSelectedId(product.prdId)
+    setListRetryKey((previous) => previous + 1)
+
+    setNotice(
+      `${product.productName} 상품이 데모에 등록됐습니다. 새로고침하면 초기화됩니다.`
+    )
+  }
+
+  // 상세 정보 표시
+  const detailRows = selectedProduct
+    ? [
+        ['상품번호', selectedProduct.prdId],
+        ['상품명', selectedProduct.productName],
+        ['팝업명', selectedProduct.popupName],
+        ['가격', formatPrice(selectedProduct.price)],
+        ['온라인 재고', `${selectedProduct.stock}개`],
+        ['회원 누적 구매 제한', `${selectedProduct.maxQty}개`],
+        [
+          '판매 상태',
+          saleStatuses[selectedProduct.saleStatus] ||
+            selectedProduct.saleStatus,
+        ],
+        ['판매 시작일시', formatDateTime(selectedProduct.saleStart)],
+        ['판매 종료일시', formatDateTime(selectedProduct.saleEnd)],
+        ['상품 설명', selectedProduct.description || '-'],
+      ]
+    : []
+
   return (
     <div className="admin-products">
       {/* 화면 제목 */}
@@ -154,16 +200,44 @@ function AdminProducts() {
           <p>상품의 판매 상태와 온라인 재고를 확인하세요.</p>
         </div>
 
-        {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
-        <span className="admin-demo-badge">DEMO DATA</span>
+        <div className="product-admin-heading-actions">
+          {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
+          <span className="admin-demo-badge">DEMO DATA</span>
+
+          <button
+            type="button"
+            className="product-admin-button primary"
+            disabled={showCreateForm}
+            aria-expanded={showCreateForm}
+            aria-controls="product-admin-create-area"
+            onClick={handleOpenCreate}
+          >
+            상품 등록
+          </button>
+        </div>
       </div>
 
       {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 제거 */}
       <p className="product-admin-demo">
-        가상 상품을 사용하는 조회 화면입니다.
-        판매 상태는 고정된 예시이며 실제 서버와 연결되지 않습니다.
+        가상 상품으로 조회·등록을 테스트하는 화면입니다.
         모든 상품은 한정판이며 재고는 온라인 판매 재고입니다.
+        등록 결과는 서버에 저장되지 않고 새로고침하면 초기화됩니다.
       </p>
+
+      {/* 등록 결과 */}
+      <p className="product-admin-notice" role="status">
+        {notice}
+      </p>
+
+      {/* 상품 등록 */}
+      <div id="product-admin-create-area">
+        {showCreateForm && (
+          <AdminProductForm
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        )}
+      </div>
 
       {/* 검색 및 필터 */}
       <section className="admin-panel" aria-label="상품 검색">
@@ -347,49 +421,12 @@ function AdminProducts() {
             {!detailLoading && !detailError && selectedProduct && (
               <>
                 <dl className="product-admin-info">
-                  <div>
-                    <dt>상품번호</dt>
-                    <dd>{selectedProduct.prdId}</dd>
-                  </div>
-                  <div>
-                    <dt>상품명</dt>
-                    <dd>{selectedProduct.productName}</dd>
-                  </div>
-                  <div>
-                    <dt>팝업명</dt>
-                    <dd>{selectedProduct.popupName}</dd>
-                  </div>
-                  <div>
-                    <dt>가격</dt>
-                    <dd>{formatPrice(selectedProduct.price)}</dd>
-                  </div>
-                  <div>
-                    <dt>온라인 재고</dt>
-                    <dd>{selectedProduct.stock}개</dd>
-                  </div>
-                  <div>
-                    <dt>회원 누적 구매 제한</dt>
-                    <dd>{selectedProduct.maxQty}개</dd>
-                  </div>
-                  <div>
-                    <dt>판매 상태</dt>
-                    <dd>
-                      {saleStatuses[selectedProduct.saleStatus] ||
-                        selectedProduct.saleStatus}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>판매 시작일시</dt>
-                    <dd>{formatDateTime(selectedProduct.saleStart)}</dd>
-                  </div>
-                  <div>
-                    <dt>판매 종료일시</dt>
-                    <dd>{formatDateTime(selectedProduct.saleEnd)}</dd>
-                  </div>
-                  <div>
-                    <dt>상품 설명</dt>
-                    <dd>{selectedProduct.description || '-'}</dd>
-                  </div>
+                  {detailRows.map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
                 </dl>
 
                 <p className="product-admin-help">
