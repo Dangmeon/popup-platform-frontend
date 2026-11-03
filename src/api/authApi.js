@@ -15,7 +15,7 @@ export async function loginRequest({ username, password }) {
   }
 
   const response = await axiosInstance.post('/api/auth/login', {
-    email: username.trim(),
+    username: username.trim(),
     password,
   })
 
@@ -32,7 +32,7 @@ export async function loginRequest({ username, password }) {
 // 회원가입
 export async function signupRequest({ email, password, name, phone }) {
   const response = await axiosInstance.post('/api/auth/signup', {
-    email: email.trim(),
+    username: email.trim(),
     password,
     name: name.trim(),
     phone: phone.trim(),
