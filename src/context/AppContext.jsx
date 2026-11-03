@@ -8,7 +8,7 @@ import {
   popups as initialPopups,
   products as initialProducts,
 } from '../data/sampleData.js'
-import { loginRequest } from '../api/authApi'
+import { loginRequest, getMyInfo } from '../api/authApi'
 import {
   getAccessToken,
   setAccessToken,
@@ -66,7 +66,7 @@ export function AppProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const [mascotVisible, setMascotVisible] = useState(false)
 
-  // 실제 인증 여부
+  // 토큰 보유 여부
   const isAuthenticated =
     currentUser?.authMode === 'jwt' &&
     Boolean(getAccessToken())
@@ -160,20 +160,52 @@ export function AppProvider({ children }) {
     setCurrentUser(null)
 
     const token = await loginRequest({ username, password })
-
     setAccessToken(token)
 
-    // 나중에 바꿀 부분: 회원 정보 조회 응답으로 표시 정보 설정
-    const user = {
+    let user = {
       username: username.trim(),
       name: username.trim(),
       authMode: 'jwt',
+    }
+
+    // 회원 표시 정보 조회
+    try {
+      const me = await getMyInfo()
+
+      // 나중에 확인할 부분: 최신 회원 정보 응답 필드
+      user = {
+        ...user,
+        email: me?.email ?? user.email,
+        name: me?.name ?? user.name,
+        phone: me?.phone ?? user.phone,
+      }
+    } catch (error) {
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+        clearAccessToken()
+        throw new Error(
+          '회원 인증을 확인하지 못했습니다. 다시 로그인해 주세요.'
+        )
+      }
+
+      showToast(
+        '회원 정보를 불러오지 못해 로그인 아이디로 표시합니다.'
+      )
     }
 
     setCurrentUser(user)
     showToast('로그인되었습니다')
 
     return user
+  }
+
+  // 회원 표시 정보 수정
+  function updateUser(patch) {
+    setCurrentUser((previous) =>
+      previous ? { ...previous, ...patch } : previous
+    )
   }
 
   // 로그아웃
@@ -273,6 +305,7 @@ export function AppProvider({ children }) {
     return id
   }
 
+  // 데모 예약 확정
   function confirmReservation(id) {
     setReservations((previous) =>
       previous.map((reservation) =>
@@ -285,6 +318,7 @@ export function AppProvider({ children }) {
     showToast('데모 예약이 확정되었습니다')
   }
 
+  // 데모 예약 취소
   function cancelReservation(id) {
     setReservations((previous) =>
       previous.map((reservation) =>
@@ -297,7 +331,7 @@ export function AppProvider({ children }) {
     showToast('데모 예약이 취소되었습니다')
   }
 
-  // 나중에 바꿀 부분: 실제 예약 API 응답으로 내역 갱신
+  // 데모 예약 기록
   function addDemoReservation({
     id,
     popupId,
@@ -311,7 +345,7 @@ export function AppProvider({ children }) {
 
     if (currentUser.authMode === 'jwt') {
       throw new Error(
-        '실제 로그인 상태의 예약은 예약 API 연결 후 이용할 수 있습니다.'
+        '실제 로그인 상태에서는 예약 API를 이용해 주세요.'
       )
     }
 
@@ -371,6 +405,7 @@ export function AppProvider({ children }) {
     return id
   }
 
+  // 데모 현장 대기 취소
   function cancelWaiting(id) {
     setWaitings((previous) =>
       previous.map((waiting) =>
@@ -388,6 +423,7 @@ export function AppProvider({ children }) {
     isAuthenticated,
     login,
     loginWithApi,
+    updateUser,
     logout,
     signup,
     likedPopups,

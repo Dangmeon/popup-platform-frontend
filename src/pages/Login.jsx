@@ -18,12 +18,16 @@ function getLoginError(error) {
 
   const { status, data } = error.response
 
-  if (status === 401) {
-    return '아이디 또는 비밀번호를 확인해 주세요.'
+  if (status === 400 || status === 401) {
+    return '이메일 또는 비밀번호를 확인해 주세요.'
   }
 
   if (status === 403) {
     return '로그인이 거부됐습니다. 서버 응답을 확인해 주세요.'
+  }
+
+  if (status === 404) {
+    return '로그인 API 또는 계정 정보를 찾지 못했습니다. 서버 응답을 확인해 주세요.'
   }
 
   if (status >= 500) {
@@ -59,7 +63,7 @@ export default function Login() {
     setError('')
 
     if (!username.trim() || !password.trim()) {
-      setError('아이디와 비밀번호를 입력해 주세요.')
+      setError('이메일과 비밀번호를 입력해 주세요.')
       return
     }
 
@@ -86,12 +90,12 @@ export default function Login() {
       <h2>로그인</h2>
 
       <form onSubmit={handleSubmit} aria-busy={loading}>
-        {/* 아이디 */}
+        {/* 이메일 */}
         <div className="form-group">
-          <label htmlFor="login-username">아이디</label>
+          <label htmlFor="login-username">이메일</label>
           <input
             id="login-username"
-            type="text"
+            type="email"
             name="username"
             value={username}
             onChange={(event) => {
@@ -145,10 +149,13 @@ export default function Login() {
         </button>
       </form>
 
-      {/* 회원가입 안내 */}
+      {/* 비밀번호 찾기 및 회원가입 */}
       <div className="form-foot">
+        <Link to="/reset-password">
+          비밀번호를 잊으셨나요?
+        </Link>
+        <br />
         계정이 없으신가요? <Link to="/signup">회원가입</Link>
-        <p>회원가입 화면은 아직 데모이며 서버 계정이 생성되지 않습니다.</p>
       </div>
     </div>
   )

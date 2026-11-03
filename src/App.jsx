@@ -29,6 +29,7 @@ import Cart from './pages/Cart.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import NotFound from './pages/NotFound.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 
 import ReservationPage from './pages/ReservationPage'
 import ReservationConfirm from './pages/ReservationConfirm'
@@ -531,7 +532,7 @@ function App() {
         endTime,
       })
 
-      // 계정 변경 시에도 생성된 예약번호 보관
+      // 계정 변경 시에도 예약번호 보관
       rememberReservation(nextReservation)
 
       if (currentUsername.current !== owner) return
@@ -548,9 +549,7 @@ function App() {
         uncertainCreation.current = true
       } else {
         try {
-          if (
-            reservationRef.current?.owner === owner
-          ) {
+          if (reservationRef.current?.owner === owner) {
             rememberReservation(reservationRef.current)
           } else {
             sessionStorage.removeItem(getStorageKey(owner))
@@ -679,6 +678,7 @@ function App() {
       const response = await getReservation({
         reservationId: reservation.reservationId,
       })
+
       const latest = mapReservation(response, reservation)
 
       if (currentUsername.current !== owner) return
@@ -688,7 +688,9 @@ function App() {
       if (latest.reservationStatus === 'CONFIRMED') {
         navigate('/reservations/edit')
       } else {
-        setReservationError('현재 예약 상태에서는 변경할 수 없습니다.')
+        setReservationError(
+          '현재 예약 상태에서는 변경할 수 없습니다.'
+        )
       }
     } catch (error) {
       if (currentUsername.current === owner) {
@@ -718,29 +720,37 @@ function App() {
       const response = await getReservation({
         reservationId: currentReservation.reservationId,
       })
-      const latest = mapReservation(response, currentReservation)
+
+      const latest = mapReservation(
+        response,
+        currentReservation
+      )
 
       if (currentUsername.current !== owner) return
 
       if (latest.reservationStatus !== 'CONFIRMED') {
         applyReservation(latest)
-        setReservationError('현재 예약 상태에서는 변경하거나 취소할 수 없습니다.')
+        setReservationError(
+          '현재 예약 상태에서는 변경하거나 취소할 수 없습니다.'
+        )
         return
       }
 
       mutationStarted = true
 
-      const result = action === 'update'
-        ? await updateReservation({
-            reservationId: latest.reservationId,
-            timeSlotId: changes.timeSlotId,
-            peopleCount: changes.peopleCount,
-          })
-        : await cancelReservation({
-            reservationId: latest.reservationId,
-          })
+      const result =
+        action === 'update'
+          ? await updateReservation({
+              reservationId: latest.reservationId,
+              timeSlotId: changes.timeSlotId,
+              peopleCount: changes.peopleCount,
+            })
+          : await cancelReservation({
+              reservationId: latest.reservationId,
+            })
 
       mutationFinished = true
+
       const changed = mapReservation(result, latest)
       rememberReservation(changed)
 
@@ -748,15 +758,15 @@ function App() {
       const detail = await getReservation({
         reservationId: changed.reservationId,
       })
+
       const refreshed = mapReservation(detail, changed)
 
       if (currentUsername.current !== owner) return
 
       applyReservation(refreshed)
 
-      const expectedStatus = action === 'update'
-        ? 'CONFIRMED'
-        : 'CANCELLED'
+      const expectedStatus =
+        action === 'update' ? 'CONFIRMED' : 'CANCELLED'
 
       if (refreshed.reservationStatus === expectedStatus) {
         app.showToast(
@@ -765,17 +775,22 @@ function App() {
             : '예약이 취소되었습니다.'
         )
       } else {
-        setReservationError('서버에서 반환한 최신 예약 상태를 확인해 주세요.')
+        setReservationError(
+          '서버에서 반환한 최신 예약 상태를 확인해 주세요.'
+        )
       }
     } catch (error) {
       if (currentUsername.current !== owner) return
 
       const message = getReservationError(error)
-      const unknownResult = mutationStarted && (
-        mutationFinished ||
-        (!error.response && Boolean(error.request)) ||
-        error.response?.status >= 500
-      )
+
+      const unknownResult =
+        mutationStarted &&
+        (
+          mutationFinished ||
+          (!error.response && Boolean(error.request)) ||
+          error.response?.status >= 500
+        )
 
       if (unknownResult) {
         // 결과 확인 전 중복 변경 방지
@@ -841,7 +856,9 @@ function App() {
       <ReservationRecovery
         loading={restoring}
         error={recoveryFailed ? recovery.error : ''}
-        onRetry={() => setRestoreKey((previous) => previous + 1)}
+        onRetry={() =>
+          setRestoreKey((previous) => previous + 1)
+        }
         onRecover={handleRecoverById}
         onLogin={() => navigate('/login')}
       />
@@ -849,7 +866,10 @@ function App() {
   }
 
   // 예약 화면 진입 확인
-  function guardReservationPage(element, requireReservation = false) {
+  function guardReservationPage(
+    element,
+    requireReservation = false
+  ) {
     if (!username) {
       return <Navigate to="/login" replace />
     }
@@ -885,7 +905,9 @@ function App() {
           <Route
             path="/popups/:popupId/reserve"
             element={guardReservationPage(
-              <ReservationPage onCreateHold={handleCreateHold} />
+              <ReservationPage
+                onCreateHold={handleCreateHold}
+              />
             )}
           />
 
@@ -966,7 +988,10 @@ function App() {
                   onBack={handleCheckStatus}
                 />
               ) : (
-                <Navigate to="/reservations/confirm" replace />
+                <Navigate
+                  to="/reservations/confirm"
+                  replace
+                />
               ),
               true
             )}
@@ -981,6 +1006,10 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/reset-password"
+            element={<ResetPassword />}
+          />
 
           {/* 없는 사용자 페이지 */}
           <Route path="*" element={<NotFound />} />
