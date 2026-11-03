@@ -1,4 +1,13 @@
-/* 굿즈 관리 제목 */
+/* 굿즈 화면 */
+.admin-products {
+  min-width: 0;
+}
+
+.admin-products .admin-page-heading {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .admin-products .admin-page-heading h2 {
   margin: 0 0 8px;
   font-size: 26px;
@@ -9,18 +18,95 @@
   color: #88786c;
 }
 
-/* 데모 안내 */
+.product-admin-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 안내 문구 */
 .product-admin-demo {
-  margin: 20px 0;
-  padding: 14px 16px;
+  margin: 22px 0;
+  padding: 16px 18px;
   border: 1px solid #eedfd0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #fff3e6;
   color: #88786c;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.product-admin-notice {
+  margin: 16px 0;
+  color: #302820;
   line-height: 1.6;
 }
 
-/* 검색 및 필터 */
+.product-admin-notice:empty {
+  display: none;
+}
+
+.product-admin-help {
+  margin: 20px 0 0;
+  color: #88786c;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* 공통 입력 */
+.product-admin-filters input,
+.product-admin-filters select,
+.product-admin-form-grid input,
+.product-admin-form-grid select,
+.product-admin-form-grid textarea,
+.product-admin-date-group input,
+.product-admin-date-group select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 11px 13px;
+  border: 1px solid #eedfd0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #302820;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  color-scheme: light;
+}
+
+.admin-products input::placeholder,
+.admin-products textarea::placeholder {
+  color: #a39488;
+}
+
+.product-admin-filters label,
+.product-admin-form-grid label,
+.product-admin-date-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  color: #635246;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.product-admin-filters input:focus-visible,
+.product-admin-filters select:focus-visible,
+.product-admin-form-grid input:focus-visible,
+.product-admin-form-grid select:focus-visible,
+.product-admin-form-grid textarea:focus-visible,
+.product-admin-date-group input:focus-visible,
+.product-admin-date-group select:focus-visible,
+.product-admin-button:focus-visible {
+  outline: 3px solid #ffb49e;
+  outline-offset: 3px;
+  border-color: #ff8066;
+}
+
+/* 검색 영역 */
 .product-admin-filters {
   display: flex;
   flex-wrap: wrap;
@@ -29,105 +115,128 @@
 }
 
 .product-admin-filters label {
-  display: flex;
-  flex: 1 1 160px;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  color: #88786c;
-  font-size: 13px;
+  flex: 1 1 180px;
 }
 
 .product-admin-filters label:first-child {
   flex-grow: 2;
 }
 
-.product-admin-filters input,
-.product-admin-filters select {
-  width: 100%;
-  min-width: 0;
-  min-height: 42px;
-  padding: 10px 12px;
-  border: 1px solid #eedfd0;
-  border-radius: 8px;
-  background: white;
-  color: #302820;
-  font: inherit;
-}
-
 /* 버튼 */
 .product-admin-button {
-  min-height: 40px;
-  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 11px 17px;
   border: 1px solid #eedfd0;
-  border-radius: 8px;
-  background: white;
+  border-radius: 10px;
+  background: #ffffff;
   color: #302820;
   font: inherit;
   font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
-.product-admin-button:hover {
+.product-admin-button:hover:not(:disabled) {
   border-color: #ff8066;
   background: #fff3e6;
 }
 
-.product-admin-button:focus-visible,
-.product-admin-filters input:focus-visible,
-.product-admin-filters select:focus-visible {
-  outline: 3px solid #ff8066;
-  outline-offset: 3px;
+.product-admin-button.primary {
+  border-color: #ff8066;
+  background: #ff8066;
+  color: #302820;
+  font-weight: 700;
 }
 
-/* 목록 및 상세 */
+.product-admin-button.primary:hover:not(:disabled) {
+  border-color: #f4745b;
+  background: #f4745b;
+}
+
+.product-admin-button:disabled,
+.product-admin-filters input:disabled,
+.product-admin-filters select:disabled,
+.product-admin-fieldset:disabled input,
+.product-admin-fieldset:disabled select,
+.product-admin-fieldset:disabled textarea,
+.product-admin-form-grid select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 상품 목록  */
 .product-admin-list,
 .product-admin-detail {
   margin-top: 24px;
 }
 
-/* 상품 테이블 */
 .product-admin-table {
-  min-width: 850px;
+  min-width: 900px;
   font-size: 13px;
 }
 
 .product-admin-table th,
 .product-admin-table td {
-  padding: 14px 12px;
-  border-bottom: 1px solid #eedfd0;
+  padding: 17px 14px;
+  border-bottom: 1px solid #f0e6dc;
   line-height: 1.6;
+  text-align: left;
   vertical-align: middle;
 }
 
 .product-admin-table th {
   background: #fffaf4;
   color: #88786c;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.product-admin-table tbody tr:hover {
+  background: #fffcf8;
 }
 
 .product-admin-table tbody tr:last-child td {
   border-bottom: none;
 }
 
+.product-admin-table td:nth-child(2) {
+  font-weight: 600;
+}
+
 .product-admin-table .product-admin-empty {
-  padding: 40px 16px;
+  padding: 44px 16px;
   color: #88786c;
   text-align: center;
 }
 
-/* 판매 상태 */
+/* 상태 표시 */
 .product-admin-status {
   display: inline-block;
-  padding: 6px 10px;
+  padding: 6px 11px;
   border-radius: 20px;
   font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .product-admin-status.on_sale {
   background: #e7f6ec;
   color: #28764a;
+}
+
+.product-admin-status.upcoming {
+  background: #fff3e6;
+  color: #9c5b42;
 }
 
 .product-admin-status.sold_out {
@@ -140,9 +249,9 @@
   color: #635246;
 }
 
-/* 재고 안내 */
 .product-admin-stock-warning {
   display: block;
+  margin-top: 3px;
   color: #a64b4b;
   font-size: 11px;
 }
@@ -154,27 +263,152 @@
 
 .product-admin-info > div {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 16px;
-  padding: 14px 0;
-  border-bottom: 1px solid #eedfd0;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 20px;
+  padding: 17px 0;
+  border-bottom: 1px solid #f0e6dc;
+}
+
+.product-admin-info > div:last-child {
+  border-bottom: none;
 }
 
 .product-admin-info dt {
   color: #88786c;
+  font-size: 13px;
 }
 
 .product-admin-info dd {
   margin: 0;
+  color: #302820;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.7;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+/* 등록 영역 */
+.product-admin-create {
+  margin-bottom: 24px;
+}
+
+.product-admin-form-guide {
+  margin: 0 0 24px;
+  padding: 13px 16px;
+  border-radius: 10px;
+  background: #fffaf4;
+  color: #88786c;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.product-admin-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.product-admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.product-admin-form-wide {
+  grid-column: 1 / -1;
+}
+
+.product-admin-form-grid textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* 판매기간 */
+.product-admin-period-heading {
+  margin: 28px 0 16px;
+}
+
+.product-admin-period-heading h4 {
+  margin: 0 0 7px;
+  color: #302820;
+  font-size: 15px;
+}
+
+.product-admin-period-heading p {
+  margin: 0;
+  color: #88786c;
+  font-size: 12px;
+}
+
+.product-admin-period-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.product-admin-date-group {
+  min-width: 0;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid #eedfd0;
+  border-radius: 14px;
+  background: #fffaf4;
+}
+
+.product-admin-date-group legend {
+  padding: 0 8px;
+  color: #9c5b42;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.product-admin-date-group input[type='date'] {
+  min-height: 48px;
+}
+
+.product-admin-time-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.product-admin-date-preview {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #eedfd0;
+  color: #635246;
+  font-size: 13px;
   font-weight: 600;
 }
 
-.product-admin-help {
+/* 등록 결과 */
+.product-admin-form-error {
   margin: 20px 0 0;
-  color: #88786c;
+  padding: 14px 16px;
+  border: 1px solid #edc5bd;
+  border-radius: 10px;
+  background: #fff3ef;
+  color: #a13d2d;
+  font-size: 13px;
   line-height: 1.6;
+}
+
+.product-admin-form-error p {
+  margin: 0 0 12px;
+}
+
+.product-admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid #eedfd0;
 }
 
 /* 접근성 안내 */
@@ -189,9 +423,18 @@
 }
 
 /* 좁은 화면 */
-@media (max-width: 600px) {
+@media (max-width: 700px) {
+  .product-admin-form-grid,
+  .product-admin-period-grid {
+    grid-template-columns: 1fr;
+  }
+
   .product-admin-info > div {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .product-admin-form-actions > button {
+    flex: 1;
   }
 }
