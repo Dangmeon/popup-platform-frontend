@@ -1,20 +1,27 @@
 import React, { useState, useMemo } from 'react'
-import { useApp } from '../context/AppContext.jsx'
 import PopupCard from '../components/common/PopupCard.jsx'
+import { usePopups } from '../hooks/usePopups'
 
 export default function PopupList(){
-  const app = useApp()
+  // 서버에서 팝업 목록 조회 (GET /api/popups)
+  const { data, loading, error } = usePopups({})
+  const popups = Array.isArray(data) ? data : []
+
   const [category, setCategory] = useState('전체')
   const [keyword, setKeyword] = useState('')
 
-  const categories = useMemo(()=>{
-    const set = new Set(app.popups.map(p=>p.category))
+  // 서버 데이터에 있는 카테고리만 탭으로 만든다
+  const categories = useMemo(() => {
+    const set = new Set(popups.map(p => p.category).filter(Boolean))
     return ['전체', ...Array.from(set)]
-  }, [app.popups])
+  }, [popups])
 
-  const filtered = app.popups.filter(p => {
+  const filtered = popups.filter(p => {
     const matchCategory = category === '전체' || p.category === category
-    const matchKeyword = !keyword || p.title.includes(keyword) || p.location.includes(keyword)
+    const matchKeyword =
+      !keyword ||
+      (p.title ?? '').includes(keyword) ||
+      (p.location ?? '').includes(keyword)
     return matchCategory && matchKeyword
   })
 
@@ -39,7 +46,11 @@ export default function PopupList(){
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="empty-state">팝업 목록을 불러오는 중이에요</div>
+      ) : error ? (
+        <div className="empty-state">{error}</div>
+      ) : filtered.length === 0 ? (
         <div className="empty-state">조건에 맞는 팝업이 없어요.</div>
       ) : (
         <div className="grid-4">

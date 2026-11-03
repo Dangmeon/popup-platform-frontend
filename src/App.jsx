@@ -13,6 +13,7 @@ import { useApp } from './context/AppContext.jsx'
 import LoadingMascot from './components/common/LoadingMascot.jsx'
 import NotFound from './pages/NotFound.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 
 export default function App(){
   const app = useApp()
@@ -43,6 +44,7 @@ export default function App(){
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
           <Route path="/mypage/account" element={<AccountSettings />} />
         </Routes>

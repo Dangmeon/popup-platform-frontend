@@ -1,114 +1,444 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { popups as initialPopups, products as initialProducts } from '../data/sampleData.js'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
+import {
+  popups as initialPopups,
+  products as initialProducts,
+} from '../data/sampleData.js'
+import { loginRequest, getMyInfo } from '../api/authApi'
+import {
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken,
+} from '../api/authToken'
 
 const AppContext = createContext(null)
+
 export const useApp = () => useContext(AppContext)
 
-function loadLS(key, fallback){
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback } catch { return fallback }
+// 임시 데이터 조회
+function loadLS(key, fallback) {
+  try {
+    const value = localStorage.getItem(key)
+    return value ? JSON.parse(value) : fallback
+  } catch {
+    return fallback
+  }
 }
 
-export function AppProvider({ children }){
+export function AppProvider({ children }) {
+  // 상품 및 팝업
   const [popupsData] = useState(initialPopups)
   const [productsData] = useState(initialProducts)
-  const [currentUser, setCurrentUser] = useState(() => loadLS('popQ_user', null))
-  const [likedPopups, setLikedPopups] = useState(() => loadLS('popQ_liked_popups', []))
-  const [likedProducts, setLikedProducts] = useState(() => loadLS('popQ_liked_products', []))
-  const [cart, setCart] = useState(() => loadLS('popQ_cart', []))
-  const [reservations, setReservations] = useState(() => loadLS('popQ_reservations', []))
-  const [waitings, setWaitings] = useState(() => loadLS('popQ_waitings', []))
+
+  // 사용자 표시 정보
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = loadLS('popQ_user', null)
+
+    if (savedUser?.authMode === 'jwt' && !getAccessToken()) {
+      return null
+    }
+
+    return savedUser
+  })
+
+  // 임시 사용자 데이터
+  const [likedPopups, setLikedPopups] = useState(() =>
+    loadLS('popQ_liked_popups', [])
+  )
+  const [likedProducts, setLikedProducts] = useState(() =>
+    loadLS('popQ_liked_products', [])
+  )
+  const [cart, setCart] = useState(() =>
+    loadLS('popQ_cart', [])
+  )
+  const [reservations, setReservations] = useState(() =>
+    loadLS('popQ_reservations', [])
+  )
+  const [waitings, setWaitings] = useState(() =>
+    loadLS('popQ_waitings', [])
+  )
+
+  // 화면 알림
   const [toasts, setToasts] = useState([])
   const [mascotVisible, setMascotVisible] = useState(false)
 
-  useEffect(()=>localStorage.setItem('popQ_user', JSON.stringify(currentUser)), [currentUser])
-  useEffect(()=>localStorage.setItem('popQ_liked_popups', JSON.stringify(likedPopups)), [likedPopups])
-  useEffect(()=>localStorage.setItem('popQ_liked_products', JSON.stringify(likedProducts)), [likedProducts])
-  useEffect(()=>localStorage.setItem('popQ_cart', JSON.stringify(cart)), [cart])
-  useEffect(()=>localStorage.setItem('popQ_reservations', JSON.stringify(reservations)), [reservations])
-  useEffect(()=>localStorage.setItem('popQ_waitings', JSON.stringify(waitings)), [waitings])
+  // 실제 인증 여부
+  const isAuthenticated =
+    currentUser?.authMode === 'jwt' &&
+    Boolean(getAccessToken())
 
-  function showToast(msg){
-    const id = Date.now()
-    setToasts(t => [...t, { id, msg }])
-    setTimeout(()=> setToasts(t => t.filter(x=>x.id!==id)), 2500)
+  // 사용자 표시 정보 저장
+  useEffect(() => {
+    localStorage.setItem('popQ_user', JSON.stringify(currentUser))
+  }, [currentUser])
+
+  // 임시 데이터 저장
+  useEffect(() => {
+    localStorage.setItem(
+      'popQ_liked_popups',
+      JSON.stringify(likedPopups)
+    )
+  }, [likedPopups])
+
+  useEffect(() => {
+    localStorage.setItem(
+      'popQ_liked_products',
+      JSON.stringify(likedProducts)
+    )
+  }, [likedProducts])
+
+  useEffect(() => {
+    localStorage.setItem('popQ_cart', JSON.stringify(cart))
+  }, [cart])
+
+  useEffect(() => {
+    localStorage.setItem(
+      'popQ_reservations',
+      JSON.stringify(reservations)
+    )
+  }, [reservations])
+
+  useEffect(() => {
+    localStorage.setItem('popQ_waitings', JSON.stringify(waitings))
+  }, [waitings])
+
+  // 알림
+  function showToast(msg) {
+    const id = crypto.randomUUID()
+
+    setToasts((previous) => [...previous, { id, msg }])
+
+    setTimeout(() => {
+      setToasts((previous) =>
+        previous.filter((toast) => toast.id !== id)
+      )
+    }, 2500)
   }
 
-  function signup({ email, password, name, phone, type }){
-    const user = { email, name, phone, type: type || 'user' }
+  // 데모 회원가입
+  function signup({ email, name, phone, type }) {
+    clearAccessToken()
+
+    const user = {
+      email,
+      name,
+      phone,
+      type: type || 'user',
+      authMode: 'demo',
+    }
+
     setCurrentUser(user)
-    showToast('회원가입이 완료되었습니다')
+    showToast('데모 회원가입이 완료되었습니다')
+
     return user
   }
-  function login({ email, password }){
-    const user = { email, name: email.split('@')[0], type: email.includes('brand') ? 'brand' : 'user' }
+
+  // 데모 로그인
+  function login({ email }) {
+    clearAccessToken()
+
+    const user = {
+      email,
+      name: email.split('@')[0],
+      type: email.includes('brand') ? 'brand' : 'user',
+      authMode: 'demo',
+    }
+
+    setCurrentUser(user)
+    showToast('데모 로그인되었습니다')
+
+    return user
+  }
+
+  // 실제 로그인
+  async function loginWithApi({ username, password }) {
+    clearAccessToken()
+    setCurrentUser(null)
+
+    const token = await loginRequest({ username, password })
+
+    setAccessToken(token)
+
+    // 기본 표시 정보 (내 정보 조회에 실패해도 로그인은 유지)
+    let user = {
+      username: username.trim(),
+      name: username.trim(),
+      authMode: 'jwt',
+    }
+
+    // 내 정보 조회 (GET /api/members/me)
+    // TODO: 응답 필드명(email, name, phone)은 Swagger 확인 후 수정
+    try {
+      const me = await getMyInfo()
+
+      user = {
+        ...user,
+        email: me?.email ?? user.email,
+        name: me?.name ?? user.name,
+        phone: me?.phone ?? user.phone,
+      }
+    } catch {
+      // 조회 실패 시 기본 표시 정보 사용
+    }
+
     setCurrentUser(user)
     showToast('로그인되었습니다')
+
     return user
   }
-  function logout(){ setCurrentUser(null); showToast('로그아웃되었습니다') }
 
-  function toggleLikePopup(id){
-    setLikedPopups(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id])
-  }
-  function toggleLikeProduct(id){
-    setLikedProducts(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id])
+  // 표시 정보 일부 수정 (내 정보 수정 후 화면 반영용)
+  function updateUser(patch) {
+    setCurrentUser((previous) =>
+      previous ? { ...previous, ...patch } : previous
+    )
   }
 
-  function addToCart(product, quantity=1){
-    setCart(prev => {
-      const existing = prev.find(i=>i.productId===product.id)
-      if(existing){
-        return prev.map(i=> i.productId===product.id ? { ...i, quantity:i.quantity+quantity } : i)
+  // 로그아웃
+  function logout() {
+    clearAccessToken()
+    setCurrentUser(null)
+    showToast('로그아웃되었습니다')
+  }
+
+  // 팝업 찜
+  function toggleLikePopup(id) {
+    setLikedPopups((previous) =>
+      previous.includes(id)
+        ? previous.filter((item) => item !== id)
+        : [...previous, id]
+    )
+  }
+
+  // 상품 찜
+  function toggleLikeProduct(id) {
+    setLikedProducts((previous) =>
+      previous.includes(id)
+        ? previous.filter((item) => item !== id)
+        : [...previous, id]
+    )
+  }
+
+  // 장바구니 추가
+  function addToCart(product, quantity = 1) {
+    setCart((previous) => {
+      const existing = previous.find(
+        (item) => item.productId === product.id
+      )
+
+      if (existing) {
+        return previous.map((item) =>
+          item.productId === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        )
       }
-      return [...prev, { productId:product.id, quantity }]
+
+      return [
+        ...previous,
+        { productId: product.id, quantity },
+      ]
     })
+
     setMascotVisible(true)
     showToast('장바구니에 담았어요')
   }
-  function updateCartQty(productId, quantity){
-    if(quantity<=0){ removeFromCart(productId); return }
-    setCart(prev => prev.map(i=> i.productId===productId ? { ...i, quantity } : i))
-  }
-  function removeFromCart(productId){
-    setCart(prev => prev.filter(i=>i.productId!==productId))
-  }
-  function clearCart(){ setCart([]) }
 
-  function createReservation(popupId, timeSlot, peopleCount){
+  // 장바구니 수량
+  function updateCartQty(productId, quantity) {
+    if (quantity <= 0) {
+      removeFromCart(productId)
+      return
+    }
+
+    setCart((previous) =>
+      previous.map((item) =>
+        item.productId === productId
+          ? { ...item, quantity }
+          : item
+      )
+    )
+  }
+
+  // 장바구니 삭제
+  function removeFromCart(productId) {
+    setCart((previous) =>
+      previous.filter((item) => item.productId !== productId)
+    )
+  }
+
+  function clearCart() {
+    setCart([])
+  }
+
+  // 기존 데모 예약
+  function createReservation(popupId, timeSlot, peopleCount) {
     const id = 'R' + Date.now()
-    const expiresAt = Date.now() + 10*60*1000
-    setReservations(prev => [...prev, { id, popupId, timeSlot, peopleCount, status:'HOLD', expiresAt }])
+    const expiresAt = Date.now() + 10 * 60 * 1000
+
+    setReservations((previous) => [
+      ...previous,
+      {
+        id,
+        popupId,
+        timeSlot,
+        peopleCount,
+        status: 'HOLD',
+        expiresAt,
+      },
+    ])
+
     return id
-  }
-  function confirmReservation(id){
-    setReservations(prev => prev.map(r=> r.id===id ? { ...r, status:'CONFIRMED' } : r))
-    showToast('예약이 확정되었습니다')
-  }
-  function cancelReservation(id){
-    setReservations(prev => prev.map(r=> r.id===id ? { ...r, status:'CANCELLED' } : r))
-    showToast('예약이 취소되었습니다')
   }
 
-  function registerWaiting(popupId, peopleCount){
+  function confirmReservation(id) {
+    setReservations((previous) =>
+      previous.map((reservation) =>
+        reservation.id === id
+          ? { ...reservation, status: 'CONFIRMED' }
+          : reservation
+      )
+    )
+
+    showToast('데모 예약이 확정되었습니다')
+  }
+
+  function cancelReservation(id) {
+    setReservations((previous) =>
+      previous.map((reservation) =>
+        reservation.id === id
+          ? { ...reservation, status: 'CANCELLED' }
+          : reservation
+      )
+    )
+
+    showToast('데모 예약이 취소되었습니다')
+  }
+
+  // 나중에 바꿀 부분: 실제 예약 API 응답으로 내역 갱신
+  function addDemoReservation({
+    id,
+    popupId,
+    visitDate,
+    timeSlot,
+    peopleCount,
+  }) {
+    if (!currentUser) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    if (currentUser.authMode === 'jwt') {
+      throw new Error(
+        '실제 로그인 상태의 예약은 예약 API 연결 후 이용할 수 있습니다.'
+      )
+    }
+
+    if (
+      !id ||
+      !popupId ||
+      !visitDate ||
+      !timeSlot ||
+      !Number.isSafeInteger(peopleCount) ||
+      peopleCount < 1
+    ) {
+      throw new Error('예약 정보를 확인해 주세요.')
+    }
+
+    const reservation = {
+      id,
+      number: id,
+      popupId,
+      visitDate,
+      timeSlot,
+      peopleCount,
+      memberEmail: currentUser.email,
+      status: 'CONFIRMED',
+      isDemo: true,
+    }
+
+    setReservations((previous) => {
+      const alreadyExists = previous.some(
+        (item) => item.id === id
+      )
+
+      return alreadyExists
+        ? previous
+        : [...previous, reservation]
+    })
+
+    return reservation
+  }
+
+  // 데모 현장 대기
+  function registerWaiting(popupId, peopleCount) {
     const id = 'W' + Date.now()
-    const queueNumber = Math.floor(Math.random()*20)+1
-    setWaitings(prev => [...prev, { id, popupId, peopleCount, queueNumber, status:'WAITING', checkinCode: Math.floor(1000+Math.random()*9000) }])
+    const queueNumber = Math.floor(Math.random() * 20) + 1
+
+    setWaitings((previous) => [
+      ...previous,
+      {
+        id,
+        popupId,
+        peopleCount,
+        queueNumber,
+        status: 'WAITING',
+        checkinCode: Math.floor(1000 + Math.random() * 9000),
+      },
+    ])
+
     return id
   }
-  function cancelWaiting(id){
-    setWaitings(prev => prev.map(w=> w.id===id ? { ...w, status:'CANCELLED' } : w))
+
+  function cancelWaiting(id) {
+    setWaitings((previous) =>
+      previous.map((waiting) =>
+        waiting.id === id
+          ? { ...waiting, status: 'CANCELLED' }
+          : waiting
+      )
+    )
   }
 
   const value = {
-    popups: popupsData, products: productsData,
-    currentUser, login, logout, signup,
-    likedPopups, likedProducts, toggleLikePopup, toggleLikeProduct,
-    cart, addToCart, updateCartQty, removeFromCart, clearCart,
-    reservations, createReservation, confirmReservation, cancelReservation,
-    waitings, registerWaiting, cancelWaiting,
-    toasts, showToast,
-    mascotVisible, setMascotVisible,
+    popups: popupsData,
+    products: productsData,
+    currentUser,
+    isAuthenticated,
+    login,
+    loginWithApi,
+    updateUser,
+    logout,
+    signup,
+    likedPopups,
+    likedProducts,
+    toggleLikePopup,
+    toggleLikeProduct,
+    cart,
+    addToCart,
+    updateCartQty,
+    removeFromCart,
+    clearCart,
+    reservations,
+    createReservation,
+    confirmReservation,
+    cancelReservation,
+    addDemoReservation,
+    waitings,
+    registerWaiting,
+    cancelWaiting,
+    toasts,
+    showToast,
+    mascotVisible,
+    setMascotVisible,
   }
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  )
 }
