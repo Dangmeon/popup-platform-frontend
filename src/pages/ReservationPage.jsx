@@ -12,6 +12,8 @@ import TimeSlotSelector from '../components/reservation/TimeSlotSelector'
 import PopqLogo from '../components/reservation/PopqLogo'
 import './ReservationPage.css'
 
+const REFRESH_INTERVAL = 5000
+
 // 초기 인원 확인
 function getInitialPeopleCount(value) {
   return Number.isSafeInteger(value) && value >= 1 && value <= 3
@@ -37,10 +39,23 @@ function getRequestError(error) {
   }
 
   if (error.request && !error.response) {
-    return '서버 응답을 확인하지 못했습니다. 서버 실행 상태와 CORS 설정을 확인해 주세요.'
+    return '서버 응답을 확인하지 못했습니다. 연결 상태를 확인해 주세요.'
   }
 
   return error.message || '요청을 처리하지 못했습니다.'
+}
+
+// 마지막 조회 시각
+function formatCheckedTime(value) {
+  if (!value) return '-'
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date(value))
 }
 
 function ReservationPage({ onCreateHold }) {
@@ -49,7 +64,6 @@ function ReservationPage({ onCreateHold }) {
   const app = useApp()
 
   const popId = Number(popupId)
-
   const validPopupId =
     /^\d+$/.test(popupId || '') &&
     Number.isSafeInteger(popId) &&
@@ -88,6 +102,12 @@ function ReservationPage({ onCreateHold }) {
   const [slotState, setSlotState] = useState(null)
   const [retryKey, setRetryKey] = useState(0)
 
+  // 선택 변경 안내
+  const [selectionNotice, setSelectionNotice] = useState({
+    scope,
+    message: '',
+  })
+
   // 예약 요청
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -104,47 +124,153 @@ function ReservationPage({ onCreateHold }) {
     return () => clearInterval(timer)
   }, [])
 
-  // 서버 회차 조회
+  // 서버 회차 자동 조회
   useEffect(() => {
     if (!app.isAuthenticated || !validPopupId) return
 
     let active = true
+    let inFlight = false
+    let stopped = false
+    let timer = null
+
+    function clearTimer() {
+      if (timer !== null) {
+        clearTimeout(timer)
+        timer = null
+      }
+    }
+
+    function scheduleNext() {
+      clearTimer()
+
+      if (
+        !active ||
+        stopped ||
+        document.visibilityState === 'hidden'
+      ) {
+        return
+      }
+
+      timer = setTimeout(loadTimeSlots, REFRESH_INTERVAL)
+    }
 
     async function loadTimeSlots() {
-      setSlotState({
-        scope,
-        loading: true,
-        items: [],
-        error: '',
+      if (
+        !active ||
+        stopped ||
+        inFlight ||
+        document.visibilityState === 'hidden'
+      ) {
+        return
+      }
+
+      clearTimer()
+
+      if (submitLock.current) {
+        scheduleNext()
+        return
+      }
+
+      inFlight = true
+
+      setSlotState((previous) => {
+        const existing =
+          previous?.scope === scope ? previous : null
+
+        return {
+          scope,
+          ready: existing?.ready ?? false,
+          loading: !existing?.ready,
+          refreshing: true,
+          items: existing?.items ?? [],
+          error: existing?.error ?? '',
+          updatedAt: existing?.updatedAt ?? null,
+        }
       })
 
       try {
         const items = await getTimeSlots({ popId })
 
-        if (!active) return
+        if (!active || submitLock.current) return
 
         setSlotState({
           scope,
+          ready: true,
           loading: false,
+          refreshing: false,
           items,
           error: '',
+          updatedAt: Date.now(),
         })
       } catch (error) {
-        if (!active) return
+        if (!active || submitLock.current) return
 
-        setSlotState({
-          scope,
-          loading: false,
-          items: [],
-          error: getRequestError(error),
+        if (
+          error.response?.status === 401 ||
+          error.response?.status === 403
+        ) {
+          stopped = true
+        }
+
+        setSlotState((previous) => {
+          const existing =
+            previous?.scope === scope ? previous : null
+
+          return {
+            scope,
+            ready: existing?.ready ?? false,
+            loading: false,
+            refreshing: false,
+            items: existing?.items ?? [],
+            error: getRequestError(error),
+            updatedAt: existing?.updatedAt ?? null,
+          }
         })
+      } finally {
+        inFlight = false
+
+        if (active) {
+          setSlotState((previous) =>
+            previous?.scope === scope
+              ? { ...previous, refreshing: false }
+              : previous
+          )
+
+          scheduleNext()
+        }
       }
+    }
+
+    // 화면 복귀 시 갱신
+    function handleVisibilityChange() {
+      clearTimer()
+
+      if (document.visibilityState !== 'hidden') {
+        loadTimeSlots()
+      }
+    }
+
+    function handleFocus() {
+      loadTimeSlots()
     }
 
     loadTimeSlots()
 
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    )
+    window.addEventListener('focus', handleFocus)
+
     return () => {
       active = false
+      clearTimer()
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      )
+      window.removeEventListener('focus', handleFocus)
     }
   }, [
     app.isAuthenticated,
@@ -160,6 +286,7 @@ function ReservationPage({ onCreateHold }) {
   const timeSlots = currentSlotState?.items ?? []
   const loading =
     !currentSlotState || currentSlotState.loading
+  const refreshing = currentSlotState?.refreshing ?? false
   const loadError = currentSlotState?.error || ''
 
   const selectedSlot = timeSlots.find(
@@ -175,8 +302,57 @@ function ReservationPage({ onCreateHold }) {
   const canShowSelection =
     app.isAuthenticated &&
     validPopupId &&
+    currentSlotState?.ready &&
     !loading &&
     !loadError
+
+  const notice =
+    selectionNotice.scope === scope
+      ? selectionNotice.message
+      : ''
+
+  // 마감된 선택 해제
+  useEffect(() => {
+    if (
+      !canShowSelection ||
+      selectedTimeSlotId === null ||
+      submitting
+    ) {
+      return
+    }
+
+    const reason = selectedSlot
+      ? unavailableReason
+      : '선택한 회차가 더 이상 제공되지 않습니다.'
+
+    if (!reason) return
+
+    setSelection((previous) => {
+      if (
+        previous.scope !== scope ||
+        previous.timeSlotId !== selectedTimeSlotId
+      ) {
+        return previous
+      }
+
+      return {
+        ...previous,
+        timeSlotId: null,
+      }
+    })
+
+    setSelectionNotice({
+      scope,
+      message: `${reason} 다른 회차를 선택해 주세요.`,
+    })
+  }, [
+    canShowSelection,
+    selectedTimeSlotId,
+    selectedSlot,
+    unavailableReason,
+    submitting,
+    scope,
+  ])
 
   // 날짜 선택
   function handleDateSelect(date) {
@@ -186,11 +362,14 @@ function ReservationPage({ onCreateHold }) {
       timeSlotId: null,
     })
 
+    setSelectionNotice({ scope, message: '' })
     setSubmitError('')
   }
 
   // 시간 선택
   function handleTimeSelect(slot) {
+    if (loading || loadError || submitting) return
+
     const reason = getSlotUnavailableReason(
       slot,
       peopleCount,
@@ -198,7 +377,7 @@ function ReservationPage({ onCreateHold }) {
     )
 
     if (reason) {
-      setSubmitError(reason)
+      setSelectionNotice({ scope, message: reason })
       return
     }
 
@@ -208,6 +387,7 @@ function ReservationPage({ onCreateHold }) {
       timeSlotId: slot.timeSlotId,
     })
 
+    setSelectionNotice({ scope, message: '' })
     setSubmitError('')
   }
 
@@ -224,16 +404,13 @@ function ReservationPage({ onCreateHold }) {
       timeSlotId: null,
     })
 
+    setSelectionNotice({ scope, message: '' })
     setSubmitError('')
   }
 
   // 회차 다시 조회
   function handleReload() {
-    setSelection({
-      scope,
-      date: null,
-      timeSlotId: null,
-    })
+    if (submitting || refreshing) return
 
     setSubmitError('')
     setRetryKey((previous) => previous + 1)
@@ -243,7 +420,8 @@ function ReservationPage({ onCreateHold }) {
   async function handleNext() {
     if (
       submitLock.current ||
-      !app.isAuthenticated ||
+      !canShowSelection ||
+      refreshing ||
       !selectedSlot ||
       typeof onCreateHold !== 'function'
     ) {
@@ -257,7 +435,10 @@ function ReservationPage({ onCreateHold }) {
     )
 
     if (reason) {
-      setSubmitError(reason)
+      setSelectionNotice({
+        scope,
+        message: `${reason} 다른 회차를 선택해 주세요.`,
+      })
       return
     }
 
@@ -276,6 +457,7 @@ function ReservationPage({ onCreateHold }) {
       })
     } catch (error) {
       setSubmitError(getRequestError(error))
+      setRetryKey((previous) => previous + 1)
     } finally {
       submitLock.current = false
       setSubmitting(false)
@@ -288,7 +470,6 @@ function ReservationPage({ onCreateHold }) {
       <div className="reservation-hero">
         <div className="reservation-brand">
           <PopqLogo />
-
           <span className="reservation-brand-tag">
             POP-UP EXPERIENCE
           </span>
@@ -320,18 +501,16 @@ function ReservationPage({ onCreateHold }) {
         </div>
       </div>
 
-      {/* 실제 로그인 안내 */}
+      {/* 로그인 안내 */}
       {!app.isAuthenticated && (
         <section className="reservation-summary">
           <h3>로그인이 필요합니다</h3>
-          <p>
-            실제 예약 회차 조회는 서버 로그인 후 이용할 수 있습니다.
-          </p>
+          <p>예약 회차 조회는 서버 로그인 후 이용할 수 있습니다.</p>
           <Link to="/login">로그인 화면으로 이동</Link>
         </section>
       )}
 
-      {/* 팝업 ID 안내 */}
+      {/* 팝업 연결 안내 */}
       {app.isAuthenticated && !validPopupId && (
         <section className="reservation-summary">
           <h3>서버 팝업 연결이 필요합니다</h3>
@@ -373,47 +552,72 @@ function ReservationPage({ onCreateHold }) {
             <p>예약은 1~3명까지 가능합니다.</p>
           </section>
 
-          {/* 회차 조회 오류 */}
-          {loadError && (
-            <section className="reservation-summary">
-              <p role="alert">{loadError}</p>
+          {/* 회차 갱신 안내 */}
+          <section className="reservation-summary">
+            <div className="reservation-summary-header">
+              <h3>회차 현황</h3>
+            </div>
 
-              <button
-                type="button"
-                className="reservation-next-button"
-                onClick={handleReload}
-                disabled={submitting}
-              >
-                회차 다시 불러오기
-              </button>
-            </section>
+            <p>
+              화면을 보고 있는 동안 회차 현황이 약 5초 간격으로
+              자동 갱신됩니다.
+            </p>
+
+            <p className="card-sub">
+              {loading
+                ? '회차를 불러오는 중입니다.'
+                : refreshing
+                  ? '최신 잔여석을 확인하고 있습니다.'
+                  : `마지막 확인: ${formatCheckedTime(
+                      currentSlotState?.updatedAt
+                    )}`}
+            </p>
+
+            {loadError && (
+              <p role="alert">
+                {loadError} 최신 정보를 확인하기 전에는 예약할 수
+                없습니다.
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="reservation-next-button"
+              onClick={handleReload}
+              disabled={submitting || refreshing}
+            >
+              {refreshing ? '확인 중…' : '회차 다시 불러오기'}
+            </button>
+          </section>
+
+          {/* 선택 변경 안내 */}
+          {notice && (
+            <p className="reservation-confirm-notice" role="status">
+              {notice}
+            </p>
           )}
 
           {/* 날짜 및 시간 */}
-          {!loadError && (
-            <>
-              <ReservationCalendar
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-                timeSlots={timeSlots}
-                peopleCount={peopleCount}
-                now={now}
-                loading={loading}
-                disabled={submitting}
-              />
+          <ReservationCalendar
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            timeSlots={timeSlots}
+            peopleCount={peopleCount}
+            now={now}
+            loading={loading}
+            disabled={submitting || Boolean(loadError)}
+          />
 
-              <TimeSlotSelector
-                selectedDate={selectedDate}
-                selectedTimeSlotId={selectedTimeSlotId}
-                onTimeSelect={handleTimeSelect}
-                timeSlots={timeSlots}
-                peopleCount={peopleCount}
-                now={now}
-                loading={loading}
-                disabled={submitting}
-              />
-            </>
-          )}
+          <TimeSlotSelector
+            selectedDate={selectedDate}
+            selectedTimeSlotId={selectedTimeSlotId}
+            onTimeSelect={handleTimeSelect}
+            timeSlots={timeSlots}
+            peopleCount={peopleCount}
+            now={now}
+            loading={loading}
+            disabled={submitting || Boolean(loadError)}
+          />
 
           {/* 요청 오류 */}
           {submitError && (
@@ -463,6 +667,7 @@ function ReservationPage({ onCreateHold }) {
                 className="reservation-next-button"
                 disabled={
                   submitting ||
+                  refreshing ||
                   Boolean(unavailableReason) ||
                   typeof onCreateHold !== 'function'
                 }
@@ -470,9 +675,11 @@ function ReservationPage({ onCreateHold }) {
               >
                 {submitting
                   ? '임시 예약 요청 중…'
-                  : typeof onCreateHold !== 'function'
-                    ? '예약 생성 연결 준비 중'
-                    : '임시 예약 후 정보 확인 →'}
+                  : refreshing
+                    ? '잔여석 확인 중…'
+                    : typeof onCreateHold !== 'function'
+                      ? '예약 생성 연결 준비 중'
+                      : '임시 예약 후 정보 확인 →'}
               </button>
             </section>
           )}
