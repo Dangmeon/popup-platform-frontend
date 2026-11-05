@@ -45,6 +45,8 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
 import AdminWaitings from './pages/admin/AdminWaitings'
 
+import './styles/toast.css'
+
 // 예약 상태
 const reservationStatuses = new Set([
   'HOLD',

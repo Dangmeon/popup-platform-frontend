@@ -149,13 +149,16 @@ export default function Login() {
         </button>
       </form>
 
-      {/* 비밀번호 찾기 및 회원가입 */}
+      {/* 회원가입 및 비밀번호 찾기 */}
       <div className="form-foot">
-        <Link to="/reset-password">
-          비밀번호를 잊으셨나요?
-        </Link>
-        <br />
-        계정이 없으신가요? <Link to="/signup">회원가입</Link>
+        <Link to="/signup">회원가입</Link>
+        <span
+          aria-hidden="true"
+          style={{ margin: '0 10px', opacity: 0.4 }}
+        >
+          |
+        </span>
+        <Link to="/reset-password">비밀번호 찾기</Link>
       </div>
     </div>
   )
