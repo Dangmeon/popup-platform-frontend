@@ -1,0 +1,60 @@
+/* 헤더 "팝업 발견" 강조 버튼 */
+.header .header-nav {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.header .header-nav a.hd-discover {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff7043, #ffb300);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(255, 112, 67, 0.35);
+  overflow: hidden;
+  animation: hd-pulse 2.4s ease-in-out infinite;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+/* 지나가는 빛 효과 */
+.header .header-nav a.hd-discover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  animation: hd-shine 3.2s ease-in-out infinite;
+}
+
+.header .header-nav a.hd-discover:hover {
+  color: #fff;
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(255, 112, 67, 0.5);
+}
+
+@keyframes hd-pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(255, 112, 67, 0.3); }
+  50%      { box-shadow: 0 4px 16px rgba(255, 112, 67, 0.55); }
+}
+
+@keyframes hd-shine {
+  0%, 60% { left: -60%; }
+  100%    { left: 130%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header .header-nav a.hd-discover,
+  .header .header-nav a.hd-discover::after {
+    animation: none;
+  }
+}

@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { keywordSuggestions } from '../../data/sampleData.js'
 import { useApp } from '../../context/AppContext.jsx'
+import './Header.css'
+
 
 export default function Header(){
   const app = useApp()
@@ -35,6 +37,7 @@ export default function Header(){
           />
         </form>
         <div className="header-actions">
+          <Link to="/wishlist" className="icon-btn">찜</Link>
           <Link to="/cart" className="icon-btn">장바구니</Link>
           <Link to="/mypage" className="icon-btn">마이페이지</Link>
           {app.currentUser ? (
@@ -58,7 +61,7 @@ export default function Header(){
       </div>
 
       <div className="container header-nav">
-        <Link to="/popups">팝업 발견</Link>
+        <Link to="/popups" className="hd-discover">팝업 발견</Link>
       </div>
     </header>
   )

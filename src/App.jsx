@@ -14,7 +14,7 @@ import LoadingMascot from './components/common/LoadingMascot.jsx'
 import NotFound from './pages/NotFound.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
-
+import './styles/toast.css'
 export default function App(){
   const app = useApp()
   const [loading, setLoading] = useState(true)
