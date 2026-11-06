@@ -1,10 +1,20 @@
 import axios from 'axios'
+import { getAccessToken } from './authToken'
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
 })
 
-// TODO: 로그인 토큰 처리 방식이 확정되면 추가 (현재는 구현하지 않음)
+// 인증 토큰 연결
+axiosInstance.interceptors.request.use((config) => {
+  const token = getAccessToken()
+
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  return config
+})
 
 export default axiosInstance

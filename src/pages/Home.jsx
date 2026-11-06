@@ -1,9 +1,9 @@
 import React from 'react'
-import { useApp } from '../context/AppContext.jsx'
 import { Link } from 'react-router-dom'
 import PopupCard from '../components/common/PopupCard.jsx'
 import HeroWide from '../components/common/HeroWide.jsx'
 import { featuredCards, featuredGoods } from '../data/featuredPopups.js'
+import { usePopups } from '../hooks/usePopups'
 import '../styles/Home.css'
 import '../styles/FeaturedPopupDetail.css'
 
@@ -15,10 +15,11 @@ const POPULAR_GOODS_IDS = [
 ]
 
 export default function Home(){
+  // 서버에서 진행 중인 팝업 목록 (GET /api/popups?status=ONGOING)
+  const { data, loading, error } = usePopups({ status: 'ONGOING' })
+  const serverPopups = Array.isArray(data) ? data : []
 
-  const app = useApp()
-
-  // 배너: 루피, 치이카와, GAL
+  // 배너: 루피, 치이카와, GAL (포스터는 프론트 임시 데이터)
   const heroSlides = [
     {
       id: 'loopy',
@@ -52,15 +53,22 @@ export default function Home(){
     },
   ]
 
-  // 지금 인기 있는 팝업: 루피, 치이카와, GAL
-  const popular = featuredCards.filter(c => ['loopy', 'chiikawa', 'gal'].includes(c.id))
+  // 지금 인기 있는 팝업: 포스터 3개 + 서버 팝업 (최대 4개)
+  const featured = featuredCards.filter(c => ['loopy', 'chiikawa', 'gal'].includes(c.id))
+  const popular = [...featured, ...serverPopups.slice(0, 4)]
 
-  // 인기 굿즈: 위 id 순서대로
+  // 마감 임박: 서버 팝업 중 아직 안 끝난 것을 종료일 빠른 순으로 4개
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const soon = serverPopups
+    .filter(p => p.endDate && new Date(p.endDate) >= today)
+    .sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
+    .slice(0, 4)
+
+  // 인기 굿즈: 위 id 순서대로 (서버 굿즈는 팝업별 조회라 임시 데이터 유지)
   const goods = POPULAR_GOODS_IDS
     .map(id => featuredGoods.find(g => g.id === id))
     .filter(Boolean)
-
-  const soon = []
 
   return (
     <div>
@@ -71,15 +79,19 @@ export default function Home(){
         <div className="grid-4">
           {popular.map(p => <PopupCard key={p.id} popup={p} />)}
         </div>
+        {loading && <div className="empty-state">팝업 목록을 불러오는 중이에요</div>}
+        {error && <div className="empty-state">{error}</div>}
 
-       <div className="section-title">⏰ 마감 임박 팝업</div>
+        <div className="section-title">⏰ 마감 임박 팝업</div>
         {soon.length > 0 ? (
-        <div className="grid-4">
-        {soon.map(p => <PopupCard key={p.id} popup={p} />)}
-        </div>
+          <div className="grid-4">
+            {soon.map(p => <PopupCard key={p.id} popup={p} />)}
+          </div>
         ) : (
-          <div className="empty-state">마감 임박 팝업이 없어요</div>
-          )}
+          <div className="empty-state">
+            {loading ? '불러오는 중이에요' : '마감 임박 팝업이 없어요'}
+          </div>
+        )}
 
         <div className="section-title">🛍️ 인기 굿즈</div>
         <div className="grid-4">

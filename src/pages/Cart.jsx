@@ -26,7 +26,7 @@ export default function Cart(){
           <img src="/mascot-empty.png" alt="빈 장바구니 너구리" className="cart-empty-mascot" />
           <p>장바구니가 비어있어요.</p>
           <Link to="/popups" className="btn btn-primary" style={{ marginTop:16, display:'inline-block' }}>
-            팝업 구경하러 가기
+            상품 구경하러 가기
           </Link>
         </div>
       ) : (
