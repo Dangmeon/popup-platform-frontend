@@ -1,0 +1,126 @@
+/* 서버 팝업 상세 (bpd = basic popup detail) */
+.bpd { padding-bottom: 60px; }
+
+/* 경로 */
+.bpd-crumb {
+  display: flex; align-items: center; gap: 8px;
+  margin: 20px 0 16px; font-size: 13px; color: var(--text-sub);
+}
+.bpd-crumb a:hover { color: var(--primary-dark); }
+.bpd-crumb-now { color: var(--text); font-weight: 600; }
+
+/* 2단 배치 */
+.bpd-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 32px;
+  align-items: start;
+}
+
+/* 이미지 */
+.bpd-gallery {
+  display: grid; gap: 12px; height: 420px;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.bpd-gallery img {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: 20px; display: block; min-height: 0;
+}
+.bpd-gallery-main { grid-row: 1 / span 2; }
+.bpd-gallery.is-double .bpd-gallery-sub { grid-row: 1 / span 2; }
+.bpd-gallery.is-single { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.bpd-gallery.is-single .bpd-gallery-main { grid-row: auto; }
+.bpd-gallery-empty {
+  height: 280px; display: flex; align-items: center; justify-content: center;
+  border-radius: 20px; background: var(--bg-soft); color: var(--text-sub);
+}
+
+/* 제목 */
+.bpd-head { padding: 24px 0 8px; }
+.bpd-badges { display: flex; align-items: center; gap: 8px; }
+.bpd-status {
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+}
+.bpd-status.is-on { background: #e6f6ee; color: #1f9d63; }
+.bpd-status.is-soon { background: #fff3e0; color: #e08a00; }
+.bpd-status.is-end { background: #eee; color: #888; }
+.bpd-title { margin: 12px 0 10px; font-size: 32px; font-weight: 800; line-height: 1.25; }
+.bpd-meta {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  color: var(--text-sub); font-size: 15px;
+}
+
+/* 탭 */
+.bpd-tabs {
+  display: flex; margin-top: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.bpd-tab {
+  flex: 1; padding: 14px 0; background: none; border: none; cursor: pointer;
+  font-size: 15px; font-weight: 600; color: var(--text-sub);
+  border-bottom: 3px solid transparent; margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.bpd-tab:hover { color: var(--text); }
+.bpd-tab.active { color: var(--text); border-bottom-color: var(--primary); }
+
+.bpd-panel { padding: 36px 0 8px; }
+
+/* 소개 */
+.bpd-about { text-align: center; }
+.bpd-eyebrow {
+  font-size: 12px; font-weight: 800; letter-spacing: 2px;
+  color: var(--primary-dark); margin-bottom: 8px;
+}
+.bpd-headline { margin: 0 0 14px; font-size: 28px; font-weight: 800; line-height: 1.35; word-break: keep-all; }
+.bpd-desc {
+  margin: 0 auto; max-width: 560px;
+  color: var(--text-sub); line-height: 1.8; font-size: 15px; word-break: keep-all;
+}
+.bpd-notice {
+  margin-top: 32px; padding: 24px 28px; border-radius: 20px;
+  background: var(--bg-soft); text-align: left;
+}
+.bpd-notice h3 { margin: 0 0 12px; font-size: 16px; }
+.bpd-notice p { margin: 6px 0; color: var(--text-sub); font-size: 14px; line-height: 1.6; }
+
+/* 굿즈 */
+.bpd-goods {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+.bpd-empty { padding: 40px 0; text-align: center; color: var(--text-sub); }
+
+/* 방문 안내 */
+.bpd-guide { display: flex; flex-direction: column; }
+.bpd-guide-row {
+  display: grid; grid-template-columns: 110px 1fr; gap: 12px;
+  padding: 16px 0; border-bottom: 1px solid var(--border); font-size: 15px;
+}
+.bpd-guide-row strong { color: var(--text); }
+.bpd-guide-row span { color: var(--text-sub); line-height: 1.6; }
+
+/* 위치 */
+.bpd-map { text-align: center; padding: 20px 0; }
+.bpd-map-place { margin: 0 0 16px; font-size: 17px; font-weight: 600; }
+
+/* 오른쪽 예약·대기 */
+.bpd-aside {
+  position: sticky; top: 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.bpd-side-card {
+  padding: 20px 22px; border-radius: 20px;
+  background: #fff; border: 1px solid var(--border);
+}
+.bpd-box { margin: 0 !important; max-width: 100% !important; }
+
+@media (max-width: 960px) {
+  .bpd-layout { grid-template-columns: 1fr; }
+  .bpd-aside { position: static; }
+  .bpd-gallery { height: 280px; }
+  .bpd-title { font-size: 26px; }
+}

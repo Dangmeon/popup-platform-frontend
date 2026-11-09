@@ -8,8 +8,36 @@ import { featuredPopups } from '../data/featuredPopups.js'
 import { usePopup, usePopupProducts } from '../hooks/usePopups'
 import { createWaiting, cancelWaiting as cancelWaitingApi } from '../api/waitingApi.js'
 import { addWaitingId } from '../utils/waitingStore.js'
+import './PopupDetail.css'
 
 const TIME_SLOTS = ['11:00', '13:00', '15:00', '17:00']
+
+const TABS = [
+  { key: 'about', label: '소개' },
+  { key: 'goods', label: '굿즈' },
+  { key: 'guide', label: '방문 안내' },
+  { key: 'map', label: '위치' },
+]
+
+// 진행 상태: 서버 값이 있으면 그것을, 없으면 날짜로 계산
+function getStatus(popup) {
+  const raw = String(popup.status ?? popup.popupStatus ?? '').toUpperCase()
+  if (['ONGOING', '진행중'].includes(raw)) return { label: '진행중', cls: 'is-on' }
+  if (['UPCOMING', 'SCHEDULED', '진행예정'].includes(raw)) return { label: '진행예정', cls: 'is-soon' }
+  if (['ENDED', 'FINISHED', '종료'].includes(raw)) return { label: '종료', cls: 'is-end' }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const start = popup.startDate ? new Date(popup.startDate) : null
+  const end = popup.endDate ? new Date(popup.endDate) : null
+  const validStart = start && !isNaN(start)
+  const validEnd = end && !isNaN(end)
+
+  if (validStart && start > today) return { label: '진행예정', cls: 'is-soon' }
+  if (validEnd && end < today) return { label: '종료', cls: 'is-end' }
+  if (validStart && validEnd) return { label: '진행중', cls: 'is-on' }
+  return null
+}
 
 function BasicPopupDetail(){
   const params = useParams()
@@ -21,6 +49,7 @@ function BasicPopupDetail(){
   const { data: productsData } = usePopupProducts(id)
   const popupGoods = Array.isArray(productsData) ? productsData : []
 
+  const [tab, setTab] = useState('about')
   const [selectedTime, setSelectedTime] = useState(TIME_SLOTS[0])
   const [peopleCount, setPeopleCount] = useState(1)
   const [myReservationId, setMyReservationId] = useState(null)
@@ -42,6 +71,20 @@ function BasicPopupDetail(){
   }
 
   const myReservation = app.reservations.find(r => r.id === myReservationId)
+
+  // 이미지: 여러 장(images)이 오면 갤러리로, 한 장이면 큰 이미지 하나로
+  const images = (Array.isArray(popup.images) && popup.images.length > 0
+    ? popup.images
+    : [popup.image]
+  ).filter(Boolean)
+  const galleryClass = images.length >= 3 ? '' : images.length === 2 ? ' is-double' : ' is-single'
+
+  const status = getStatus(popup)
+  const description =
+    popup.description ||
+    popup.content ||
+    `${popup.location || '지정된 장소'}에서 ${popup.startDate} ~ ${popup.endDate} 동안 열리는 팝업스토어예요.`
+  const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(popup.location || popup.title || '')}`
 
   // TODO: 예약은 팀장님이 이슈 #4에서 통합. 지금은 기존 샘플 동작 유지
   function handleReserve(){
@@ -89,24 +132,132 @@ function BasicPopupDetail(){
   }
 
   return (
-    <div className="container">
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:32, marginTop:24 }}>
-        <img src={popup.image} alt={popup.title} style={{ width:'100%', borderRadius:'var(--radius)', aspectRatio:'4/3', objectFit:'cover' }} />
+    <div className="container bpd">
+      {/* 경로 */}
+      <nav className="bpd-crumb" aria-label="현재 위치">
+        <Link to="/">홈</Link>
+        <span>›</span>
+        <Link to="/popups">팝업 탐색</Link>
+        <span>›</span>
+        <span className="bpd-crumb-now">{popup.title}</span>
+      </nav>
 
-        <div>
-          <span className="badge">{popup.category}</span>
-          <h1 style={{ fontSize:28, fontWeight:800, margin:'12px 0 8px' }}>{popup.title}</h1>
-          <p className="card-sub">{popup.location}</p>
-          <p className="card-sub">{popup.startDate} ~ {popup.endDate}</p>
+      <div className="bpd-layout">
+        {/* 왼쪽: 정보 */}
+        <div className="bpd-main">
+          {/* 이미지 */}
+          {images.length > 0 ? (
+            <div className={'bpd-gallery' + galleryClass}>
+              {images.slice(0, 3).map((src, i) => (
+                <img
+                  key={src + i}
+                  src={src}
+                  alt={i === 0 ? popup.title : `${popup.title} ${i + 1}`}
+                  className={i === 0 ? 'bpd-gallery-main' : 'bpd-gallery-sub'}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bpd-gallery-empty">이미지 준비 중이에요</div>
+          )}
 
-          <div style={{ marginTop:24 }}>
-            <div className="card-sub" style={{ marginBottom:6 }}>현재 혼잡도</div>
+          {/* 제목 영역 */}
+          <div className="bpd-head">
+            <div className="bpd-badges">
+              {popup.category && <span className="badge">{popup.category}</span>}
+              {status && <span className={'bpd-status ' + status.cls}>{status.label}</span>}
+            </div>
+            <h1 className="bpd-title">{popup.title}</h1>
+            <ul className="bpd-meta">
+              <li>📍 {popup.location}</li>
+              <li>🗓 {popup.startDate} ~ {popup.endDate}</li>
+            </ul>
+          </div>
+
+          {/* 탭 */}
+          <div className="bpd-tabs" role="tablist">
+            {TABS.map(t => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.key}
+                className={'bpd-tab' + (tab === t.key ? ' active' : '')}
+                onClick={() => setTab(t.key)}
+              >
+                {t.label}{t.key === 'goods' && popupGoods.length > 0 ? ` ${popupGoods.length}` : ''}
+              </button>
+            ))}
+          </div>
+
+          <div className="bpd-panel">
+            {tab === 'about' && (
+              <div className="bpd-about">
+                <div className="bpd-eyebrow">ABOUT</div>
+                <h2 className="bpd-headline">{popup.title}</h2>
+                <p className="bpd-desc">{description}</p>
+
+                <div className="bpd-notice">
+                  <h3>방문 전 꼭 확인해 주세요</h3>
+                  <p>예약은 회차 7일 전 10:00에 열리고, 전날까지 할 수 있어요.</p>
+                  <p>예약을 선점한 뒤 10분 안에 확정하지 않으면 자리가 풀려요.</p>
+                  <p>현장 대기는 휴대폰 번호로 등록하고, 받은 체크인 코드로 입장해요.</p>
+                </div>
+              </div>
+            )}
+
+            {tab === 'goods' && (
+              popupGoods.length > 0 ? (
+                <div className="bpd-goods">
+                  {popupGoods.map(g => <GoodsCard key={g.id} item={g} />)}
+                </div>
+              ) : (
+                <div className="bpd-empty">아직 등록된 굿즈가 없어요</div>
+              )
+            )}
+
+            {tab === 'guide' && (
+              <div className="bpd-guide">
+                <div className="bpd-guide-row">
+                  <strong>운영 기간</strong>
+                  <span>{popup.startDate} ~ {popup.endDate}</span>
+                </div>
+                <div className="bpd-guide-row">
+                  <strong>장소</strong>
+                  <span>{popup.location}</span>
+                </div>
+                <div className="bpd-guide-row">
+                  <strong>예약 방법</strong>
+                  <span>오른쪽에서 시간과 인원을 고르고 예약을 선점한 뒤 확정해요.</span>
+                </div>
+                <div className="bpd-guide-row">
+                  <strong>현장 대기</strong>
+                  <span>휴대폰 번호를 입력해 등록하면 순번과 체크인 코드를 받아요.</span>
+                </div>
+              </div>
+            )}
+
+            {tab === 'map' && (
+              <div className="bpd-map">
+                <p className="bpd-map-place">📍 {popup.location}</p>
+                <a className="btn btn-outline" href={mapUrl} target="_blank" rel="noreferrer">
+                  네이버 지도에서 보기
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 오른쪽: 예약·대기 */}
+        <aside className="bpd-aside">
+          <div className="bpd-side-card">
+            <div className="bpd-eyebrow">현재 혼잡도</div>
             <CongestionBar reserved={popup.reserved ?? 0} capacity={popup.capacity ?? 0} />
             <div className="card-sub">{popup.reserved ?? 0} / {popup.capacity ?? 0}명 예약</div>
           </div>
 
           {/* 예약 섹션 */}
-          <div className="form-box" style={{ margin:'24px 0 0', maxWidth:'100%' }}>
+          <div className="form-box bpd-box">
             <h2 style={{ fontSize:18 }}>예약하기</h2>
             <div className="tabs">
               {TIME_SLOTS.map(t => (
@@ -138,7 +289,7 @@ function BasicPopupDetail(){
           </div>
 
           {/* 웨이팅 섹션 */}
-          <div className="form-box" style={{ margin:'16px 0 0', maxWidth:'100%' }}>
+          <div className="form-box bpd-box">
             <h2 style={{ fontSize:18 }}>현장 대기 등록</h2>
             {!myWaiting ? (
               <>
@@ -165,17 +316,8 @@ function BasicPopupDetail(){
               <p className="card-sub">현재 상태: {myWaiting.status}</p>
             )}
           </div>
-        </div>
+        </aside>
       </div>
-
-      {popupGoods.length > 0 && (
-        <>
-          <div className="section-title" style={{ marginTop:48 }}>🛍️ 판매 굿즈</div>
-          <div className="grid-4">
-            {popupGoods.map(g => <GoodsCard key={g.id} item={g} />)}
-          </div>
-        </>
-      )}
     </div>
   )
 }
