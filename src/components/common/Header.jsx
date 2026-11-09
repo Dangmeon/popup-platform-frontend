@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { keywordSuggestions } from '../../data/sampleData.js'
 import { useApp } from '../../context/AppContext.jsx'
 import './Header.css'
-
 
 export default function Header(){
   const app = useApp()
@@ -13,6 +11,17 @@ export default function Header(){
   function handleLogout(){
     app.logout()
     nav('/')
+  }
+
+  // 검색: 팝업 목록으로 이동하면서 검색어를 주소에 담는다
+  function goSearch(word){
+    const q = word.trim()
+    nav(q ? `/popups?q=${encodeURIComponent(q)}` : '/popups')
+  }
+
+  function handleSearch(e){
+    e.preventDefault()
+    goSearch(keyword)
   }
 
   return (
@@ -29,7 +38,7 @@ export default function Header(){
             style={{ height: '100%', width: 'auto', objectFit: 'contain', display: 'block' }}
           />
         </Link>
-        <form className="search-box" onSubmit={e=>e.preventDefault()}>
+        <form className="search-box" onSubmit={handleSearch}>
           <input
             placeholder="팝업스토어, 브랜드, 지역을 검색해보세요"
             value={keyword}
@@ -37,7 +46,6 @@ export default function Header(){
           />
         </form>
         <div className="header-actions">
-          <Link to="/wishlist" className="icon-btn">찜</Link>
           <Link to="/cart" className="icon-btn">장바구니</Link>
           <Link to="/mypage" className="icon-btn">마이페이지</Link>
           {app.currentUser ? (
@@ -53,15 +61,9 @@ export default function Header(){
           )}
         </div>
       </div>
-
-      <div className="container keyword-row">
-        {keywordSuggestions.map(k => (
-          <button key={k} className="keyword-chip" onClick={()=>setKeyword(k)}>{k}</button>
-        ))}
-      </div>
-
       <div className="container header-nav">
-        <Link to="/popups" className="hd-discover">팝업 발견</Link>
+        <Link to="/popups" className="hd-discover"> 팝업 발견</Link>
+        <Link to="/goods" className="hd-discover"> 굿즈샵</Link>
       </div>
     </header>
   )

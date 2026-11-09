@@ -15,6 +15,7 @@ import NotFound from './pages/NotFound.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import './styles/toast.css'
+import Goods from './pages/Goods.jsx'
 export default function App(){
   const app = useApp()
   const [loading, setLoading] = useState(true)
@@ -47,6 +48,7 @@ export default function App(){
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
           <Route path="/mypage/account" element={<AccountSettings />} />
+          <Route path="/goods" element={<Goods />} />
         </Routes>
       </main>
       <Footer />
