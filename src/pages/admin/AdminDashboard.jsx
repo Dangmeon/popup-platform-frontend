@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getDashboard } from '../../api/admin/dashboardApi'
+import AdminSalesSummary from '../../components/admin/AdminSalesSummary'
 
 // 주문 상태 표시
 function getOrderStatus(status) {
@@ -93,6 +94,8 @@ function AdminDashboard() {
         {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
         <span className="admin-demo-badge">DEMO DATA</span>
       </div>
+
+      <AdminSalesSummary compact />
 
       {/* 조회 상태 */}
       {loading && (

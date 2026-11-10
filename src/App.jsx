@@ -41,6 +41,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminReservations from './pages/admin/AdminReservations'
 import AdminMembers from './pages/admin/AdminMembers'
 import AdminOrders from './pages/admin/AdminOrders'
+import AdminSales from './pages/admin/AdminSales'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
 import AdminWaitings from './pages/admin/AdminWaitings'
@@ -1026,6 +1027,7 @@ function App() {
           />
           <Route path="members" element={<AdminMembers />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="sales" element={<AdminSales />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="popups" element={<AdminPopups />} />
           <Route path="waiting" element={<AdminWaitings />} />
