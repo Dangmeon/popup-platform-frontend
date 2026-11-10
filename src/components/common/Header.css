@@ -2,6 +2,7 @@
 .header .header-nav {
   padding-top: 6px;
   padding-bottom: 6px;
+  border-top: none;
 }
 
 .header .header-nav a.hd-discover {

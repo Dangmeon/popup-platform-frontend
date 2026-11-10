@@ -1,0 +1,128 @@
+/* 포스터 팝업 상세: 탭 / 소개 / 안내 */
+.fpd-tabs {
+  display: flex;
+  margin-top: 40px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fpd-tab {
+  flex: 1;
+  padding: 14px 0;
+  border: none;
+  background: none;
+  color: var(--text-sub);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.fpd-tab:hover {
+  color: var(--text);
+}
+
+.fpd-tab.active {
+  color: var(--primary-dark);
+  border-bottom-color: var(--primary);
+}
+
+.fpd-panel {
+  padding: 32px 0 20px;
+}
+
+/* 소개 */
+.fpd-about {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.fpd-eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--primary-dark);
+}
+
+.fpd-headline {
+  margin: 12px 0 14px;
+  font-size: 28px;
+  line-height: 1.35;
+  font-weight: 800;
+  word-break: keep-all;
+}
+
+.fpd-desc {
+  margin: 0 auto 28px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-sub);
+  word-break: keep-all;
+}
+
+.fpd-notice {
+  text-align: left;
+  padding: 24px 28px;
+  border-radius: 20px;
+  background: var(--bg-soft);
+}
+
+.fpd-notice h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.fpd-notice p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-sub);
+}
+
+/* 방문 안내 */
+.fpd-guide-list {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.fpd-guide-row {
+  display: flex;
+  gap: 24px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+
+.fpd-guide-row strong {
+  flex: 0 0 90px;
+}
+
+.fpd-guide-row span {
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+/* 위치 */
+.fpd-map {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.fpd-map-place {
+  margin: 0 0 16px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.fpd-empty {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--text-sub);
+}
+
+@media (max-width: 768px) {
+  .fpd-headline { font-size: 22px; }
+  .fpd-guide-row { flex-direction: column; gap: 4px; }
+}

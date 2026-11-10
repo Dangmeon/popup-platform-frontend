@@ -1,0 +1,51 @@
+.admin-layout .admin-sales-summary {
+  margin-bottom: 24px;
+}
+
+.admin-sales-summary .admin-panel-header {
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.admin-sales-periods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.admin-sales-periods > div {
+  padding: 16px;
+  border-radius: 10px;
+  background: #fff7ef;
+}
+
+.admin-sales-periods > .admin-sales-forecast {
+  background: #fff;
+  outline: 1px dashed #b87a65;
+  outline-offset: -1px;
+}
+
+.admin-sales-periods dt,
+.admin-sales-note {
+  color: #695950;
+}
+
+.admin-sales-periods dd {
+  margin: 7px 0 0;
+  font-size: clamp(20px, 2.2vw, 30px);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.admin-sales-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #a5402c;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.admin-sales-note {
+  margin: 14px 0 0;
+}
