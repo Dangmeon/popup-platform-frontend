@@ -46,6 +46,7 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
 import AdminWaitings from './pages/admin/AdminWaitings'
 
+import Goods from './pages/Goods.jsx'
 import './styles/toast.css'
 
 // 예약 상태
@@ -1013,6 +1014,8 @@ function App() {
             path="/reset-password"
             element={<ResetPassword />}
           />
+
+          <Route path="/goods" element={<Goods />} />
 
           {/* 없는 사용자 페이지 */}
           <Route path="*" element={<NotFound />} />

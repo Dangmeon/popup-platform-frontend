@@ -1,9 +1,5 @@
 import { useState } from 'react'
-import {
-  Link,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { keywordSuggestions } from '../../data/sampleData.js'
 import { useApp } from '../../context/AppContext.jsx'
 import './Header.css'
@@ -13,20 +9,26 @@ export default function Header() {
   const navigate = useNavigate()
   const location = useLocation()
   const [keyword, setKeyword] = useState('')
-
-  // 메인 화면 확인
   const isHomePage = location.pathname === '/'
 
-  // 로그아웃
   function handleLogout() {
     app.logout()
     navigate('/')
   }
 
+  function goSearch(word) {
+    const query = word.trim()
+    navigate(query ? `/popups?q=${encodeURIComponent(query)}` : '/popups')
+  }
+
+  function handleSearch(event) {
+    event.preventDefault()
+    goSearch(keyword)
+  }
+
   return (
     <header className="header">
       <div className="container header-top">
-        {/* 로고 */}
         <Link
           to="/"
           className="logo-link"
@@ -49,11 +51,7 @@ export default function Header() {
           />
         </Link>
 
-        {/* 검색 입력 */}
-        <form
-          className="search-box"
-          onSubmit={(event) => event.preventDefault()}
-        >
+        <form className="search-box" onSubmit={handleSearch}>
           <input
             aria-label="팝업스토어, 브랜드, 지역 검색"
             placeholder="팝업스토어, 브랜드, 지역을 검색해보세요"
@@ -62,24 +60,15 @@ export default function Header() {
           />
         </form>
 
-        {/* 회원 메뉴 */}
         <div className="header-actions">
-          <Link to="/cart" className="icon-btn">
-            장바구니
-          </Link>
-          <Link to="/mypage" className="icon-btn">
-            마이페이지
-          </Link>
+          <Link to="/cart" className="icon-btn">장바구니</Link>
+          <Link to="/mypage" className="icon-btn">마이페이지</Link>
 
           {app.currentUser ? (
             <>
-              <span
-                className="icon-btn"
-                style={{ cursor: 'default' }}
-              >
+              <span className="icon-btn" style={{ cursor: 'default' }}>
                 {app.currentUser.name}님
               </span>
-
               <button
                 type="button"
                 className="icon-btn"
@@ -90,39 +79,35 @@ export default function Header() {
             </>
           ) : (
             <>
-              <Link to="/login" className="icon-btn">
-                로그인
-              </Link>
-              <Link to="/signup" className="icon-btn">
-                회원가입
-              </Link>
+              <Link to="/login" className="icon-btn">로그인</Link>
+              <Link to="/signup" className="icon-btn">회원가입</Link>
             </>
           )}
         </div>
       </div>
 
-      {/* 추천 검색어 */}
       <div className="container keyword-row">
         {keywordSuggestions.map((suggestion) => (
           <button
             type="button"
             key={suggestion}
             className="keyword-chip"
-            onClick={() => setKeyword(suggestion)}
+            onClick={() => {
+              setKeyword(suggestion)
+              goSearch(suggestion)
+            }}
           >
             {suggestion}
           </button>
         ))}
       </div>
 
-      {/* 메인 팝업 목록 이동 */}
-      {isHomePage && (
-        <div className="container header-nav">
-          <Link to="/popups" className="hd-discover">
-            팝업 발견
-          </Link>
-        </div>
-      )}
+      <div className="container header-nav">
+        {isHomePage && (
+          <Link to="/popups" className="hd-discover">팝업 발견</Link>
+        )}
+        <Link to="/goods" className="hd-discover">굿즈샵</Link>
+      </div>
     </header>
   )
 }

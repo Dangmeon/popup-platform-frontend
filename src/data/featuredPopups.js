@@ -19,19 +19,6 @@ export const featuredPopups = [
     ],
   },
   {
-    id: 'binggrae',
-    category: '식품',
-    tag: '빙그레 POP-UP STORE',
-    title: '달콤한 굿즈 왕국',
-    poster: '/poster-binggrae.png',
-    period: '2026.11.01(일) ~ 11.30(월)',
-    time: '10:00 ~ 20:00',
-    location: '더현대 서울 5F POPQ ZONE',
-    zones: ['PHOTO ZONE', 'GOODS SHOP', 'EVENT ZONE', 'BANA CAFE'],
-    goodsGuide: '',
-    goods: [], // 굿즈 사진이 생기면 위와 같은 형식으로 추가
-  },
-  {
     id: 'chiikawa',
     category: '캐릭터',
     tag: '치이카와 POP-UP STORE',
@@ -73,15 +60,36 @@ export const featuredPopups = [
       { id: 'gal-8', name: '버터플라이 선글라스', price: 0, image: '/gal/sunglasses.png', limited: true },
     ],
   },
+  {
+    id: 'kinetic',
+    category: '스포츠',
+    tag: 'KINETIC POP-UP STORE',
+    title: 'KINETIC 팝업스토어',
+     poster: '/kinetic/poster-kinetic.png',
+    period: '2026.12.01(화) ~ 12.31(목)', // TODO: 임시값 (가상 브랜드)
+    time: '10:00 ~ 20:00', // TODO: 임시값
+    location: '서울 성수 팝업존', // TODO: 임시값
+    zones: ['LIMITED DROP', 'GOODS SHOP', 'RUNNING LAB', 'LOCKER ROOM'], // TODO: 임시값
+    goodsGuide: '', // 굿즈 안내 이미지 없음 (안내 섹션이 자동으로 숨겨짐)
+    goods: [
+      // TODO: 가격은 모두 임시값
+            { id: 'kinetic-bag', name: '차콜 더플백', price: 89000, image: '/kinetic/kinetic-bag.png', limited: true },
+      { id: 'kinetic-shoe', name: '러닝화', price: 129000, image: '/kinetic/kinetic-shoe.png', limited: true },
+      { id: 'kinetic-bottle', name: '텀블러', price: 29000, image: '/kinetic/kinetic-bottle.png', limited: false },
+      { id: 'kinetic-towel', name: '스포츠 타월', price: 15000, image: '/kinetic/kinetic-towel.png', limited: false },
+      { id: 'kinetic-cap', name: '볼캡', price: 39000, image: '/kinetic/kinetic-cap.png', limited: true },
+
+    ],
+  },
 ]
 
 // 목록 카드(PopupCard)용으로 변환 — 샘플 팝업과 같은 필드 구조
 // likes, reserved, capacity는 임시 숫자입니다.
 const CARD_META = {
   loopy:    { startDate: '2026-12-01', endDate: '2026-12-31', likes: 150, reserved: 40, capacity: 100 },
-  binggrae: { startDate: '2026-11-01', endDate: '2026-11-30', likes: 120, reserved: 30, capacity: 100 },
   chiikawa: { startDate: '2027-02-02', endDate: '2027-02-28', likes: 180, reserved: 50, capacity: 100 },
   gal:      { startDate: '2027-03-01', endDate: '2027-03-31', likes: 160, reserved: 20, capacity: 100 }, // TODO: 임시값
+  kinetic:  { startDate: '2026-12-01', endDate: '2026-12-31', likes: 140, reserved: 30, capacity: 100 }, // TODO: 임시값
 }
 
 export const featuredCards = featuredPopups.map((f) => ({
