@@ -1,0 +1,19 @@
+/* 오픈 예정과 지역 추천 사이의 가로형 이벤트 배너 */
+.popq-home .pq-events { margin-top:56px; }
+.popq-home .pq-event-slide { position:relative; display:grid; grid-template-columns:1.3fr 1fr; min-height:240px; border-radius:20px; overflow:hidden; background:#edf1e5; color:#303b27; }
+.popq-home .pq-event-copy { position:relative; z-index:1; padding:34px 44px 42px; }
+.popq-home .pq-event-label { font-size:10px; font-weight:800; letter-spacing:2px; }
+.popq-home .pq-event-copy h2 { margin:12px 0 10px; font-size:clamp(22px,2.3vw,32px); letter-spacing:-1px; line-height:1.3; }
+.popq-home .pq-event-copy p { margin:0 0 20px; font-size:13px; line-height:1.7; opacity:.8; }
+.popq-home .pq-event-cta { display:inline-flex; align-items:center; gap:18px; padding:0; border:0; background:none; color:inherit; font:inherit; font-size:12px; font-weight:800; cursor:pointer; text-decoration:none; }
+.popq-home .pq-event-art { position:relative; display:flex; align-items:center; justify-content:center; min-width:0; }
+.popq-home .pq-event-orbit { position:absolute; width:280px; height:280px; border:1px solid #bccba4; border-radius:50%; }
+.popq-home .pq-event-brandmark { position:relative; transform:rotate(-6deg); padding:20px 30px; border-radius:18px; background:#fff9; box-shadow:0 15px 30px #46523512; }
+.popq-home .pq-event-brandmark img { width:190px; height:90px; object-fit:contain; display:block; }.popq-home .pq-event-brandmark span { display:block; font-size:8px; text-align:center; letter-spacing:2px; }
+.popq-home .pq-event-birthday { background:#f5eee5; color:#60452f; }
+.popq-home .pq-event-coupon { position:relative; min-width:220px; padding:20px 28px; transform:rotate(-7deg); border-radius:14px; border:1px dashed #af9675; background:#fffaf2; box-shadow:10px 14px 0 #dfcfbb; text-align:center; }.popq-home .pq-event-coupon>span { font-size:10px; letter-spacing:2px; }.popq-home .pq-event-coupon strong { display:block; font-size:68px; line-height:1.1; color:#68754b; }.popq-home .pq-event-coupon strong span { font-size:34px; }.popq-home .pq-event-coupon small { font-size:9px; letter-spacing:1px; }
+.popq-home .pq-event-sponsor { background:#252c25; color:#f2f6e9; }.popq-home .pq-event-ad-image { width:90%; height:215px; object-fit:contain; transform:rotate(-10deg); }.popq-home .pq-event-ad-caption { position:absolute; bottom:22px; font-size:9px; letter-spacing:3px; color:#c7d6a9; }
+.popq-home .pq-event-controls { position:absolute; bottom:13px; left:40px; display:flex; align-items:center; gap:12px; font-size:10px; z-index:2; }.popq-home .pq-event-controls button { width:25px; height:25px; border:1px solid currentColor; border-radius:50%; background:transparent; color:inherit; font-size:18px; cursor:pointer; }
+.popq-home .pq-event-notice { margin-top:12px; padding:20px; border:1px solid #e2e6db; border-radius:14px; font-size:13px; line-height:1.8; }.popq-home .pq-event-notice button { background:#465235; color:white; border:0; border-radius:6px; padding:7px 15px; cursor:pointer; }
+.popq-home .pq-events button:focus-visible,.popq-home .pq-events a:focus-visible { outline:2px solid currentColor; outline-offset:4px; }
+@media(max-width:640px) { .popq-home .pq-events { margin-top:36px; }.popq-home .pq-event-slide { grid-template-columns:1fr; }.popq-home .pq-event-copy { padding:28px 24px 16px; }.popq-home .pq-event-art { min-height:180px; padding-bottom:44px; }.popq-home .pq-event-copy h2 { font-size:23px; }.popq-home .pq-event-controls { left:22px; }.popq-home .pq-event-orbit { width:210px;height:210px; }.popq-home .pq-event-coupon { min-width:180px; padding:12px 24px; }.popq-home .pq-event-coupon strong { font-size:50px; }.popq-home .pq-event-ad-image { height:160px; }.popq-home .pq-event-ad-caption { bottom:42px; } }

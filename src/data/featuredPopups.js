@@ -81,6 +81,117 @@ export const featuredPopups = [
 
     ],
   },
+  // 홍보 배너 시연용 팝업. 실제 팝업 API 연결 시 교체합니다.
+  {
+  "id": "aespa",
+  "category": "ENTERTAINMENT",
+  "tag": "에스파 POP-UP STORE",
+  "title": "aespa LEMONADE 팝업스토어",
+  "poster": "/promo/aespa.png",
+  "period": "2026.12.01(화) ~ 12.31(목)",
+  "time": "운영시간 안내 예정",
+  "location": "롯데월드몰 1F 아트리움 팝업존",
+  "zones": [
+    "POP-UP EXPERIENCE"
+  ],
+  "goodsGuide": "",
+  "goods": [],
+  "description": "에스파의 강렬한 LEMONADE 콘셉트를 만나는 팝업 공간입니다.",
+  "about": "에스파의 강렬한 LEMONADE 콘셉트를 만나는 팝업 공간입니다. 프론트엔드 시연용 더미 팝업이며 실제 예약은 제공하지 않습니다.",
+  "isPromoDemo": true,
+  "mainBanner": true,
+  "startDate": "2026-12-01",
+  "endDate": "2026-12-31",
+  "imageFit": "contain"
+},
+  {
+  "id": "chimchakman",
+  "category": "ENTERTAINMENT",
+  "tag": "침착맨 POP-UP STORE",
+  "title": "침착맨 팝업스토어",
+  "poster": "/promo/chimchakman.png",
+  "period": "2026.12.01(화) ~ 12.31(목)",
+  "time": "운영시간 안내 예정",
+  "location": "롯데월드몰 1F 아트리움 팝업존",
+  "zones": [
+    "POP-UP EXPERIENCE"
+  ],
+  "goodsGuide": "",
+  "goods": [],
+  "description": "침착맨 특유의 유쾌한 세계관을 담은 팝업 공간입니다.",
+  "about": "침착맨 특유의 유쾌한 세계관을 담은 팝업 공간입니다. 프론트엔드 시연용 더미 팝업이며 실제 예약은 제공하지 않습니다.",
+  "isPromoDemo": true,
+  "mainBanner": true,
+  "startDate": "2026-12-01",
+  "endDate": "2026-12-31",
+  "imageFit": "contain"
+},
+  {
+  "id": "black-white-cooks",
+  "category": "FOOD",
+  "tag": "흑백요리사 POP-UP STORE",
+  "title": "흑백요리사 팝업스토어",
+  "poster": "/promo/black-white-cooks.png",
+  "period": "2026.12.01(화) ~ 12.31(목) · 예시 일정",
+  "time": "운영시간 안내 예정",
+  "location": "장소 안내 예정",
+  "zones": [
+    "POP-UP EXPERIENCE"
+  ],
+  "goodsGuide": "",
+  "goods": [],
+  "description": "흑과 백, 두 가지 콘셉트로 만나는 요리 테마 팝업입니다.",
+  "about": "흑과 백, 두 가지 콘셉트로 만나는 요리 테마 팝업입니다. 프론트엔드 시연용 더미 팝업이며 실제 예약은 제공하지 않습니다.",
+  "isPromoDemo": true,
+  "mainBanner": true,
+  "startDate": "2026-12-01",
+  "endDate": "2026-12-31",
+  "imageFit": "contain"
+},
+  {
+  "id": "rescene",
+  "category": "ENTERTAINMENT",
+  "tag": "리센느 POP-UP STORE",
+  "title": "RESCENE 팝업스토어",
+  "poster": "/promo/rescene.png",
+  "period": "2026.12.01(화) ~ 12.31(목) · 예시 일정",
+  "time": "운영시간 안내 예정",
+  "location": "장소 안내 예정",
+  "zones": [
+    "POP-UP EXPERIENCE"
+  ],
+  "goodsGuide": "",
+  "goods": [],
+  "description": "리센느의 감성을 담은 포토 공간과 팝업 콘텐츠를 만나보세요.",
+  "about": "리센느의 감성을 담은 포토 공간과 팝업 콘텐츠를 만나보세요. 프론트엔드 시연용 더미 팝업이며 실제 예약은 제공하지 않습니다.",
+  "isPromoDemo": true,
+  "mainBanner": true,
+  "startDate": "2026-12-01",
+  "endDate": "2026-12-31",
+  "imageFit": "contain"
+},
+  {
+  "id": "squid-game",
+  "category": "ENTERTAINMENT",
+  "tag": "오징어게임 POP-UP STORE",
+  "title": "오징어게임 팝업스토어",
+  "poster": "/promo/squid-game.png",
+  "period": "2026.12.01(화) ~ 12.31(목) · 예시 일정",
+  "time": "운영시간 안내 예정",
+  "location": "장소 안내 예정",
+  "zones": [
+    "POP-UP EXPERIENCE"
+  ],
+  "goodsGuide": "",
+  "goods": [],
+  "description": "오징어게임의 상징적인 공간과 소품을 만나는 테마 팝업입니다.",
+  "about": "오징어게임의 상징적인 공간과 소품을 만나는 테마 팝업입니다. 프론트엔드 시연용 더미 팝업이며 실제 예약은 제공하지 않습니다.",
+  "isPromoDemo": true,
+  "mainBanner": true,
+  "startDate": "2026-12-01",
+  "endDate": "2026-12-31",
+  "imageFit": "contain"
+},
 ]
 
 // 목록 카드(PopupCard)용으로 변환 — 샘플 팝업과 같은 필드 구조
@@ -98,6 +209,8 @@ export const featuredCards = featuredPopups.map((f) => ({
   category: f.category,
   location: f.location,
   image: f.poster,
+  startDate: f.startDate,
+  endDate: f.endDate,
   ...CARD_META[f.id],
 }))
 

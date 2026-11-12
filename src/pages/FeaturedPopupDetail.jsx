@@ -47,9 +47,15 @@ export default function FeaturedPopupDetail({ popup }) {
             {p.zones.map((z) => <span key={z} className="fpd-zone">{z}</span>)}
           </div>
 
-          <Link to={`/popups/${p.id}/reserve`} className="btn btn-primary btn-block fpd-reserve">
-            예약하기
-          </Link>
+
+          {/* 더미 홍보 팝업은 실제 예약 API를 호출하지 않습니다. */}
+          {p.isPromoDemo ? (
+            <p className="fpd-demo-notice" role="note" style={{ padding: '16px', background: '#f2f5eb', borderRadius: '12px', color: '#626d52', lineHeight: 1.7 }}>
+              시연용 팝업입니다. 실제 예약은 아직 제공하지 않습니다.
+            </p>
+          ) : (
+            <Link to={`/popups/${p.id}/reserve`} className="btn btn-primary btn-block fpd-reserve">예약하기</Link>
+          )}
         </div>
       </div>
 
