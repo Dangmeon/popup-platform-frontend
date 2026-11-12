@@ -1,0 +1,279 @@
+.co-page {
+  min-height: 100vh;
+  padding: 24px 0 80px;
+  background: #fff;
+}
+
+.co-breadcrumb {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #8a7f76;
+}
+.co-breadcrumb a { color: inherit; text-decoration: none; }
+.co-breadcrumb a:hover { text-decoration: underline; }
+
+.co-title {
+  margin: 0 0 24px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #2b2420;
+}
+
+.co-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.co-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.co-card {
+  padding: 22px 24px;
+  background: #fff;
+  border: 1px solid #f0e6dc;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(60, 40, 20, 0.05);
+}
+
+.co-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.co-card-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #2b2420;
+}
+.co-req {
+  font-size: 12px;
+  color: #a2968b;
+}
+
+/* 배송 정보 입력 */
+.co-row {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+}
+.co-row > label {
+  flex: 0 0 110px;
+  padding-top: 11px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4a4038;
+}
+.co-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.co-field input,
+.co-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: #2b2420;
+  background: #fff;
+  border: 1px solid #e6d9cc;
+  border-radius: 10px;
+  outline: none;
+}
+.co-field input:focus,
+.co-field select:focus {
+  border-color: #ff8a5c;
+  box-shadow: 0 0 0 3px rgba(255, 138, 92, 0.15);
+}
+.co-field input[readonly] { background: #faf6f1; }
+
+.co-zip {
+  display: flex;
+  gap: 8px;
+}
+.co-zip input { flex: 1; }
+
+.co-sub-btn {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8602f;
+  background: #fff3ec;
+  border: 1px solid #ffd2bd;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.co-sub-btn:hover { background: #ffe7da; }
+
+.co-error {
+  margin: -2px 0 0;
+  font-size: 12px;
+  color: #e2554a;
+}
+
+/* 주문 상품 */
+.co-sample {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #b06a00;
+  background: #fff6e0;
+  border-radius: 10px;
+}
+.co-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.co-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid #f5ede4;
+}
+.co-item:first-child { border-top: none; }
+.co-item-img {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  background: #faf6f1;
+  border-radius: 10px;
+}
+.co-item-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.co-item-info { flex: 1; min-width: 0; }
+.co-item-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2b2420;
+}
+.co-item-opt {
+  margin-top: 3px;
+  font-size: 13px;
+  color: #8a7f76;
+}
+.co-item-qty {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: #7a6f66;
+}
+.co-item-price {
+  flex: 0 0 96px;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 800;
+  color: #2b2420;
+}
+
+/* 결제 수단 안내 */
+.co-toss {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #fff8f2;
+  border: 1px solid #ffd9c6;
+  border-radius: 12px;
+}
+.co-toss strong { font-size: 15px; color: #e8602f; }
+.co-toss span { font-size: 13px; color: #7a6f66; }
+
+/* 최종 결제 정보 */
+.co-summary {
+  position: sticky;
+  top: 24px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #f0e6dc;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(60, 40, 20, 0.05);
+}
+.co-summary h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #2b2420;
+}
+.co-sum-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #6b6058;
+}
+.co-sum-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 12px 0 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f0e6dc;
+  font-weight: 800;
+  color: #2b2420;
+}
+.co-sum-total strong {
+  font-size: 26px;
+  color: #e8602f;
+}
+
+.co-notice {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c0392b;
+  background: #fdecea;
+  border-radius: 10px;
+}
+
+.co-pay {
+  width: 100%;
+  padding: 16px 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #ff7043, #ffb300);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 112, 67, 0.35);
+}
+.co-pay:hover:not(:disabled) { filter: brightness(1.04); }
+.co-pay:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.co-secure {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #7a6f66;
+  background: #faf6f1;
+  border-radius: 10px;
+}
+
+@media (max-width: 900px) {
+  .co-grid { grid-template-columns: 1fr; }
+  .co-summary { position: static; }
+  .co-row { flex-direction: column; gap: 4px; }
+  .co-row > label { flex: none; padding-top: 0; }
+}
