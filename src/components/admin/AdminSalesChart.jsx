@@ -85,12 +85,12 @@ export default function AdminSalesChart({ summary }) {
 
           return (
             <g key={index} aria-hidden="true">
-              <line x1={left} x2={right} y1={y} y2={y} stroke="#eedfd0" />
+              <line x1={left} x2={right} y1={y} y2={y} stroke="#e3e8da" />
               <text
                 x={left - 12}
                 y={y + 4}
                 textAnchor="end"
-                fill="#695950"
+                fill="#839075"
                 fontSize={14}
               >
                 {formatAxis(minAmount + index * step)}
@@ -104,7 +104,7 @@ export default function AdminSalesChart({ summary }) {
           x2={left}
           y1={top}
           y2={bottom}
-          stroke="#cdbbae"
+          stroke="#d4ddc8"
         />
 
         {activePoint && (
@@ -113,7 +113,7 @@ export default function AdminSalesChart({ summary }) {
             x2={activePoint.x}
             y1={top}
             y2={bottom}
-            stroke="#bca89a"
+            stroke="#a5b291"
             strokeDasharray="4 4"
             aria-hidden="true"
           />
@@ -124,7 +124,7 @@ export default function AdminSalesChart({ summary }) {
           y1={previous.y}
           x2={current.x}
           y2={current.y}
-          stroke="#cf5039"
+          stroke="#68754b"
           strokeWidth={3}
         />
         <line
@@ -132,7 +132,7 @@ export default function AdminSalesChart({ summary }) {
           y1={current.y}
           x2={forecast.x}
           y2={forecast.y}
-          stroke="#cf5039"
+          stroke="#68754b"
           strokeWidth={3}
           strokeDasharray="7 6"
         />
@@ -143,14 +143,14 @@ export default function AdminSalesChart({ summary }) {
               cx={x}
               cy={y}
               r={activePoint === points[index] ? 7 : 5}
-              fill={index === 2 ? '#fff' : '#cf5039'}
-              stroke="#cf5039"
+              fill={index === 2 ? '#fff' : '#68754b'}
+              stroke="#68754b"
               strokeWidth={2}
             />
-            <text x={x} y={bottom + 22} textAnchor="middle" fill="#302820" fontSize={15}>
+            <text x={x} y={bottom + 22} textAnchor="middle" fill="#293323" fontSize={15}>
               {month}월
             </text>
-            <text x={x} y={bottom + 42} textAnchor="middle" fill="#695950" fontSize={13}>
+            <text x={x} y={bottom + 42} textAnchor="middle" fill="#839075" fontSize={13}>
               {label}
             </text>
 
@@ -178,9 +178,9 @@ export default function AdminSalesChart({ summary }) {
               width={tooltipWidth}
               height={tooltipHeight}
               rx={8}
-              fill="#302820"
+              fill="#293323"
             />
-            <text x={tooltipX + 12} y={tooltipY + 20} fill="#eedfd0" fontSize={13}>
+            <text x={tooltipX + 12} y={tooltipY + 20} fill="#e3e8da" fontSize={13}>
               {activePoint.month}월 · {activePoint.label}
             </text>
             <text

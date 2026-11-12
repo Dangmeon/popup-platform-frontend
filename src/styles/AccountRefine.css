@@ -1,0 +1,24 @@
+/* 내 정보 보기 화면에만 적용하는 정돈된 계정 설정 스타일 */
+.pq-my .pq-my-tiles.pq-my-single { grid-template-columns:minmax(0,560px); }
+.pq-my-single>a { position:relative; min-height:210px; background:linear-gradient(120deg,#f7f9f2,#fff); }
+.pq-my-single .pq-my-card-icon { display:grid; place-items:center; width:48px; height:48px; border-radius:14px; background:#eaf0df; color:#718359; }
+.pq-my-single h3 { margin:20px 0 10px; font-size:21px; }.pq-my-single>a>span:last-child { margin-top:24px; }
+.pq-my .acc.acc-refined { max-width:680px; padding:0 0 40px; color:#293323; }
+.acc-refined .acc-heading { margin-bottom:28px; }.acc-refined .acc-eyebrow { font-size:10px; letter-spacing:2px; font-weight:800; color:#8b9a76; }
+.acc-refined .acc-heading h1 { font-size:28px; letter-spacing:-.7px; margin:12px 0; }.acc-refined .acc-heading p { font-size:13px; color:#939b87; line-height:1.7; margin:0; }
+.acc-refined .acc-settings-card { background:white; border:1px solid #e2e8d9; border-radius:18px; overflow:hidden; }
+.acc-refined .acc-section { padding:30px 34px; }.acc-refined .acc-section+.acc-section { border-top:1px solid #e9eddf; }
+.pq-my-content .acc-refined h2 { font-size:18px; margin:0 0 8px; color:#39462d; }.acc-refined .acc-section-description { margin:0 0 27px; font-size:12px; color:#929d85; line-height:1.8; }
+.pq-my-content .acc.acc-refined .form-group { margin-bottom:22px; }.acc-refined .form-group label { display:block; font-size:12px; font-weight:600; color:#7d896d; margin-bottom:10px; }
+.pq-my-content .acc.acc-refined .form-group input { display:block; box-sizing:border-box; width:100%; height:47px; min-height:47px; padding:12px 14px; border:1px solid #dfe6d4; border-radius:9px; background:white; color:#39462d; font:inherit; font-size:13px; box-shadow:none; }
+.pq-my-content .acc.acc-refined .form-group input:focus { outline:2px solid #a6b78c; outline-offset:2px; border-color:#8b9e70; }
+.pq-my-content .acc.acc-refined .form-group input:disabled { background:#f6f8f1; color:#939c87; }
+.acc-refined .acc-hint { margin-top:9px; color:#97a08b; font-size:11px; }
+.acc-refined .acc-submit.btn { display:inline-flex; justify-content:center; align-items:center; width:auto; min-width:130px; padding:12px 20px; margin-top:4px; border:1px solid #68754b; border-radius:9px; background:#68754b; color:#fff; font-size:12px; font-weight:700; box-shadow:none; }
+.acc-refined .acc-submit.btn:hover:not(:disabled) { background:#465235; border-color:#465235; }.acc-refined .acc-submit.btn:disabled { opacity:.5; cursor:not-allowed; }
+.acc-refined .acc-departure { margin-top:25px; border-top:1px solid #e8edde; }.acc-refined .acc-departure>summary { padding:20px 2px; color:#929b87; font-size:12px; cursor:pointer; }.acc-refined .acc-departure[open]>summary { color:#9c7868; }.acc-refined .acc-departure-body { padding:22px; border:1px solid #eadfd8; border-radius:13px; background:#fffdfa; }
+.acc-refined .acc-warn { margin:18px 0 24px; padding:17px 18px 17px 32px; background:#f8f2e9; color:#9a8c77; font-size:12px; line-height:1.9; border-radius:10px; }.acc-refined .acc-agree { font-size:12px; line-height:1.7; color:#8e927f; gap:9px; }.acc-refined .acc-agree input { accent-color:#68754b; }
+.acc-refined .acc-submit.acc-danger { background:#ac7968; border-color:#ac7968; }.acc-refined .acc-submit.acc-danger:hover:not(:disabled) { background:#93624f; border-color:#93624f; }
+.acc-refined .form-error { border-radius:8px; background:#fbf0e9; color:#9b7663; padding:11px 14px; margin:14px 0; font-size:12px; line-height:1.7; }
+.acc-refined button:focus-visible,.acc-refined summary:focus-visible { outline:2px solid #8b9e70; outline-offset:4px; }
+@media(max-width:640px) { .acc-refined .acc-section { padding:25px 20px; }.acc-refined .acc-heading h1 { font-size:25px; }.acc-refined .acc-submit.btn { width:100%; }.acc-refined .acc-departure-body { padding:20px 16px; }.pq-my .pq-my-tiles.pq-my-single { grid-template-columns:1fr; } }

@@ -1,0 +1,38 @@
+/* 포스터 가운데 행사 오픈 D-DAY 표시 */
+.popq-home .opening-day-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+
+  /* 카드 너비에 맞춰 원 크기 조절 */
+  width: 56%;
+  max-width: 126px;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+
+  /* 사진이 비치는 어두운 배경과 올리브 테두리 */
+  border: 5px solid #b5c68c;
+  border-radius: 50%;
+  background: rgb(19 25 15 / 78%);
+  color: #dce8c4;
+
+  font-size: clamp(18px, 2.2vw, 27px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.5px;
+
+  /* 원을 눌러도 팝업 상세 링크가 동작 */
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .popq-home .opening-day-badge {
+    max-width: 100px;
+    border-width: 4px;
+    font-size: 22px;
+  }
+}

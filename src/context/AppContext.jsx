@@ -178,6 +178,8 @@ export function AppProvider({ children }) {
         email: me?.email ?? user.email,
         name: me?.name ?? user.name,
         phone: me?.phone ?? user.phone,
+        // 서버가 반환한 관리자 권한을 화면에서 사용
+        role: me?.role ?? 'USER',
       }
     } catch (error) {
       if (

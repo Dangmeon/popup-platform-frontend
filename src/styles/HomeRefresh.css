@@ -1,0 +1,62 @@
+/* 지역 소개 폭은 기존 약 300px에서 200px로 축소 */
+.popq-home .hm-explore {
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.popq-home .hm-explore-panel {
+  grid-column: auto;
+  min-height: 0;
+  padding: 26px 20px;
+}
+
+/* 오른쪽에 최대 5개, 좁은 화면은 가로 스크롤 */
+.popq-home .hm-area-cards {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 40px) / 3);
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+
+.popq-home .hm-area-cards .hm-card-title { font-size: 13px; }
+.popq-home .hm-area-cards .opening-day-badge { font-size: 17px; border-width: 3px; }
+
+/* 굿즈 자동 넘김 제어 */
+.popq-home .hm-goods-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin: -10px 0 14px;
+}
+
+.popq-home .hm-goods-controls button {
+  padding: 7px 11px;
+  border: 1px solid #e1e6d9;
+  border-radius: 6px;
+  background: #fff;
+  color: #626d52;
+  font-size: 11px;
+}
+
+@media (max-width: 1100px) {
+  .popq-home .hm-area-cards { grid-auto-columns: 180px; }
+}
+
+@media (max-width: 640px) {
+  .popq-home .hm-explore { grid-template-columns: 1fr; }
+  .popq-home .hm-explore-panel { padding: 20px; }
+  .popq-home .hm-explore-name { margin: 12px 0; }
+  .popq-home .hm-explore-desc { display: none; }
+  .popq-home .hm-explore-count { margin-top: 0; }
+  .popq-home .hm-area-cards { grid-auto-columns: 45%; }
+}
+
+/* 작은 목록에서도 한눈에 보이는 오픈 배지 */
+.popq-home .hm-soon-d { display: inline-flex; background: #465235; color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 800; margin-bottom: 7px; }
+/* 스크롤바를 숨겨도 터치·휠·키보드 이동은 유지 */
+.popq-home .hm-goods-row { scrollbar-width: none; scroll-snap-type: none; }
+.popq-home .hm-goods-row::-webkit-scrollbar { display: none; }

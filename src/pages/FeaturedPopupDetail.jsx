@@ -47,6 +47,7 @@ export default function FeaturedPopupDetail({ popup }) {
             {p.zones.map((z) => <span key={z} className="fpd-zone">{z}</span>)}
           </div>
 
+         
           <Link to={`/popups/${p.id}/reserve`} className="btn btn-primary btn-block fpd-reserve">
             예약하기
           </Link>

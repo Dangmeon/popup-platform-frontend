@@ -1,316 +1,401 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import HeroWide from '../components/common/HeroWide.jsx'
+import PopqIcon from '../components/common/PopqIcon.jsx'
+import HomeBanner from './HomeBanner.jsx'
+import HomeGoods from './HomeGoods.jsx'
+import HomeEvents from './HomeEvents.jsx'
+import { areaDemoPopups } from '../data/areaDemoPopups.js'
+import OpeningDayBadge from '../components/common/OpeningDayBadge.jsx'
 import { featuredCards, featuredGoods } from '../data/featuredPopups.js'
 import { usePopups } from '../hooks/usePopups'
 import '../styles/Home.css'
 import '../styles/FeaturedPopupDetail.css'
 import '../styles/HomeSections.css'
+import '../components/common/OpeningDayBadge.css'
+import '../styles/HomeRefresh.css'
 
-// 인기 굿즈로 보여줄 상품 id (원하는 대로 바꾸세요)
-// 팝업이 번갈아 보이도록 섞어 두었습니다. (8개)
-const POPULAR_GOODS_IDS = [
+// 메인에 표시할 굿즈
+const GOODS_IDS = [
   'loopy-1', 'chiikawa-1', 'gal-1', 'kinetic-shoe',
   'loopy-4', 'chiikawa-3', 'gal-6', 'kinetic-bag',
 ]
 
-// 포스터 팝업 id (인기 팝업에 노출)
-const POSTER_POPUP_IDS = ['loopy', 'chiikawa', 'gal', 'kinetic']
-
-// 바로가기 메뉴 (to: 페이지 이동, scroll: 같은 화면의 섹션으로 스크롤)
+// 중간 바로가기
 const QUICK_MENUS = [
-  { icon: '🗓️', label: '전체 팝업', to: '/popups' },
-  { icon: '📍', label: '동네별 탐색', scroll: 'hm-explore' },
-  { icon: '🛍️', label: '인기 굿즈', scroll: 'hm-goods' },
-  { icon: '🎟️', label: '내 예약·웨이팅', to: '/mypage' },
+  { icon: 'calendar', label: '전체 팝업', to: '/popups' },
+  { icon: 'location', label: '주변 팝업', to: '/nearby' },
+  { icon: 'bag', label: '굿즈샵', to: '/goods' },
+  { icon: 'ticket', label: '내 예약·웨이팅', to: '/my-activities' },
 ]
 
-// 동네 탭: 장소 문구에 keys 중 하나가 들어 있으면 그 동네로 묶는다
+// 장소 문구를 기준으로 지역 분류
 const AREAS = [
-  { label: '성수', keys: ['성수'] },
-  { label: '더현대', keys: ['더현대'] },
-  { label: '잠실', keys: ['잠실', '롯데월드몰'] },
-  { label: '여의도', keys: ['여의도', 'IFC'] },
-  { label: '홍대', keys: ['홍대'] },
-  { label: '강남', keys: ['강남'] },
-  { label: '한남', keys: ['한남'] },
-  { label: '북촌', keys: ['북촌'] },
+  { label: '성수', keywords: ['성수'] },
+  { label: '더현대', keywords: ['더현대'] },
+  { label: '잠실', keywords: ['잠실', '롯데월드몰'] },
+  { label: '여의도', keywords: ['여의도', 'IFC'] },
+  { label: '홍대', keywords: ['홍대'] },
+  { label: '강남', keywords: ['강남'] },
+  { label: '한남', keywords: ['한남'] },
+  { label: '북촌', keywords: ['북촌'] },
 ]
 
-// 'YYYY-MM-DD...' 문자열을 로컬 날짜로 바꾼다 (시간대 때문에 하루 어긋나는 것을 막음)
-function toDate(s) {
-  if (!s) return null
-  const [y, m, d] = String(s).slice(0, 10).split('-').map(Number)
-  if (!y || !m || !d) return null
-  return new Date(y, m - 1, d)
+// 한국의 오늘 날짜를 일 단위 비교값으로 변환
+function getToday() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+
+  const values = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value])
+  )
+
+  return Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day)
+  )
 }
 
-const fmt = (s) => (s ? String(s).slice(5, 10).replace('-', '.') : '')
+// 행사 날짜 변환 및 유효성 검사
+function getDate(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return null
 
-function SectionHead({ eyebrow, title, to, more }) {
+  const [, year, month, day] = match
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+
+  if (
+    date.getUTCFullYear() !== Number(year) ||
+    date.getUTCMonth() !== Number(month) - 1 ||
+    date.getUTCDate() !== Number(day)
+  ) {
+    return null
+  }
+
+  return date.getTime()
+}
+
+function formatDate(value) {
+  return getDate(value) === null
+    ? ''
+    : String(value).slice(5, 10).replace('-', '.')
+}
+
+// 오픈 예정 목록에 사용할 문구
+function getOpeningLabel(startDate, today) {
+  const start = getDate(startDate)
+  if (start === null) return ''
+
+  const days = Math.round((start - today) / 86400000)
+  return days === 0 ? 'Today' : `D-${days}`
+}
+
+// 공통 섹션 제목
+function SectionHeading({ eyebrow, title, to = '/popups', more = '전체 보기' }) {
   return (
     <div className="hm-head">
       <div>
-        <div className="hm-eyebrow">{eyebrow}</div>
+        {eyebrow && <span className="hm-eyebrow">{eyebrow}</span>}
         <h2 className="hm-title">{title}</h2>
       </div>
-      {to && <Link to={to} className="hm-more">{more} →</Link>}
+      <Link to={to} className="hm-more">
+        {more}
+        <PopqIcon name="arrow" size={17} />
+      </Link>
     </div>
   )
 }
 
-// 메인용 팝업 카드 (포스터 팝업과 서버 팝업 모두 같은 모양)
-function HomeCard({ popup: p, rank, today }) {
-  const start = toDate(p.startDate)
-  const end = toDate(p.endDate)
-  let badge = ''
-  if (start && start > today) badge = `D-${Math.round((start - today) / 86400000)}`
-  else if (start && end && start <= today && end >= today) badge = '진행중'
-
+// 팝업 카드와 가운데 원형 D-DAY
+function PopupCard({ popup, today, rank }) {
   return (
-    <Link to={`/popups/${p.id}`} className="hm-card">
+    <Link to={popup.isDemo ? `/nearby?area=${encodeURIComponent(popup.area)}` : `/popups/${popup.id}`} className="hm-card">
       <div className="hm-card-img">
-        {rank && <span className="hm-rank">{String(rank).padStart(2, '0')}</span>}
-        {p.image ? <img src={p.image} alt={p.title} loading="lazy" /> : <div className="hm-card-noimg" />}
-        {badge && <span className="hm-badge">{badge}</span>}
+        {popup.image ? (
+          <img src={popup.image} alt={popup.title} loading="lazy" />
+        ) : (
+          <div className="hm-card-noimg">POPQ</div>
+        )}
+
+        {rank && (
+          <span className="hm-rank">{String(rank).padStart(2, '0')}</span>
+        )}
+
+        <OpeningDayBadge startDate={popup.startDate} endDate={popup.endDate} today={today} />
       </div>
+
       <div className="hm-card-body">
-        {p.category && <span className="hm-card-cat">{p.category}</span>}
-        <div className="hm-card-title">{p.title}</div>
-        {p.location && <div className="hm-card-sub">{p.location}</div>}
-        {start && end && <div className="hm-card-date">{fmt(p.startDate)} - {fmt(p.endDate)}</div>}
+        <span className="hm-card-cat">{popup.isDemo ? '예시 팝업' : (popup.category || '팝업스토어')}</span>
+        <h3 className="hm-card-title">{popup.title}</h3>
+        <p className="hm-card-sub">{popup.location || '장소 안내 예정'}</p>
+        {getDate(popup.startDate) !== null && getDate(popup.endDate) !== null && (
+          <p className="hm-card-date">
+            {formatDate(popup.startDate)} — {formatDate(popup.endDate)}
+          </p>
+        )}
       </div>
     </Link>
   )
 }
 
-export default function Home(){
-  // 서버에서 진행 중인 팝업 목록 (GET /api/popups?status=ONGOING)
+export default function Home() {
   const { data, loading, error } = usePopups({ status: 'ONGOING' })
-  const serverPopups = Array.isArray(data) ? data : []
-
   const [area, setArea] = useState('')
+  const [today, setToday] = useState(getToday)
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const dday = (s) => Math.round((toDate(s) - today) / 86400000)
+  // 날짜가 바뀌면 D-DAY도 갱신
+  useEffect(() => {
+    const timer = setInterval(() => setToday(getToday()), 60000)
+    return () => clearInterval(timer)
+  }, [])
 
-  // 배너: 루피, 치이카와, GAL, KINETIC (포스터는 프론트 임시 데이터)
-  const heroSlides = [
-    {
-      id: 'loopy',
-      image: '/poster-loopy.png',
-      poster: true,
-      tag: '잔망루피 POP-UP STORE',
-      title: '잔망루피는 못 말려!',
-      place: '롯데월드몰 1F 아트리움 팝업존',
-      period: '2026.12.01 ~ 12.31 · 10:00 ~ 20:00',
-      to: '/popups/loopy',
-    },
-    {
-      id: 'chiikawa',
-      image: '/chiikawa/poster.png',
-      poster: true,
-      tag: '치이카와 POP-UP STORE',
-      title: '치이카와는 귀여워!',
-      place: 'IFC몰 서울 L1 팝업존',
-      period: '2027.02.02 ~ 02.28 · 10:00 ~ 20:00',
-      to: '/popups/chiikawa',
-    },
-    {
-      id: 'gal',
-      image: '/gal/poster.png',
-      poster: true,
-      tag: 'GAL POP-UP STORE',
-      title: 'GAL POP-UP STORE',
-      place: '장소 미정',                         // TODO: 실제 장소
-      period: '2027.03.01 ~ 03.31 · 10:00 ~ 20:00', // TODO: 실제 일정
-      to: '/popups/gal',
-    },
-    {
-      id: 'kinetic',
-      image: '/kinetic/poster-kinetic.png',
-      poster: true,
-      tag: 'KINETIC POP-UP STORE',
-      title: 'KINETIC 팝업스토어',
-      place: '서울 성수 팝업존',                    // TODO: 임시값 (가상 브랜드)
-      period: '2026.12.01 ~ 12.31 · 10:00 ~ 20:00', // TODO: 임시값
-      to: '/popups/kinetic',
-    },
-  ]
-
-  // 포스터 팝업 + 서버 팝업을 한 묶음으로 (id가 겹치면 한 번만)
+  const serverPopups = Array.isArray(data) ? data : []
   const seen = new Set()
-  const pool = [...featuredCards, ...serverPopups].filter((p) => {
-    const key = String(p.id)
+
+  // 추천 콘텐츠와 서버 목록의 중복 제거
+  const pool = [...featuredCards, ...serverPopups].filter((popup) => {
+    const key = String(popup.id)
     if (seen.has(key)) return false
     seen.add(key)
     return true
   })
 
-  // 지금 인기 있는 팝업: 포스터 4개 + 서버 팝업 (최대 8개)
-  const featured = featuredCards.filter((c) => POSTER_POPUP_IDS.includes(c.id))
-  const popular = [...featured, ...serverPopups.slice(0, 4)].slice(0, 8)
-
-  // 오픈 예정: 시작일이 오늘 이후인 것, 빠른 순 (첫 번째는 큰 카드, 나머지 3개는 목록)
-  const upcoming = pool
-    .filter((p) => toDate(p.startDate) && toDate(p.startDate) > today)
-    .sort((a, b) => toDate(a.startDate) - toDate(b.startDate))
-    .slice(0, 4)
-
-  // 동네별 탐색: 팝업이 하나라도 있는 동네만 탭으로 보여 준다
-  const areaList = AREAS
-    .map((a) => ({
-      ...a,
-      items: pool.filter((p) => a.keys.some((k) => (p.location || '').includes(k))),
-    }))
-    .filter((a) => a.items.length > 0)
-  const currentArea = areaList.find((a) => a.label === area) || areaList[0]
-
-  // 마감 임박: 지금 진행 중인 팝업 중 종료일이 빠른 순으로 4개
-  const soon = pool
-    .filter((p) => {
-      const s = toDate(p.startDate)
-      const e = toDate(p.endDate)
-      return s && e && s <= today && e >= today
+  const recommended = pool
+    .filter((popup) => {
+      const end = getDate(popup.endDate)
+      const start = getDate(popup.startDate)
+      return (end === null || end >= today) && (start === null || start <= today + 30 * 86400000)
     })
-    .sort((a, b) => toDate(a.endDate) - toDate(b.endDate))
+    .slice(0, 5)
+
+  // 행사 시작일 기준 오늘부터 30일 이내 오픈 예정 팝업
+  const upcoming = pool
+    .filter((popup) => {
+      const start = getDate(popup.startDate)
+      const end = getDate(popup.endDate)
+      return (
+        start !== null &&
+        start >= today &&
+        start <= today + 30 * 86400000 &&
+        (end === null || end >= today)
+      )
+    })
+    .sort((a, b) => getDate(a.startDate) - getDate(b.startDate))
     .slice(0, 4)
 
-  // 인기 굿즈: 위 id 순서대로 (서버 굿즈는 팝업별 조회라 임시 데이터 유지)
-  const goods = POPULAR_GOODS_IDS
-    .map((id) => featuredGoods.find((g) => g.id === id))
-    .filter(Boolean)
+  const areaList = AREAS.map((item) => ({
+    ...item,
+    items: [...pool, ...areaDemoPopups].filter((popup) => {
+      const end = getDate(popup.endDate)
+      return (
+        (end === null || end >= today) &&
+        item.keywords.some((keyword) =>
+          (popup.location || '').includes(keyword)
+        )
+      )
+    }),
+  })).filter((item) => item.items.length > 0)
 
-  function goTo(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const currentArea =
+    areaList.find((item) => item.label === area) || areaList[0]
+
+  const goods = GOODS_IDS.map((id) =>
+    featuredGoods.find((item) => item.id === id)
+  ).filter(Boolean)
+
+
+  function scrollToSection(id) {
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches
+
+    document.getElementById(id)?.scrollIntoView({
+      behavior: reducedMotion ? 'auto' : 'smooth',
+      block: 'start',
+    })
   }
 
   return (
-    <div>
-      <HeroWide slides={heroSlides} />
-
+    <div className="popq-home">
       <div className="container">
-        {/* 바로가기 */}
-        <div className="hm-quick">
-          {QUICK_MENUS.map((m) => {
-            const inner = (
+        {/* 팝업별 설명과 수동 배너 이동 */}
+        <HomeBanner />
+
+        {/* 중간 아이콘 바로가기 */}
+        <nav className="hm-quick" aria-label="주요 기능 바로가기">
+          {QUICK_MENUS.map((menu) => {
+            const content = (
               <>
-                <span className="hm-quick-icon">{m.icon}</span>
-                <span className="hm-quick-label">{m.label}</span>
+                <span className="hm-quick-icon">
+                  <PopqIcon name={menu.icon} size={25} />
+                </span>
+                <span className="hm-quick-label">{menu.label}</span>
               </>
             )
-            return m.to ? (
-              <Link key={m.label} to={m.to} className="hm-quick-item">{inner}</Link>
+
+            return menu.to ? (
+              <Link key={menu.label} to={menu.to} className="hm-quick-item">
+                {content}
+              </Link>
             ) : (
-              <button key={m.label} type="button" className="hm-quick-item" onClick={() => goTo(m.scroll)}>{inner}</button>
+              <button
+                key={menu.label}
+                type="button"
+                className="hm-quick-item"
+                onClick={() => scrollToSection(menu.section)}
+              >
+                {content}
+              </button>
             )
           })}
-        </div>
+        </nav>
 
-        {/* 지금 인기 있는 팝업 */}
+        {/* 추천 팝업 최대 5개 */}
         <section className="hm-sec">
-          <SectionHead eyebrow="WEEKLY HOT" title="지금 가장 인기 있는 팝업" to="/popups" more="전체보기" />
+          <SectionHeading eyebrow="POPQ PICKS" title="지금 눈여겨볼 팝업" />
           <div className="hm-grid">
-            {popular.map((p, i) => <HomeCard key={p.id} popup={p} rank={i + 1} today={today} />)}
-          </div>
-          {loading && <div className="empty-state">팝업 목록을 불러오는 중이에요</div>}
-          {error && <div className="empty-state">{error}</div>}
-        </section>
-
-        {/* 오픈 예정 팝업 */}
-        {upcoming.length > 0 && (
-          <section className="hm-sec hm-band">
-            <SectionHead eyebrow="COMING SOON" title="곧 만나요, 오픈 예정 팝업" to="/popups" more="전체보기" />
-            <div className="hm-soon">
-              <Link to={`/popups/${upcoming[0].id}`} className="hm-soon-hero">
-                {upcoming[0].image && <img className="hm-soon-bg" src={upcoming[0].image} alt="" />}
-                <span className="hm-soon-dday">D-{dday(upcoming[0].startDate)}</span>
-                <div className="hm-soon-title">{upcoming[0].title}</div>
-                {upcoming[0].location && <div className="hm-soon-sub">{upcoming[0].location}</div>}
-                <span className="hm-soon-btn">자세히 보기 →</span>
-              </Link>
-
-              <div className="hm-soon-list">
-                {upcoming.slice(1, 4).map((p) => (
-                  <Link key={p.id} to={`/popups/${p.id}`} className="hm-soon-item">
-                    <div className="hm-soon-thumb">
-                      {p.image && <img src={p.image} alt={p.title} loading="lazy" />}
-                    </div>
-                    <div className="hm-soon-text">
-                      <span className="hm-soon-d">D-{dday(p.startDate)}</span>
-                      <div className="hm-soon-name">{p.title}</div>
-                      {p.location && <div className="hm-card-sub">{p.location}</div>}
-                      <div className="hm-card-date">{fmt(p.startDate)} - {fmt(p.endDate)}</div>
-                    </div>
-                    <span className="hm-soon-arrow">›</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 동네별 탐색 */}
-        {areaList.length > 0 && currentArea && (
-          <section className="hm-sec" id="hm-explore">
-            <SectionHead eyebrow="EXPLORE SEOUL" title="동네마다 새로운 취향을 발견해요" to="/popups" more="전체보기" />
-            <div className="hm-tabs">
-              {areaList.map((a) => (
-                <button
-                  key={a.label}
-                  type="button"
-                  className={'hm-tab' + (a.label === currentArea.label ? ' active' : '')}
-                  onClick={() => setArea(a.label)}
-                >{a.label}</button>
-              ))}
-            </div>
-            <div className="hm-explore">
-              <div className="hm-explore-panel">
-                <div className="hm-explore-eyebrow">THIS WEEK IN</div>
-                <div className="hm-explore-name">{currentArea.label}</div>
-                <p className="hm-explore-desc">{currentArea.label}에서 지금 만날 수 있는<br />취향 가득한 팝업을 모았어요.</p>
-                <div className="hm-explore-count">총 {currentArea.items.length}개의 팝업</div>
-              </div>
-              {currentArea.items.slice(0, 3).map((p, i) => (
-                <HomeCard key={p.id} popup={p} rank={i + 1} today={today} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 마감 임박 */}
-        <section className="hm-sec">
-          <SectionHead eyebrow="LAST CALL" title="놓치기 전에, 마감 임박 팝업" to="/popups" more="전체보기" />
-          {soon.length > 0 ? (
-            <div className="hm-grid">
-              {soon.map((p) => <HomeCard key={p.id} popup={p} today={today} />)}
-            </div>
-          ) : (
-            <div className="empty-state">
-              {loading ? '불러오는 중이에요' : '마감 임박 팝업이 없어요'}
-            </div>
-          )}
-        </section>
-
-        {/* 인기 굿즈 */}
-        <section className="hm-sec" id="hm-goods">
-          <SectionHead eyebrow="TRENDING GOODS" title="지금 가장 사랑받는 굿즈" />
-          <div className="grid-4">
-            {goods.map((g) => (
-              <Link key={g.id} to={`/popups/${g.popupId}`} className="fpd-good" style={{ display:'block' }}>
-                <div className="fpd-good-img">
-                  {g.limited && <span className="fpd-good-badge">한정판</span>}
-                  <img src={g.image} alt={g.name} style={g.imageFit ? { objectFit: g.imageFit } : undefined} />
-                </div>
-                <div className="fpd-good-body">
-                  <div className="hm-good-from">{g.popupTitle}</div>
-                  <div className="fpd-good-name">{g.name}</div>
-                  <div className="fpd-good-price">{g.price > 0 ? `${g.price.toLocaleString()}원` : '가격 미정'}</div>
-                </div>
-              </Link>
+            {recommended.map((popup, index) => (
+              <PopupCard
+                key={popup.id}
+                popup={popup}
+                rank={index + 1}
+                today={today}
+              />
             ))}
           </div>
+          {loading && <p role="status">팝업을 불러오는 중이에요.</p>}
+          {error && (
+            <p role="alert" className="hm-data-message">
+              서버 팝업을 불러오지 못했어요. 현재 추천 콘텐츠를 표시합니다.
+            </p>
+          )}
+          {!loading && !error && recommended.length === 0 && (
+            <p>현재 표시할 팝업이 없어요.</p>
+          )}
+        </section>
+      </div>
+
+      {/* 오픈 예정 행사가 있을 때 표시 */}
+      {upcoming.length > 0 && (
+        <section className="hm-upcoming-band">
+          <div className="container">
+            <SectionHeading
+              eyebrow="COMING SOON"
+              title="기다리는 즐거움, 오픈 예정 팝업"
+            />
+
+            <div
+              className="hm-soon"
+              style={upcoming.length === 1 ? { gridTemplateColumns: '1fr' } : undefined}
+            >
+              <Link to={`/popups/${upcoming[0].id}`} className="hm-soon-hero">
+                {upcoming[0].image && (
+                  <img
+                    className="hm-soon-bg"
+                    src={upcoming[0].image}
+                    alt=""
+                    loading="lazy"
+                  />
+                )}
+                <OpeningDayBadge startDate={upcoming[0].startDate} endDate={upcoming[0].endDate} today={today} />
+                <h3 className="hm-soon-title">{upcoming[0].title}</h3>
+                <p className="hm-soon-sub">{upcoming[0].location}</p>
+                <span className="hm-soon-btn">
+                  팝업 둘러보기 <PopqIcon name="arrow" size={18} />
+                </span>
+              </Link>
+
+              {upcoming.length > 1 && (
+                <div className="hm-soon-list">
+                  {upcoming.slice(1).map((popup) => (
+                    <Link
+                      key={popup.id}
+                      to={`/popups/${popup.id}`}
+                      className="hm-soon-item"
+                    >
+                      <div className="hm-soon-thumb">
+                        {popup.image && (
+                          <img src={popup.image} alt="" loading="lazy" />
+                        )}
+                      </div>
+                      <div className="hm-soon-text">
+                        <span className="hm-soon-d">
+                          {getOpeningLabel(popup.startDate, today)}
+                        </span>
+                        <h3 className="hm-soon-name">{popup.title}</h3>
+                        <p className="hm-card-sub">{popup.location}</p>
+                        <p className="hm-card-date">
+                          {formatDate(popup.startDate)} — {formatDate(popup.endDate)}
+                        </p>
+                      </div>
+                      <PopqIcon name="arrow" size={19} />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <div className="container">
+        {/* POPQ 소개·생일 혜택·광고 시안 배너 */}
+        <HomeEvents />
+
+        {/* 지역별 팝업 탐색 */}
+        {currentArea && (
+          <section className="hm-sec" id="hm-explore">
+            <SectionHeading
+              eyebrow="EXPLORE YOUR AREA"
+              title="추천 팝업"
+            />
+            <div className="hm-tabs" aria-label="지역 선택">
+              {areaList.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  className={`hm-tab${currentArea.label === item.label ? ' active' : ''}`}
+                  aria-pressed={currentArea.label === item.label}
+                  onClick={() => setArea(item.label)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="hm-explore">
+              <div className="hm-explore-panel">
+                <span className="hm-explore-eyebrow">AROUND YOU</span>
+                <h3 className="hm-explore-name">{currentArea.label}</h3>
+                <p className="hm-explore-desc">
+                  이 동네에서 발견하는<br />취향 가득한 팝업
+                </p>
+                <span className="hm-explore-count">
+                  진행 중·오픈 예정 {currentArea.items.length}개
+                </span>
+              </div>
+              <div className="hm-area-cards">
+              {currentArea.items.slice(0, 3).map((popup) => (
+                <PopupCard key={popup.id} popup={popup} today={today} />
+              ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 추천 굿즈 가로 한 줄 */}
+        <section className="hm-sec" id="hm-goods">
+          <SectionHeading
+            eyebrow=""
+            title="굿즈"
+            to="/goods"
+            more="굿즈샵 보기"
+          />
+          <HomeGoods goods={goods} />
         </section>
       </div>
     </div>
