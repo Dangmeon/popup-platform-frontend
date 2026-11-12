@@ -1,30 +1,316 @@
-.cart-row { display:flex; gap:16px; align-items:center; padding:16px 0; border-bottom:1px solid var(--border); }
-.cart-row img { width:80px; height:80px; border-radius:14px; object-fit:cover; }
-.qty-box { display:flex; align-items:center; gap:8px; }
-.qty-box button { width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:#fff; cursor:pointer; }
-.cart-summary { background:var(--bg-soft); border-radius:var(--radius); padding:24px; margin-top:20px; }
-.cart-mascot-bounce {
-  width: 90px;
-  
+/* 장바구니 (레퍼런스: 목록 카드 + 오른쪽 주문 요약) */
+
+.ct-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
 }
 
-
-.cart-empty {
+.ct-crumb {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #8a7a6c;
+}
+.ct-crumb a { color: #8a7a6c; text-decoration: none; }
+.ct-crumb a:hover { color: #ff7043; }
+
+.ct-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ct-title {
+  margin: 14px 0 24px;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: #2b2118;
 }
 
+.ct-status { color: #8a7a6c; }
+
+.ct-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* 왼쪽 목록 카드 */
+.ct-card {
+  background: #fff;
+  border: 1px solid #f0e4d6;
+  border-radius: 20px;
+  padding: 8px 24px;
+  box-shadow: 0 6px 20px rgba(120, 80, 40, 0.05);
+}
+
+.ct-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+  border-bottom: 1px solid #f0e4d6;
+}
+
+.ct-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #2b2118;
+  cursor: pointer;
+}
+.ct-check-label input,
+.ct-row-check {
+  width: 22px;
+  height: 22px;
+  accent-color: #ff7043;
+  cursor: pointer;
+}
+
+.ct-text-btn {
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #8a7a6c;
+  cursor: pointer;
+}
+.ct-text-btn:hover:not(:disabled) { color: #ff7043; }
+.ct-text-btn:disabled { opacity: 0.5; cursor: default; }
+
+.ct-row {
+  display: grid;
+  grid-template-columns: 22px 80px minmax(0, 1fr) auto 110px 28px;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid #f5ece1;
+}
+.ct-row:last-child { border-bottom: none; }
+.ct-row-off { opacity: 0.6; }
+
+.ct-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: #fff3e8;
+}
+
+.ct-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2b2118;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ct-unit {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #8a7a6c;
+}
+
+.ct-qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #ecdccb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ct-qty button {
+  width: 36px;
+  height: 38px;
+  border: none;
+  background: #fff;
+  font-size: 18px;
+  color: #5a4a3c;
+  cursor: pointer;
+}
+.ct-qty button:hover:not(:disabled) { background: #fff3e8; }
+.ct-qty button:disabled { color: #c9bcae; cursor: default; }
+.ct-qty span {
+  min-width: 36px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.ct-line {
+  text-align: right;
+  font-size: 17px;
+  font-weight: 800;
+  color: #2b2118;
+}
+
+.ct-del {
+  border: none;
+  background: none;
+  font-size: 22px;
+  color: #9a8c80;
+  cursor: pointer;
+}
+.ct-del:hover:not(:disabled) { color: #e5484d; }
+
+.ct-warn {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #d9480f;
+}
+.ct-error {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: #e5484d;
+}
+
+/* 오른쪽 주문 요약 */
+.ct-summary {
+  position: sticky;
+  top: 24px;
+  background: #fff;
+  border: 1px solid #f0e4d6;
+  border-radius: 20px;
+  padding: 28px 24px;
+  box-shadow: 0 6px 20px rgba(120, 80, 40, 0.05);
+}
+.ct-summary h2 {
+  margin: 0 0 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0e4d6;
+  font-size: 22px;
+  font-weight: 800;
+  color: #2b2118;
+}
+.ct-sum-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 16px;
+  color: #6f5f52;
+}
+.ct-sum-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 18px;
+  border-top: 1px solid #f0e4d6;
+  font-size: 18px;
+  font-weight: 800;
+  color: #2b2118;
+}
+.ct-sum-total strong {
+  font-size: 28px;
+  color: #ff7043;
+}
+
+.ct-order {
+  display: block;
+  width: 100%;
+  margin-top: 22px;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff7043, #ffb300);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(255, 112, 67, 0.3);
+}
+.ct-order:hover:not(:disabled) { transform: translateY(-1px); }
+.ct-order:disabled {
+  background: #e6dccf;
+  box-shadow: none;
+  cursor: default;
+}
+
+.ct-notice {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff6ee;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6f5f52;
+}
+
+.ct-continue {
+  display: inline-block;
+  margin-top: 28px;
+  padding: 12px 22px;
+  border: 1px solid #ecdccb;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #2b2118;
+  text-decoration: none;
+}
+.ct-continue:hover { border-color: #ff7043; color: #ff7043; }
+
+/* 빈 장바구니·오류 */
+.ct-empty {
+  padding: 60px 20px;
+  border: 1px dashed #ecdccb;
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+  color: #6f5f52;
+}
 .cart-empty-mascot {
-  width: 160px;
+  width: 140px;
+  height: auto;
   margin-bottom: 8px;
-  animation: cartEmptyShake 2.2s ease-in-out infinite;
 }
 
-@keyframes cartEmptyShake {
-  0%, 100% { transform: rotate(0deg) translateY(0); }
-  20% { transform: rotate(-3deg) translateY(-2px); }
-  40% { transform: rotate(3deg) translateY(0); }
-  60% { transform: rotate(-2deg) translateY(-2px); }
-  80% { transform: rotate(2deg) translateY(0); }
+.ct-btn-primary,
+.ct-btn-line {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ct-btn-primary {
+  border: none;
+  background: linear-gradient(135deg, #ff7043, #ffb300);
+  color: #fff;
+}
+.ct-btn-line {
+  border: 1px solid #ecdccb;
+  background: #fff;
+  color: #2b2118;
+}
+
+/* 제목 옆 너구리 */
+.cart-mascot-bounce {
+  width: 72px;
+  height: auto;
+  animation: ct-bounce 1.6s ease-in-out infinite;
+}
+@keyframes ct-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-mascot-bounce { animation: none; }
+}
+
+@media (max-width: 860px) {
+  .ct-layout { grid-template-columns: 1fr; }
+  .ct-summary { position: static; }
+  .ct-row {
+    grid-template-columns: 22px 64px minmax(0, 1fr) 28px;
+    row-gap: 10px;
+  }
+  .ct-thumb { width: 64px; height: 64px; }
+  .ct-qty { grid-column: 3; justify-self: start; }
+  .ct-line { grid-column: 3; text-align: left; }
 }

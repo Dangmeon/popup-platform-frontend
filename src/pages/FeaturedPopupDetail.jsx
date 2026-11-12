@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import ShopGoodsCard from '../components/common/ShopGoodsCard.jsx'
 import '../styles/FeaturedPopupDetail.css'
 import '../styles/FeaturedPopupDetailTabs.css'
 
@@ -46,7 +47,6 @@ export default function FeaturedPopupDetail({ popup }) {
             {p.zones.map((z) => <span key={z} className="fpd-zone">{z}</span>)}
           </div>
 
-         
           <Link to={`/popups/${p.id}/reserve`} className="btn btn-primary btn-block fpd-reserve">
             예약하기
           </Link>
@@ -100,19 +100,20 @@ export default function FeaturedPopupDetail({ popup }) {
               {goods.length > 0 && (
                 <>
                   <div className="section-title">🛍️ 이 팝업의 굿즈</div>
-                  <div className="fpd-goods">
-                    {goods.map((g, i) => (
-                      <div key={g.id} className="fpd-good">
-                        <div className="fpd-good-img">
-                          <span className="fpd-good-no">{i + 1}</span>
-                          {g.limited && <span className="fpd-good-badge">한정판</span>}
-                          <img src={g.image} alt={g.name} style={p.imageFit ? { objectFit: p.imageFit } : undefined} />
-                        </div>
-                        <div className="fpd-good-body">
-                          <div className="fpd-good-name">{g.name}</div>
-                          <div className="fpd-good-price">{g.price > 0 ? `${g.price.toLocaleString()}원` : '가격 미정'}</div>
-                        </div>
-                      </div>
+                  {/* 새 굿즈 카드 (ShopGoodsCard). 굿즈에 serverId(서버에 등록된 상품 숫자 ID)가 있으면
+                      그 값으로 장바구니에 담긴다. serverId가 없는 굿즈는 "아직 판매 준비 중인 상품이에요" 안내가 나온다 */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+                      gap: 24,
+                    }}
+                  >
+                    {goods.map((g) => (
+                      <ShopGoodsCard
+                        key={g.id}
+                        goods={{ ...g, id: g.serverId ?? g.id, popupId: g.popupId ?? p.id, popupName: p.title, imageFit: p.imageFit }}
+                      />
                     ))}
                   </div>
                 </>

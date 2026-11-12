@@ -49,6 +49,9 @@ import AdminWaitings from './pages/admin/AdminWaitings'
 import Goods from './pages/Goods.jsx'
 import './styles/toast.css'
 
+import Checkout from './pages/Checkout.jsx'
+import { PaymentSuccess, PaymentFail } from './pages/PaymentResult.jsx'
+
 // 예약 상태
 const reservationStatuses = new Set([
   'HOLD',
@@ -1016,6 +1019,12 @@ function App() {
           />
 
           <Route path="/goods" element={<Goods />} />
+
+         
+
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payments/success" element={<PaymentSuccess />} />
+          <Route path="/payments/fail" element={<PaymentFail />} />
 
           {/* 없는 사용자 페이지 */}
           <Route path="*" element={<NotFound />} />
