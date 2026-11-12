@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import { updateMyInfo, deleteMyAccount } from '../api/authApi'
 import '../styles/AccountSettings.css'
+import '../styles/AccountRefine.css'
 
 // ─────────────────────────────────────────────
 // 회원 정보 관리 (API 연결 버전)
@@ -12,11 +13,6 @@ import '../styles/AccountSettings.css'
 // - 서버 로그인(JWT)을 한 상태에서만 동작합니다. (데모 로그인은 불가)
 // ─────────────────────────────────────────────
 
-const TABS = [
-  { id: 'profile', label: '내 정보 수정' },
-  { id: 'password', label: '비밀번호 변경' },
-  { id: 'withdraw', label: '회원 탈퇴' },
-]
 
 // 서버 오류 문구
 function getApiError(err, fallback) {
@@ -33,44 +29,19 @@ function getApiError(err, fallback) {
 
 export default function AccountSettings() {
   const app = useApp()
-  const [tab, setTab] = useState('profile')
   const user = app.currentUser
-
-  if (!user) {
-    return (
-      <div className="container empty-state">
-        로그인이 필요합니다. <Link to="/login">로그인하기</Link>
-      </div>
-    )
-  }
-
-  return (
-    <div className="container acc">
-      <h1 className="page-title">내 정보 관리</h1>
-
-      {!app.isAuthenticated && (
-        <div className="form-error" style={{ marginBottom: 12 }}>
-          데모 로그인 상태입니다. 서버에 저장하려면 서버 계정으로 로그인해 주세요.
-        </div>
-      )}
-
-      <div className="tabs">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            className={'tab-btn' + (tab === t.id ? ' active' : '')}
-            onClick={() => setTab(t.id)}
-          >{t.label}</button>
-        ))}
-      </div>
-
-      <div className="form-box acc-box">
-        {tab === 'profile' && <ProfileForm app={app} user={user} />}
-        {tab === 'password' && <PasswordForm app={app} />}
-        {tab === 'withdraw' && <WithdrawForm app={app} />}
-      </div>
+  if (!user) return <div className="container empty-state">로그인이 필요합니다. <Link to="/login">로그인하기</Link></div>
+  return <div className="container acc acc-refined">
+    <header className="acc-heading"><span className="acc-eyebrow">ACCOUNT SETTINGS</span><h1>내 정보 보기</h1><p>나의 기본 정보를 확인하고 계정 설정을 변경하세요.</p></header>
+    {!app.isAuthenticated && <p className="form-error" role="alert">데모 로그인 상태입니다. 정보를 저장하려면 서버 계정으로 로그인해 주세요.</p>}
+    {/* 정보와 비밀번호는 한 화면에 표시하되 각각 별도 요청으로 저장합니다. */}
+    <div className="acc-settings-card" key={user.username || user.email}>
+      <section className="acc-section" aria-label="기본 정보"><ProfileForm app={app} user={user} /></section>
+      <section className="acc-section" aria-label="비밀번호 변경"><PasswordForm app={app} /></section>
     </div>
-  )
+    {/* 탈퇴는 평소에는 접어 두고, 동의와 확인 문구 입력 후에만 요청합니다. */}
+    <details className="acc-departure"><summary>회원 탈퇴 안내</summary><div className="acc-departure-body"><WithdrawForm app={app} /></div></details>
+  </div>
 }
 
 /* ───────── 1. 내 정보 수정 ───────── */
@@ -107,22 +78,23 @@ function ProfileForm({ app, user }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>내 정보 수정</h2>
+      <h2>기본 정보</h2>
+      <p className="acc-section-description">이메일은 로그인 아이디로 사용됩니다. 이름과 연락처를 변경할 수 있어요.</p>
       <div className="form-group">
-        <label>이메일(아이디)</label>
-        <input value={user.email ?? user.username ?? ''} disabled />
+        <label htmlFor="account-email">이메일(아이디)</label>
+        <input id="account-email" value={user.email ?? user.username ?? ''} disabled />
       </div>
       <div className="form-group">
-        <label>이름</label>
-        <input value={name} onChange={e => setName(e.target.value)} maxLength={20} />
+        <label htmlFor="account-name">이름</label>
+        <input id="account-name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} maxLength={20} />
       </div>
       <div className="form-group">
-        <label>휴대폰 번호</label>
-        <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-1234-5678" />
+        <label htmlFor="account-phone">휴대폰 번호</label>
+        <input id="account-phone" type="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-1234-5678" />
       </div>
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="form-error" role="alert">{error}</div>}
       <button className="btn btn-primary btn-block acc-submit" type="submit" disabled={loading}>
-        {loading ? '저장 중...' : '저장'}
+        {loading ? '저장 중...' : '정보 저장'}
       </button>
     </form>
   )
@@ -162,16 +134,17 @@ function PasswordForm({ app }) {
   return (
     <form onSubmit={handleSubmit}>
       <h2>비밀번호 변경</h2>
+      <p className="acc-section-description">새 비밀번호를 입력하고 아래 버튼을 눌러 변경해 주세요.</p>
       <div className="form-group">
-        <label>새 비밀번호</label>
-        <input type="password" value={next} onChange={e => setNext(e.target.value)} autoComplete="new-password" />
+        <label htmlFor="account-password">새 비밀번호</label>
+        <input id="account-password" type="password" value={next} onChange={e => setNext(e.target.value)} autoComplete="new-password" />
         <div className="acc-hint">영문, 숫자 포함 8자 이상</div>
       </div>
       <div className="form-group">
-        <label>새 비밀번호 확인</label>
-        <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" />
+        <label htmlFor="account-password-confirm">새 비밀번호 확인</label>
+        <input id="account-password-confirm" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" />
       </div>
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="form-error" role="alert">{error}</div>}
       <button className="btn btn-primary btn-block acc-submit" type="submit" disabled={loading}>
         {loading ? '변경 중...' : '비밀번호 변경'}
       </button>
@@ -228,7 +201,7 @@ function WithdrawForm({ app }) {
         위 내용을 모두 확인했으며 탈퇴에 동의합니다.
       </label>
 
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="form-error" role="alert">{error}</div>}
       <button className="btn btn-primary btn-block acc-submit acc-danger" type="submit" disabled={!ready || loading}>
         {loading ? '처리 중...' : '회원 탈퇴'}
       </button>

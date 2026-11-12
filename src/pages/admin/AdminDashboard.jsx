@@ -1,3 +1,4 @@
+import PopqIcon from '../../components/common/PopqIcon.jsx'
 import { useEffect, useState } from 'react'
 import { getDashboard } from '../../api/admin/dashboardApi'
 import AdminSalesSummary from '../../components/admin/AdminSalesSummary'
@@ -134,7 +135,7 @@ function AdminDashboard() {
                 <div className="admin-stat-top">
                   <span>{stat.title}</span>
                   <span className="admin-stat-icon" aria-hidden="true">
-                    {stat.icon}
+                    <PopqIcon name={stat.title.includes('매출') ? 'chart' : stat.title.includes('주문') ? 'cart' : stat.title.includes('회원') ? 'user' : stat.title.includes('굿즈') || stat.title.includes('재고') ? 'bag' : 'calendar'} size={20} />
                   </span>
                 </div>
 

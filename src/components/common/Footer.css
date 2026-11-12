@@ -1,0 +1,166 @@
+/* 짧은 페이지에서도 푸터를 화면 아래에 배치 */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app > .user-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 본문과 푸터 사이 여백, 공통 높이 */
+.footer.pq-footer {
+  flex-shrink: 0;
+  min-height: 210px;
+  margin-top: 56px;
+  padding: 0;
+  border-top: 1px solid #e8ebe4;
+  background: #fafbf8;
+  color: #252922;
+  text-align: left;
+}
+
+.pq-footer .pq-footer-inner {
+  display: flex;
+  flex-direction: column;
+  width: min(1240px, calc(100% - 64px));
+  min-height: 209px;
+  margin-inline: auto;
+}
+
+/* 브랜드·메뉴·바로가기 영역 */
+.pq-footer .pq-footer-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: start;
+  gap: 32px;
+  padding: 25px 0;
+}
+
+/* 로고와 소개 문구 */
+.pq-footer .pq-footer-brand img {
+  display: block;
+  width: 92px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.pq-footer .pq-footer-brand p {
+  margin: 7px 0 0;
+  color: #777c73;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* 서비스 메뉴 */
+.pq-footer .pq-footer-links {
+  display: flex;
+  gap: 44px;
+  padding-top: 7px;
+}
+
+.pq-footer .pq-footer-links > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.pq-footer .pq-footer-links h2 {
+  margin: 0 0 3px;
+  color: #465235;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.pq-footer .pq-footer-links a {
+  color: #62695b;
+  font-size: 11px;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.pq-footer .pq-footer-links a:hover {
+  color: #293323;
+  text-decoration: underline;
+}
+
+/* 오른쪽 팝업 탐색 링크 */
+.pq-footer .pq-footer-discover {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 7px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #68754b;
+  color: #465235;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* 하단 저작권 */
+.pq-footer .pq-footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: auto;
+  padding: 15px 0;
+  border-top: 1px solid #e8ebe4;
+  color: #858a80;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.4px;
+}
+
+/* 키보드 선택 표시 */
+.pq-footer a:focus-visible {
+  outline: 2px solid #68754b;
+  outline-offset: 5px;
+}
+
+/* 태블릿에서는 바로가기를 다음 줄로 배치 */
+@media (max-width: 900px) {
+  .pq-footer .pq-footer-top {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .pq-footer .pq-footer-discover {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-top: 0;
+  }
+}
+
+/* 모바일에서는 여백과 글자 배치 조정 */
+@media (max-width: 640px) {
+  .footer.pq-footer {
+    margin-top: 40px;
+  }
+
+  .pq-footer .pq-footer-inner {
+    width: calc(100% - 32px);
+  }
+
+  .pq-footer .pq-footer-top {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 24px 0;
+  }
+
+  .pq-footer .pq-footer-links {
+    gap: 48px;
+    padding-top: 0;
+  }
+
+  .pq-footer .pq-footer-bottom {
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    padding: 14px 0;
+  }
+}
