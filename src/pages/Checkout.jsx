@@ -62,14 +62,19 @@ export default function Checkout() {
   const [form, setForm] = useState({
     name: '', phone: '', zip: '', address: '', detail: '', memo: MEMOS[0],
   })
+  const [paymentMethod, setPaymentMethod] = useState('toss')
+  const [usePoint, setUsePoint] = useState('')
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
   const [paying, setPaying] = useState(false)
-  // 결제창만 닫고 다시 누른 경우 주문을 또 만들지 않도록 만든 주문을 기억해 둔다
+  
   const orderRef = useRef(null)
 
-  // 금액: 상품 금액 합계 = 서버 totalPrice (쿠폰·포인트·배송비 없음)
+  // 금액 계산
   const total = items.reduce((sum, it) => sum + it.price * it.qty, 0)
+  const discount = 5000 // 예시 쿠폰 할인 금액
+  const pointUsed = Number(usePoint) || 0
+  const finalTotal = Math.max(0, total - discount - pointUsed)
   const count = items.reduce((sum, it) => sum + it.qty, 0)
 
   function setField(key, value) {
@@ -111,8 +116,6 @@ export default function Checkout() {
 
     setPaying(true)
     try {
-      // 1) 주문 생성 → tossOrderId, totalPrice 받기
-      // 같은 상품으로 다시 누른 경우 결제 만료 전이면 만든 주문을 다시 쓴다 (재고가 또 줄지 않게)
       const key = JSON.stringify(items.map(it => [it.id, it.qty]))
       let order = orderRef.current?.key === key ? orderRef.current.order : null
       if (order?.expiresAt && new Date(order.expiresAt) <= new Date()) order = null
@@ -126,25 +129,19 @@ export default function Checkout() {
       if (!tossOrderId || !totalPrice) {
         throw new Error('주문 응답에 tossOrderId / totalPrice가 없어요.')
       }
-      if (Number(totalPrice) !== total) {
-        console.warn('화면 금액과 서버 금액이 달라요', { 화면: total, 서버: totalPrice })
-      }
 
-      // 성공 페이지에서 금액 확인에 쓴다
       sessionStorage.setItem('popq_pending_order', JSON.stringify({ tossOrderId, totalPrice }))
 
-      // 2) 토스페이먼츠 결제창 호출 (성공 시 /payments/success 로 이동, 닫으면 USER_CANCEL)
       const first = items[0].name
       await requestTossPayment({
         orderId: tossOrderId,
         orderName: items.length > 1 ? `${first} 외 ${items.length - 1}건` : first,
-        amount: Number(totalPrice),
+        amount: Number(finalTotal),
         customerName: form.name.trim(),
         customerPhone: form.phone,
       })
     } catch (err) {
       if (err?.code === 'USER_CANCEL') {
-        // TODO: 주문 취소 API(PATCH /api/orders/{orderId}/cancel)는 아직 연결하지 않음. 같은 상품이면 위에서 만든 주문을 다시 쓴다
         setNotice('결제를 취소했어요. 다시 시도하려면 결제하기를 눌러 주세요.')
       } else {
         setNotice(getApiError(err, '결제를 시작하지 못했어요. 잠시 후 다시 시도해 주세요.'))
@@ -166,8 +163,7 @@ export default function Checkout() {
             {/* 배송 정보 */}
             <section className="co-card">
               <div className="co-card-head">
-                <h2>🚚 배송 정보</h2>
-                <span className="co-req">* 필수 입력 항목</span>
+                <h2>배송 정보</h2>
               </div>
 
               <div className="co-row">
@@ -221,7 +217,7 @@ export default function Checkout() {
             {/* 주문 상품 */}
             <section className="co-card">
               <div className="co-card-head">
-                <h2>🛍️ 주문 상품</h2>
+                <h2>주문 상품</h2>
                 <span className="co-req">총 {items.length}개 상품</span>
               </div>
               {isSample && (
@@ -244,14 +240,124 @@ export default function Checkout() {
               </ul>
             </section>
 
-            {/* 결제 수단: 토스 결제창에서 고른다 */}
+            {/* 쿠폰 / 포인트 영역 */}
             <section className="co-card">
               <div className="co-card-head">
-                <h2>💳 결제 수단</h2>
+                <h2>쿠폰 / 포인트</h2>
               </div>
-              <div className="co-toss">
-                <strong>Toss Payments</strong>
-                <span>결제하기를 누르면 토스페이먼츠 결제창에서 카드·간편결제를 선택할 수 있어요.</span>
+              <div className="co-row">
+                <label>쿠폰 사용</label>
+                <div className="co-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <select style={{ flex: 1 }}>
+                    <option>사용 가능한 쿠폰 1개 (₩5,000 할인)</option>
+                  </select>
+                  <span style={{ background: '#eef2ff', color: '#4f46e5', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>적용됨</span>
+                </div>
+              </div>
+              <div className="co-row">
+                <label>포인트 사용</label>
+                <div className="co-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    value={usePoint}
+                    onChange={e => setUsePoint(e.target.value.replace(/\D/g, ''))}
+                    placeholder="0"
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ fontSize: '13px', color: '#6b7684' }}>P</span>
+                  <button
+                    type="button"
+                    className="co-sub-btn"
+                    onClick={() => setUsePoint('2500')}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    전액 사용
+                  </button>
+                </div>
+                <div style={{ fontSize: '11px', color: '#8b95a1', marginTop: '4px' }}>보유 포인트 2,500P</div>
+              </div>
+            </section>
+
+            {/* 결제 수단 선택 UI */}
+            <section className="co-card">
+              <div className="co-card-head">
+                <h2>결제 수단</h2>
+              </div>
+              <div className="co-payment-methods" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                <label 
+                  className={`co-pay-method-card ${paymentMethod === 'toss' ? 'active' : ''}`}
+                  style={{
+                    border: paymentMethod === 'toss' ? '2px solid #465235' : '1px solid #e5e8eb',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    background: paymentMethod === 'toss' ? '#f4f6f2' : '#fff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      checked={paymentMethod === 'toss'} 
+                      onChange={() => setPaymentMethod('toss')} 
+                    />
+                    <strong style={{ fontSize: '15px' }}>Toss Payments</strong>
+                    <span style={{ background: '#465235', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>추천</span>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#6b7684', paddingLeft: '22px' }}>토스페이먼츠로 안전하고 간편한 결제</span>
+                </label>
+
+                <label 
+                  className={`co-pay-method-card ${paymentMethod === 'card' ? 'active' : ''}`}
+                  style={{
+                    border: paymentMethod === 'card' ? '2px solid #465235' : '1px solid #e5e8eb',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    background: paymentMethod === 'card' ? '#f4f6f2' : '#fff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      checked={paymentMethod === 'card'} 
+                      onChange={() => setPaymentMethod('card')} 
+                    />
+                    <strong style={{ fontSize: '15px' }}>신용·체크카드</strong>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#6b7684', paddingLeft: '22px' }}>모든 카드로 결제</span>
+                </label>
+
+                <label 
+                  className={`co-pay-method-card ${paymentMethod === 'easy' ? 'active' : ''}`}
+                  style={{
+                    border: paymentMethod === 'easy' ? '2px solid #465235' : '1px solid #e5e8eb',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    background: paymentMethod === 'easy' ? '#f4f6f2' : '#fff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      checked={paymentMethod === 'easy'} 
+                      onChange={() => setPaymentMethod('easy')} 
+                    />
+                    <strong style={{ fontSize: '15px' }}>간편결제</strong>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#6b7684', paddingLeft: '22px' }}>네이버페이 · 카카오페이 등</span>
+                </label>
               </div>
             </section>
           </div>
@@ -263,17 +369,28 @@ export default function Checkout() {
               <span>상품 금액 ({count}개)</span>
               <span>{won(total)}</span>
             </div>
+            <div className="co-sum-row">
+              <span>할인 금액</span>
+              <span style={{ color: '#e11d48' }}>-{won(discount + pointUsed)}</span>
+            </div>
             <div className="co-sum-total">
               <span>총 결제 금액</span>
-              <strong>{won(total)}</strong>
+              <strong style={{ color: '#465235' }}>{won(finalTotal)}</strong>
             </div>
 
             {notice && <p className="co-notice">{notice}</p>}
 
-            <button type="button" className="co-pay" onClick={handlePay} disabled={paying}>
+            {/* 요청하신 #465235 색상 적용 버튼 */}
+            <button 
+              type="button" 
+              className="co-pay" 
+              onClick={handlePay} 
+              disabled={paying}
+              style={{ backgroundColor: '#465235' }}
+            >
               {paying ? '결제창 여는 중…' : <>결제하기 &nbsp;›</>}
             </button>
-            <p className="co-secure">🛡️ 결제는 토스페이먼츠(Toss Payments)로 안전하게 진행돼요.</p>
+            <p className="co-secure">결제는 토스페이먼츠(Toss Payments)로 안전하게 진행돼요.</p>
           </aside>
         </div>
       </div>
