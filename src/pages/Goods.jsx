@@ -12,7 +12,6 @@ const POPUP_NAMES = {
 }
 
 // 상품 이름에 들어 있는 단어로 카테고리를 자동 분류 (위에서부터 먼저 맞는 것)
-// TODO: 상품 데이터에 category 필드가 생기면 이 규칙은 지워도 됩니다.
 const CATEGORY_RULES = [
   { label: '가방', words: ['가방', '백', '토트'] },
   { label: '패션', words: ['티셔츠', '후드', '집업', '스커트', '바지', '캡', '선글라스', '러닝화', '맨투맨'] },
@@ -34,21 +33,13 @@ const ALL_GOODS = (Array.isArray(featuredGoods) ? featuredGoods : []).map(g => (
   popupName: POPUP_NAMES[g.popupId] || g.popupId,
 }))
 
-// 추천 모음 (카드를 누르면 아래 목록이 그 조건으로 걸러짐)
-const COLLECTIONS = [
-  { key: 'limited', eyebrow: 'LIMITED', title: '놓치면 없는', tab: '한정판', test: g => g.limited },
-  { key: 'cheap', eyebrow: 'UNDER 20K', title: '부담 없이 담는', tab: '2만원 이하', test: g => g.price > 0 && g.price <= 20000 },
-  { key: 'wear', eyebrow: 'STYLE', title: '입고 들고 다니는', tab: '패션·가방', test: g => g.category === '패션' || g.category === '가방' },
-  { key: 'cute', eyebrow: 'CHARACTER', title: '품에 안기는 귀여움', tab: '인형·키링', test: g => g.category === '인형·키링' },
-]
-
 function formatPrice(price) {
   return price > 0 ? `${price.toLocaleString()}원` : '가격 미정'
 }
 
 export default function Goods() {
   const [params, setParams] = useSearchParams()
-  const popup = params.get('popup') || 'all' // /goods?popup=kinetic 처럼 주소로도 필터 가능
+  const popup = params.get('popup') || 'all' 
   const [category, setCategory] = useState('전체')
   const [collection, setCollection] = useState('all')
   const [sort, setSort] = useState('default')
@@ -80,29 +71,42 @@ export default function Goods() {
     [popups]
   )
 
-  const activeCol = COLLECTIONS.find(c => c.key === collection)
-
   const list = useMemo(() => {
     let result = ALL_GOODS.filter(g =>
       (category === '전체' || g.category === category) &&
-      (popup === 'all' || g.popupId === popup) &&
-      (!activeCol || activeCol.test(g))
+      (popup === 'all' || g.popupId === popup)
     )
     if (sort === 'low') result = [...result].sort((a, b) => a.price - b.price)
     if (sort === 'high') result = [...result].sort((a, b) => b.price - a.price)
     return result
-  }, [category, popup, activeCol, sort])
-
-  const pickCollection = (key) => {
-    setCollection(prev => (prev === key ? 'all' : key))
-    document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  }, [category, popup, sort])
 
   const resetAll = () => {
     setCategory('전체')
     setCollection('all')
     setSort('default')
     setPopup('all')
+  }
+
+  // 장바구니 담기 핸들러 함수
+  const handleAddToCart = (g) => {
+    const existingCart = JSON.parse(localStorage.getItem('popq_cart') || '[]')
+    const itemIndex = existingCart.findIndex(cartItem => cartItem.id === g.id)
+    
+    if (itemIndex > -1) {
+      existingCart[itemIndex].qty = (existingCart[itemIndex].qty || 1) + 1
+    } else {
+      existingCart.push({
+        id: g.id,
+        name: g.name,
+        price: g.price,
+        image: g.image,
+        option: g.option || '기본',
+        qty: 1
+      })
+    }
+    localStorage.setItem('popq_cart', JSON.stringify(existingCart))
+    alert(`'${g.name}' 상품이 장바구니에 담겼어요!`)
   }
 
   return (
@@ -124,37 +128,6 @@ export default function Goods() {
             </div>
           ))}
           <span className="gs-hero-badge">NEW<br />DROP</span>
-        </div>
-      </section>
-
-      {/* 추천 모음 */}
-      <section className="gs-sec">
-        <div className="gs-head">
-          <div>
-            <div className="gs-eyebrow">CURATED GOODS</div>
-            <h2 className="gs-title">지금 주목할 굿즈</h2>
-          </div>
-          <button type="button" className="gs-more" onClick={resetAll}>전체 상품 보기 →</button>
-        </div>
-        <div className="gs-curated">
-          {COLLECTIONS.map(c => {
-            const count = ALL_GOODS.filter(c.test).length
-            return (
-              <button
-                key={c.key}
-                type="button"
-                className={`gs-curated-card ${collection === c.key ? 'active' : ''}`}
-                onClick={() => pickCollection(c.key)}
-              >
-                <span className="gs-curated-eyebrow">{c.eyebrow}</span>
-                <span className="gs-curated-title">{c.title}</span>
-                <span className="gs-curated-foot">
-                  <span>{count}개 상품</span>
-                  <span>→</span>
-                </span>
-              </button>
-            )
-          })}
         </div>
       </section>
 
@@ -207,14 +180,6 @@ export default function Goods() {
               <span>총 {list.length}개</span>
             </div>
             <div className="gs-tools">
-              <div className="gs-tabs">
-                <button type="button" className={collection === 'all' ? 'on' : ''} onClick={() => setCollection('all')}>전체</button>
-                {COLLECTIONS.map(c => (
-                  <button key={c.key} type="button" className={collection === c.key ? 'on' : ''} onClick={() => setCollection(c.key)}>
-                    {c.tab}
-                  </button>
-                ))}
-              </div>
               <select className="gs-sort" value={sort} onChange={e => setSort(e.target.value)}>
                 <option value="default">기본순</option>
                 <option value="low">낮은 가격순</option>
@@ -235,10 +200,26 @@ export default function Goods() {
                     <div className="gs-card-popup">{g.popupName}</div>
                     <div className="gs-card-name">{g.name}</div>
                     <div className="gs-card-price">{formatPrice(g.price)}</div>
-                    <div className="gs-card-actions">
-                      {/* TODO: 장바구니 담기 버튼은 장바구니 연동 방식이 정해지면 추가 */}
-                      <Link to={`/popups/${g.popupId}`} className="gs-btn">상세보기</Link>
+                    
+                    {/* 상세보기(좌측) 및 장바구니 담기(우측) 버튼 영역 */}
+                    <div className="gs-card-actions" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                      <Link 
+                        to={`/popups/${g.popupId}`} 
+                        className="gs-btn" 
+                        style={{ flex: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', padding: '8px 0', textDecoration: 'none', border: '1px solid #d1d5db', color: '#374151' }}
+                      >
+                        상세보기
+                      </Link>
+                      <button 
+                        type="button" 
+                        className="gs-btn" 
+                        style={{ flex: 1, backgroundColor: '#293323', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '8px 0', fontWeight: '600' }}
+                        onClick={() => handleAddToCart(g)}
+                      >
+                        장바구니 담기
+                      </button>
                     </div>
+
                   </div>
                 </article>
               ))}

@@ -248,11 +248,11 @@
   font-size: 17px;
   font-weight: 800;
   color: #fff;
-  background: linear-gradient(135deg, #ff7043, #ffb300);
+  background: #465235; /* 단색으로 변경 */
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(255, 112, 67, 0.35);
+  box-shadow: 0 6px 16px rgba(70, 82, 53, 0.35); /* 버튼 색상과 어울리는 그림자로 변경 */
 }
 .co-pay:hover:not(:disabled) { filter: brightness(1.04); }
 .co-pay:disabled {
