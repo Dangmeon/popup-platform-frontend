@@ -78,7 +78,7 @@ function CartPage({ authed }) {
             const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
             list = localData.map((it, idx) => ({
               cartId: it.id || idx,
-              productId: it.id,
+              prdId: it.id,
               productName: it.name,
               productImg: it.image,
               price: it.price,
@@ -90,7 +90,7 @@ function CartPage({ authed }) {
           const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
           list = localData.map((it, idx) => ({
             cartId: it.id || idx,
-            productId: it.id,
+            prdId: it.id,
             productName: it.name,
             productImg: it.image,
             price: it.price,
@@ -149,7 +149,7 @@ function CartPage({ authed }) {
         await updateCartItem(item.cartId, next)
       } else {
         const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
-        const updated = localData.map(it => (it.id === item.productId || it.id === item.cartId) ? { ...it, qty: next } : it)
+        const updated = localData.map(it => (it.id === item.prdId || it.id === item.cartId) ? { ...it, qty: next } : it)
         localStorage.setItem('popq_cart', JSON.stringify(updated))
       }
 
@@ -227,7 +227,7 @@ function CartPage({ authed }) {
       state: {
         items: selectedItems.map((i) => ({
           cartId: i.cartId,
-          productId: i.productId,
+          prdId: i.prdId,
           quantity: i.quantity,
           name: i.productName,
           price: i.price,
@@ -258,7 +258,7 @@ function CartPage({ authed }) {
     )
   } else if (items.length === 0) {
     body = (
-      <div className="cp-empty">
+      <div className="cp-empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
         <p>장바구니가 비어있어요.</p>
         <Link to="/goods" className="cp-btn-main cp-btn-inline" style={{ backgroundColor: '#293323' }}>
           굿즈 구경하러 가기
@@ -317,10 +317,10 @@ function CartPage({ authed }) {
 
       <h1 className="cp-title" style={{ fontSize: '28px', fontWeight: '800', marginBottom: '24px' }}>장바구니</h1>
 
-      <div className="cp-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
+      <div className="cp-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'stretch' }}>
         
         {/* 왼쪽: 장바구니 목록 카드 박스 */}
-        <section className="cp-panel" style={{ background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <section className="cp-panel" style={{ background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
           <div className="cp-panel-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e8eb', paddingBottom: '16px', marginBottom: '16px' }}>
             <label className="cp-all" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '600' }}>
               <input
@@ -350,7 +350,20 @@ function CartPage({ authed }) {
         </section>
 
         {/* 오른쪽: 주문 요약 카드 박스 */}
-        <aside className="cp-summary" style={{ background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', position: 'sticky', top: '20px' }}>
+        <aside
+          className="cp-summary"
+          style={{
+            background: '#fff',
+            border: '1px solid #e5e8eb',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            position: 'sticky',
+            top: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '20px', borderBottom: '1px solid #e5e8eb', paddingBottom: '12px' }}>주문 요약</h2>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '15px', color: '#4b5563' }}>
@@ -371,7 +384,7 @@ function CartPage({ authed }) {
             style={{
               width: '100%',
               padding: '16px 0',
-              backgroundColor: '#293323', // #293323 색상 적용
+              backgroundColor: '#293323',
               color: '#fff',
               border: 'none',
               borderRadius: '12px',
@@ -386,7 +399,18 @@ function CartPage({ authed }) {
             주문하기 ›
           </button>
 
-          <p style={{ fontSize: '12px', color: '#6b7684', textAlign: 'center', background: '#f8f9fa', padding: '12px', borderRadius: '8px' }}>
+          <p
+            style={{
+              fontSize: '12px',
+              color: '#6b7684',
+              textAlign: 'center',
+              background: '#f8f9fa',
+              padding: '12px',
+              borderRadius: '8px',
+              marginTop: 'auto',
+              marginBottom: 0,
+            }}
+          >
             ✓ 결제는 토스페이먼츠(Toss Payments)로 안전하게 진행됩니다.
           </p>
         </aside>
