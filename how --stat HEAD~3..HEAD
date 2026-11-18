@@ -1,0 +1,31 @@
+[33mcommit 3f3ef6d5f4ad2e913bb33a0ca14735546faa96f4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/2-main-page[m[33m, [m[1;31morigin/feature/2-main-page[m[33m)[m
+Author: lyhhhh222 <rhrlwhdk12@naver.com>
+Date:   Tue Nov 10 00:04:20 2026 +0900
+
+    feat: 팝업 상세 화면 개편 및 탭 추가 (#2)
+
+ src/pages/FeaturedPopupDetail.jsx      | 156 [32m+++++++++++++++++++++[m[31m------[m
+ src/pages/PopupDetail.css              | 126 [32m++++++++++++++++++++++[m
+ src/pages/PopupDetail.jsx              | 190 [32m++++++++++++++++++++++++++++[m[31m-----[m
+ src/styles/FeaturedPopupDetailTabs.css | 128 [32m++++++++++++++++++++++[m
+ 4 files changed, 545 insertions(+), 55 deletions(-)
+
+[33mcommit f817037e6a286afff836ff53c6d9b787c123f59d[m
+Author: lyhhhh222 <rhrlwhdk12@naver.com>
+Date:   Tue Nov 10 00:04:04 2026 +0900
+
+    fix: 로그인·가입·장바구니·검색 화면 수정 (#2)
+
+ src/pages/PopupList.jsx | 88 [32m++++++++++++++++++++++++++++++++++++++++++[m[31m-------[m
+ 1 file changed, 76 insertions(+), 12 deletions(-)
+
+[33mcommit 202503b8a6594ab0a0d9f50ce593f4556d31a622[m
+Author: lyhhhh222 <rhrlwhdk12@naver.com>
+Date:   Tue Nov 10 00:03:51 2026 +0900
+
+    feat: 헤더 검색·굿즈샵 링크 및 알림 위치 수정 (#2)
+
+ src/App.jsx                      |  2 [32m++[m
+ src/components/common/Header.css |  1 [32m+[m
+ src/components/common/Header.jsx | 28 [32m+++++++++++++++[m[31m-------------[m
+ 3 files changed, 18 insertions(+), 13 deletions(-)

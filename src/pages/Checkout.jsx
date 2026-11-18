@@ -50,7 +50,7 @@ export default function Checkout() {
   const items = useMemo(() => {
     if (isSample) return SAMPLE_ITEMS
     return passed.map((it, i) => ({
-      id: it.productId ?? it.id ?? i,
+      id: it.prdId ?? it.id ?? i,
       name: it.name ?? it.productName ?? '상품',
       option: it.option ?? '',
       price: Number(it.price ?? 0),
@@ -121,7 +121,7 @@ export default function Checkout() {
       if (order?.expiresAt && new Date(order.expiresAt) <= new Date()) order = null
       if (!order) {
         order = await createOrder({
-          items: items.map(it => ({ productId: it.id, quantity: it.qty })),
+          items: items.map(it => ({ prdId: it.id, quantity: it.qty })),
         })
         orderRef.current = { key, order }
       }
@@ -251,29 +251,32 @@ export default function Checkout() {
                   <select style={{ flex: 1 }}>
                     <option>사용 가능한 쿠폰 1개 (₩5,000 할인)</option>
                   </select>
-                  <span style={{ background: '#eef2ff', color: '#4f46e5', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>적용됨</span>
                 </div>
               </div>
               <div className="co-row">
                 <label>포인트 사용</label>
-                <div className="co-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    value={usePoint}
-                    onChange={e => setUsePoint(e.target.value.replace(/\D/g, ''))}
-                    placeholder="0"
-                    style={{ flex: 1 }}
-                  />
-                  <span style={{ fontSize: '13px', color: '#6b7684' }}>P</span>
-                  <button
-                    type="button"
-                    className="co-sub-btn"
-                    onClick={() => setUsePoint('2500')}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    전액 사용
-                  </button>
+                <div className="co-field">
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      value={usePoint}
+                      onChange={e => setUsePoint(e.target.value.replace(/\D/g, ''))}
+                      placeholder="0"
+                      style={{ flex: 1 }}
+                    />
+                    <span style={{ fontSize: '13px', color: '#6b7684' }}>P</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                    <span style={{ fontSize: '11px', color: '#8b95a1' }}>보유 포인트 2,500P</span>
+                    <button
+                      type="button"
+                      className="co-sub-btn"
+                      onClick={() => setUsePoint('2500')}
+                      style={{ whiteSpace: 'nowrap', padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      전액 사용
+                    </button>
+                  </div>
                 </div>
-                <div style={{ fontSize: '11px', color: '#8b95a1', marginTop: '4px' }}>보유 포인트 2,500P</div>
               </div>
             </section>
 
@@ -380,7 +383,6 @@ export default function Checkout() {
 
             {notice && <p className="co-notice">{notice}</p>}
 
-            {/* 요청하신 #465235 색상 적용 버튼 */}
             <button 
               type="button" 
               className="co-pay" 

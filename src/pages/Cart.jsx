@@ -78,7 +78,7 @@ function CartPage({ authed }) {
             const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
             list = localData.map((it, idx) => ({
               cartId: it.id || idx,
-              productId: it.id,
+              prdId: it.id,
               productName: it.name,
               productImg: it.image,
               price: it.price,
@@ -90,7 +90,7 @@ function CartPage({ authed }) {
           const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
           list = localData.map((it, idx) => ({
             cartId: it.id || idx,
-            productId: it.id,
+            prdId: it.id,
             productName: it.name,
             productImg: it.image,
             price: it.price,
@@ -149,7 +149,7 @@ function CartPage({ authed }) {
         await updateCartItem(item.cartId, next)
       } else {
         const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
-        const updated = localData.map(it => (it.id === item.productId || it.id === item.cartId) ? { ...it, qty: next } : it)
+        const updated = localData.map(it => (it.id === item.prdId || it.id === item.cartId) ? { ...it, qty: next } : it)
         localStorage.setItem('popq_cart', JSON.stringify(updated))
       }
 
@@ -227,7 +227,7 @@ function CartPage({ authed }) {
       state: {
         items: selectedItems.map((i) => ({
           cartId: i.cartId,
-          productId: i.productId,
+          prdId: i.prdId,
           quantity: i.quantity,
           name: i.productName,
           price: i.price,

@@ -239,12 +239,12 @@ export function AppProvider({ children }) {
   function addToCart(product, quantity = 1) {
     setCart((previous) => {
       const existing = previous.find(
-        (item) => item.productId === product.id
+        (item) => item.prdId === product.id
       )
 
       if (existing) {
         return previous.map((item) =>
-          item.productId === product.id
+          item.prdId === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
@@ -252,7 +252,7 @@ export function AppProvider({ children }) {
 
       return [
         ...previous,
-        { productId: product.id, quantity },
+        { prdId: product.id, quantity },
       ]
     })
 
@@ -261,15 +261,15 @@ export function AppProvider({ children }) {
   }
 
   // 장바구니 수량
-  function updateCartQty(productId, quantity) {
+  function updateCartQty(prdId, quantity) {
     if (quantity <= 0) {
-      removeFromCart(productId)
+      removeFromCart(prdId)
       return
     }
 
     setCart((previous) =>
       previous.map((item) =>
-        item.productId === productId
+        item.prdId === prdId
           ? { ...item, quantity }
           : item
       )
@@ -277,9 +277,9 @@ export function AppProvider({ children }) {
   }
 
   // 장바구니 삭제
-  function removeFromCart(productId) {
+  function removeFromCart(prdId) {
     setCart((previous) =>
-      previous.filter((item) => item.productId !== productId)
+      previous.filter((item) => item.prdId !== prdId)
     )
   }
 

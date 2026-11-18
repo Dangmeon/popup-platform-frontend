@@ -7,7 +7,7 @@ import './ShopGoodsCard.css'
 // 서버 상품·프론트 임시 굿즈 둘 다 받는다. 필드명이 다르면 이 함수만 고친다
 function normalize(g) {
   return {
-    id: g.productId ?? g.id,
+    id: g.prdId ?? g.id,
     name: g.productName ?? g.name ?? '상품',
     price: typeof g.price === 'number' ? g.price : null,
     image: g.productImg ?? g.imageUrl ?? g.image ?? '',
@@ -21,10 +21,10 @@ function normalize(g) {
 // 판매중으로 보는 값 (서버 값이 다르면 여기에 추가)
 const ON_SALE = ['판매중', 'ON_SALE', 'SELLING']
 
-// 장바구니 담기: POST /api/cart/items  (body: { productId, quantity })
-async function addCartItem(productId, quantity = 1) {
+// 장바구니 담기: POST /api/cart/items  (body: { prdId, quantity })
+async function addCartItem(prdId, quantity = 1) {
   const res = await axiosInstance.post('/api/cart/items', {
-    productId: Number(productId),
+    prdId: Number(prdId),
     quantity,
   })
   return res.data?.data ?? res.data
