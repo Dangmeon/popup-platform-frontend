@@ -1,4 +1,3 @@
-import ManagerCenter from './pages/manager/ManagerCenter.jsx'
 import { useEffect, useRef, useState } from 'react'
 import {
   Routes,
@@ -7,6 +6,7 @@ import {
   Navigate,
   useNavigate,
   useParams,
+  useLocation,
 } from 'react-router-dom'
 
 import Header from './components/common/Header.jsx'
@@ -26,8 +26,6 @@ import Home from './pages/Home.jsx'
 import PopupList from './pages/PopupList.jsx'
 import PopupDetail from './pages/PopupDetail.jsx'
 import MyPage from './pages/MyPage.jsx'
-import MyPageHome, { MyPageFrame } from './pages/MyPageHome.jsx'
-import NearbyPopups from './pages/NearbyPopups.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
 import MyPageServices from './pages/MyPageServices.jsx'
 import Cart from './pages/Cart.jsx'
@@ -42,14 +40,30 @@ import ReservationEdit from './pages/ReservationEdit'
 
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminReservations from './pages/admin/AdminReservations'
 import AdminMembers from './pages/admin/AdminMembers'
 import AdminOrders from './pages/admin/AdminOrders'
 import AdminSales from './pages/admin/AdminSales'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
+import AdminWaitings from './pages/admin/AdminWaitings'
 
 import Goods from './pages/Goods.jsx'
 import './styles/toast.css'
+
+import Checkout from './pages/Checkout.jsx'
+import { PaymentSuccess, PaymentFail } from './pages/PaymentResult.jsx'
+
+// 2. 페이지 이동 시 스크롤을 맨 위로 올려주는 공통 컴포넌트 추가
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+
+  return null
+}
 
 // 예약 상태
 const reservationStatuses = new Set([
@@ -920,6 +934,8 @@ function App() {
 
   return (
     <>
+      {/* 3. 라우터 내부 상단에 ScrollToTop 배치 */}
+      <ScrollToTop />
       <Routes>
         {/* 사용자 페이지 */}
         <Route element={<UserLayout />}>
@@ -1033,7 +1049,7 @@ function App() {
           <Route path="/nearby" element={<NearbyPopups />} />
           <Route
             path="/mypage/account"
-            element={<MyPageFrame><AccountSettings /></MyPageFrame>}
+            element={<AccountSettings />}
           />
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
@@ -1045,21 +1061,28 @@ function App() {
 
           <Route path="/goods" element={<Goods />} />
 
+          {/* 주문·결제 */}
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payments/success" element={<PaymentSuccess />} />
+          <Route path="/payments/fail" element={<PaymentFail />} />
+
           {/* 없는 사용자 페이지 */}
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        {/* 담당 팝업 매니저 전용 화면 */}
-        <Route path="/manager/*" element={<ManagerCenter />} />
-
         {/* 관리자 페이지 */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
+          <Route
+            path="reservations"
+            element={<AdminReservations />}
+          />
           <Route path="members" element={<AdminMembers />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="sales" element={<AdminSales />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="popups" element={<AdminPopups />} />
+          <Route path="waiting" element={<AdminWaitings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
