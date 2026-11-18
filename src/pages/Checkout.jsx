@@ -4,10 +4,10 @@ import { createOrder, getApiError } from '../api/orderApi.js'
 import { requestTossPayment } from '../api/tossPayments.js'
 import '../styles/Checkout.css'
 
-// 장바구니에서 넘어온 상품이 없을 때 보여줄 임시 상품 (isSoldOut: true 추가)
+// 장바구니에서 넘어온 상품이 없을 때 보여줄 임시 상품
 const SAMPLE_ITEMS = [
   { id: 's1', name: 'KINETIC 러닝화', option: '270', price: 129000, qty: 1, image: '/kinetic/kinetic-shoe.png', isSoldOut: false },
-  { id: 's2', name: 'KINETIC 볼캡', option: '차콜', price: 39000, qty: 1, image: '/kinetic/kinetic-cap.png', isSoldOut: true }, // 👈 여기 품절 상태 명시
+  { id: 's2', name: 'KINETIC 볼캡', option: '차콜', price: 39000, qty: 1, image: '/kinetic/kinetic-cap.png', isSoldOut: true },
 ]
 
 const MEMOS = [
@@ -20,7 +20,6 @@ const MEMOS = [
 
 const won = n => `₩${Math.round(n).toLocaleString()}`
 
-// 휴대폰 번호에 하이픈 자동으로 넣기
 function formatPhone(v) {
   const d = v.replace(/\D/g, '').slice(0, 11)
   if (d.length < 4) return d
@@ -28,7 +27,6 @@ function formatPhone(v) {
   return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`
 }
 
-// 다음 우편번호 스크립트는 주소 검색을 처음 눌렀을 때 불러온다
 function loadPostcode() {
   return new Promise((resolve, reject) => {
     if (window.daum?.Postcode) return resolve()
@@ -43,15 +41,12 @@ function loadPostcode() {
 export default function Checkout() {
   const location = useLocation()
 
-  // 장바구니에서 navigate('/checkout', { state: { items } }) 로 넘어온 상품
   const passed = location.state?.items
   const isSample = !Array.isArray(passed) || passed.length === 0
 
-  // 상품 목록 상태 관리 (품절 상품은 무조건 exclude: true로 자동 설정)
   const [orderItems] = useState(() => {
     const rawList = isSample ? SAMPLE_ITEMS : passed
     return rawList.map((it, i) => {
-      // 💡 품절 판정 조건 강화 (purchasable이 false이거나, isSoldOut이 true이거나)
       const soldOut = it.purchasable === false || it.isSoldOut === true || it.soldOut === true
       return {
         id: it.prdId ?? it.id ?? i,
@@ -61,7 +56,7 @@ export default function Checkout() {
         qty: Number(it.qty ?? it.quantity ?? 1),
         image: it.image ?? it.imageUrl ?? '',
         isSoldOut: soldOut,
-        exclude: soldOut, // 품절이면 무조건 주문 제외
+        exclude: soldOut,
       }
     })
   })
@@ -70,6 +65,7 @@ export default function Checkout() {
     name: '', phone: '', zip: '', address: '', detail: '', memo: MEMOS[0],
   })
   const [paymentMethod, setPaymentMethod] = useState('toss')
+  const [selectedCoupon, setSelectedCoupon] = useState('5000') // 💡 쿠폰 선택 상태 추가 ('0'이면 미사용, '5000'이면 5천원 할인)
   const [usePoint, setUsePoint] = useState('')
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
@@ -77,15 +73,13 @@ export default function Checkout() {
   
   const orderRef = useRef(null)
 
-  // 주문에서 제외되지 않은 유효한 상품들만 필터링
   const activeItems = useMemo(() => orderItems.filter(it => !it.exclude), [orderItems])
 
-  // 금액 계산: 오직 유효한(active) 상품들의 금액만 합산
   const activeProductTotal = useMemo(() => {
     return activeItems.reduce((sum, it) => sum + it.price * it.qty, 0)
   }, [activeItems])
 
-  const discount = 5000 // 예시 쿠폰 할인 금액
+  const discount = Number(selectedCoupon) || 0 // 💡 선택된 쿠폰 금액 반영 (안함 선택 시 0원)
   const pointUsed = Number(usePoint) || 0
   const finalTotal = Math.max(0, activeProductTotal - discount - pointUsed)
   const count = activeItems.reduce((sum, it) => sum + it.qty, 0)
@@ -231,7 +225,7 @@ export default function Checkout() {
               </div>
             </section>
 
-            {/* 주문 상품 (품절 상품 자동 제외 및 안내 UI) */}
+            {/* 주문 상품 */}
             <section className="co-card">
               <div className="co-card-head">
                 <h2>주문 상품</h2>
@@ -288,8 +282,14 @@ export default function Checkout() {
               <div className="co-row">
                 <label>쿠폰 사용</label>
                 <div className="co-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <select style={{ flex: 1 }}>
-                    <option>사용 가능한 쿠폰 1개 (₩5,000 할인)</option>
+                  {/* 💡 쿠폰 사용 안함 옵션 추가 */}
+                  <select 
+                    style={{ flex: 1 }} 
+                    value={selectedCoupon} 
+                    onChange={e => setSelectedCoupon(e.target.value)}
+                  >
+                    <option value="0">사용안함</option>
+                    <option value="5000">사용 가능한 쿠폰 1개 (₩5,000 할인)</option>
                   </select>
                 </div>
               </div>
