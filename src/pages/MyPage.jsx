@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useRealtimeTopics } from '../hooks/useRealtimeTopics.js'
 import { useApp } from '../context/AppContext.jsx'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import { getMyReservations } from '../api/mypageApi'
@@ -13,7 +14,7 @@ function errorMessage(error) {
   const status = error.response?.status
   if (status === 401) return '로그인 시간이 만료되었습니다. 다시 로그인해 주세요.'
   if (status === 403) return '이 내역을 조회할 인증 또는 권한을 확인하지 못했습니다.'
-  if (status === 404) return '내역 조회 기능을 아직 연결하지 못했습니다. 잠시 후 다시 확인해 주세요.'
+  if (status === 404) return '내역을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.'
   if (!error.response && error.request) return '서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.'
   return '내역을 불러오지 못했습니다. 다시 조회해 주세요.'
 }
@@ -44,6 +45,11 @@ function ActivityPage({ owner }) {
   const [notice, setNotice] = useState('')
   const cancelLock = useRef(false)
   const mounted = useRef(false)
+  const waitingRefresh = useRef(null)
+  const mutationVersion = useRef(0)
+  const calledIds = useRef(new Set())
+  const app = useApp()
+  const connection = useRealtimeTopics(waitings.map(row=>`/topic/waitings/${row.waitingId}`), Boolean(owner), ()=>waitingRefresh.current?.())
 
   useEffect(() => {
     mounted.current = true
@@ -64,29 +70,47 @@ function ActivityPage({ owner }) {
       if (active) { setReservations([]); setErrors(previous => ({...previous,reservations:errorMessage(error)})) }
     }).finally(() => { if (active) setLoading(previous => ({...previous,reservations:false})) })
 
-    async function fetchWaitings() {
-      try {
-        const ids = loadWaitingIds(owner)
-        const results = await Promise.allSettled(ids.map(id => getWaiting(id)))
-        if (!active) return
-        const rows = results.filter(result => result.status === 'fulfilled').map(result => result.value)
-        if (rows.some(row => !row || !Number.isSafeInteger(row.waitingId) || typeof row.status !== 'string')) throw new Error('Invalid waiting response')
-        setWaitings(rows.filter(row => ['WAITING','CALLED'].includes(row.status)))
-        const failure = results.find(result => result.status === 'rejected')
-        if (failure) setErrors(previous => ({...previous,waitings:errorMessage(failure.reason)}))
-      } catch (error) {
-        if (active) {setWaitings([]);setErrors(previous => ({...previous,waitings:errorMessage(error)}))}
-      } finally {
-        if (active) setLoading(previous => ({...previous,waitings:false}))
-      }
-    }
-    fetchWaitings()
     getPopups().then(rows => { if (active && Array.isArray(rows)) setPopups(rows) }).catch(() => {})
     return () => { active = false }
   }, [owner,retry])
 
+  useEffect(() => {
+    if (!owner) return
+    let active=true, running=false, timer, queued=false
+    async function refresh() {
+      if (!active || document.hidden) return
+      if (running || cancelLock.current) { queued=true; return }
+      clearTimeout(timer); running=true; queued=false
+      const version=mutationVersion.current
+      try {
+        const results=await Promise.allSettled(loadWaitingIds(owner).map(id=>getWaiting(id)))
+        if (!active || version!==mutationVersion.current) return
+        const rows=results.filter(result=>result.status==='fulfilled').map(result=>result.value)
+        if (rows.some(row=>!Number.isSafeInteger(row?.waitingId)||typeof row?.status!=='string')) throw new Error('Invalid response')
+        setWaitings(rows.filter(row=>['WAITING','CALLED'].includes(row.status)))
+        const failure=results.find(result=>result.status==='rejected')
+        setErrors(previous=>({...previous,waitings:failure?errorMessage(failure.reason):''}))
+      } catch(error) { if(active)setErrors(previous=>({...previous,waitings:errorMessage(error)})) }
+      finally {running=false;if(active){setLoading(previous=>({...previous,waitings:false}));timer=setTimeout(refresh,queued?100:5000)}}
+    }
+    waitingRefresh.current=refresh
+    function resume(){if(!document.hidden)refresh()}
+    refresh();document.addEventListener('visibilitychange',resume)
+    return()=>{active=false;waitingRefresh.current=null;clearTimeout(timer);document.removeEventListener('visibilitychange',resume)}
+  },[owner,retry])
+
+  useEffect(()=>{
+    for(const row of waitings){
+      if(row.status==='CALLED'&&!calledIds.current.has(row.waitingId)){
+        calledIds.current.add(row.waitingId)
+        app.showToast('입장 호출을 받았어요. 웨이팅 내역을 확인해 주세요.')
+      }
+    }
+  },[waitings,app.showToast])
+
   async function handleCancel(id) {
     if (cancelLock.current || !window.confirm('이 팝업의 현장 대기를 취소하시겠습니까?')) return
+    mutationVersion.current += 1
     cancelLock.current = true
     setCancelling(id); setCancelError('');setNotice('')
     try {
@@ -119,7 +143,6 @@ function ActivityPage({ owner }) {
         <button type="button" aria-pressed={tab === 'waitings'} onClick={() => setTab('waitings')}><PopqIcon name="clock" size={23} /><span>진행 중인 웨이팅<strong>{count('waitings')}<small>건</small></strong></span><span className="pa-tab-arrow">↗</span></button>
       </nav>
       <div className="pa-list-heading"><h2>{tab === 'reservations' ? '예약 확인증' : '나의 대기 현황'}</h2><span>{tab === 'reservations' ? '확정된 예약만 표시합니다' : '대기 중·호출 완료 내역만 표시합니다'}</span></div>
-      {tab === 'waitings' && <p className="pa-source-note">이 계정으로 현재 브라우저에서 등록한 웨이팅을 조회합니다.</p>}
       {notice && <p className="pa-feedback" role="status">{notice}</p>}{cancelError && <p className="pa-feedback pa-error" role="alert">{cancelError}</p>}
       {loading[tab] ? <section className="pa-state" role="status"><span className="pa-state-icon"><PopqIcon name="refresh" size={28} /></span><h2>내역을 확인하고 있어요</h2><p>잠시만 기다려 주세요.</p></section> : <>
         {errors[tab] && <section className="pa-state pa-unavailable" role="alert"><span className="pa-state-icon"><PopqIcon name="ticket" size={30} /></span><h2>내역을 불러오지 못했어요</h2><p>{errors[tab]}</p><div className="pa-state-actions"><button className="pa-primary" type="button" disabled={busy} onClick={() => setRetry(value=>value+1)}>다시 조회하기</button><Link className="pa-secondary" to="/popups">팝업 둘러보기</Link></div></section>}

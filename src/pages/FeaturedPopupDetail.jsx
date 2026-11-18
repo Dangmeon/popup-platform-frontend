@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import '../styles/FeaturedPopupDetail.css'
 import '../styles/FeaturedPopupDetailTabs.css'
 
-export default function FeaturedPopupDetail({ popup }) {
+import PopupLifecycleBadge from '../components/common/PopupLifecycleBadge.jsx'
+import PopupReservationPanel from '../components/reservation/PopupReservationPanel.jsx'
+import '../components/reservation/PopupReservationPanel.css'
+
+export default function FeaturedPopupDetail({ popup, onCreateHold }) {
   const p = popup
   const [tab, setTab] = useState('about')
 
@@ -26,14 +29,15 @@ export default function FeaturedPopupDetail({ popup }) {
   ]
 
   return (
-    <div className="container fpd">
+    <div className="container fpd pd-layout">
+      <div className="pd-main">
       <div className="fpd-top">
         <div className="fpd-poster">
           <img src={p.poster} alt={p.title} />
         </div>
 
         <div className="fpd-info">
-          <span className="fpd-tag">{p.tag}</span>
+          <div className="fpd-detail-badges"><span className="fpd-tag">{p.tag}</span><PopupLifecycleBadge popup={p} /></div>
           <h1 className="fpd-title">{p.title}</h1>
 
           <dl className="fpd-meta">
@@ -43,18 +47,11 @@ export default function FeaturedPopupDetail({ popup }) {
           </dl>
 
           <div className="fpd-zones">
-            {p.zones.map((z) => <span key={z} className="fpd-zone">{z}</span>)}
+            {(p.zones || []).map((z) => <span key={z} className="fpd-zone">{z}</span>)}
           </div>
 
-         
-          {/* 더미 홍보 팝업은 실제 예약 API를 호출하지 않습니다. */}
-          {p.isPromoDemo ? (
-            <p className="fpd-demo-notice" role="note" style={{ padding: '16px', background: '#f2f5eb', borderRadius: '12px', color: '#626d52', lineHeight: 1.7 }}>
-              시연용 팝업입니다. 실제 예약은 아직 제공하지 않습니다.
-            </p>
-          ) : (
-            <Link to={`/popups/${p.id}/reserve`} className="btn btn-primary btn-block fpd-reserve">예약하기</Link>
-          )}
+
+
         </div>
       </div>
 
@@ -86,7 +83,7 @@ export default function FeaturedPopupDetail({ popup }) {
               <h3>방문 전 꼭 확인해 주세요</h3>
               <p>운영 시간은 {p.time}이에요. 마감 전에 입장해 주세요.</p>
               <p>예약은 회차 7일 전 10:00에 열리고, 전날까지 할 수 있어요.</p>
-              <p>예약을 선점한 뒤 10분 안에 확정하지 않으면 자리가 풀려요.</p>
+
             </div>
           </div>
         )}
@@ -145,7 +142,7 @@ export default function FeaturedPopupDetail({ popup }) {
             </div>
             <div className="fpd-guide-row">
               <strong>예약 방법</strong>
-              <span>예약하기 버튼에서 날짜와 회차를 고르고, 선점한 뒤 10분 안에 확정해요.</span>
+              <span>방문 예약에서 날짜와 회차를 선택해 주세요.</span>
             </div>
           </div>
         )}
@@ -160,6 +157,8 @@ export default function FeaturedPopupDetail({ popup }) {
           </div>
         )}
       </div>
+      </div>
+      <aside className="pd-aside"><PopupReservationPanel popup={p} onCreateHold={onCreateHold} /></aside>
     </div>
   )
 }

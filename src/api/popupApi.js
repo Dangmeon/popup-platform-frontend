@@ -30,12 +30,16 @@ function toPopup(raw) {
     location: pick(raw, ['location', 'address', 'place']),
     startDate: toDate(pick(raw, ['startDate', 'startAt', 'openDate'])),
     endDate: toDate(pick(raw, ['endDate', 'endAt', 'closeDate'])),
-    image: pick(raw, ['image', 'imageUrl', 'thumbnailUrl', 'posterUrl']),
+    image: pick(raw, ['image', 'imageUrl', 'thumbnailUrl', 'posterUrl', 'storeImg']),
     description: pick(raw, ['description', 'content', 'detail']),
     reserved: Number(pick(raw, ['reserved', 'reservedCount'], 0)),
     capacity: Number(pick(raw, ['capacity', 'maxCapacity'], 0)),
     status: pick(raw, ['status', 'popupStatus']),
     waitingStatus: pick(raw, ['waitingStatus']),
+    walkinStatus: pick(raw, ['walkinStatus']),
+    opStatus: pick(raw, ['opStatus']),
+    waitingOpenAt: pick(raw, ['waitingOpenAt']),
+    waitingCloseAt: pick(raw, ['waitingCloseAt']),
   }
 }
 

@@ -6,6 +6,7 @@ import {
   Outlet,
   Navigate,
   useNavigate,
+  useParams,
 } from 'react-router-dom'
 
 import Header from './components/common/Header.jsx'
@@ -28,13 +29,13 @@ import MyPage from './pages/MyPage.jsx'
 import MyPageHome, { MyPageFrame } from './pages/MyPageHome.jsx'
 import NearbyPopups from './pages/NearbyPopups.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
+import MyPageServices from './pages/MyPageServices.jsx'
 import Cart from './pages/Cart.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 
-import ReservationPage from './pages/ReservationPage'
 import ReservationConfirm from './pages/ReservationConfirm'
 import ReservationComplete from './pages/ReservationComplete'
 import ReservationEdit from './pages/ReservationEdit'
@@ -148,6 +149,11 @@ function getReservationError(error) {
 }
 
 // 사용자 화면 레이아웃
+function LegacyReservationRedirect() {
+  const { popupId } = useParams()
+  return <Navigate to={`/popups/${popupId}`} replace />
+}
+
 function UserLayout() {
   return (
     <div className="app">
@@ -484,8 +490,9 @@ function App() {
     slotDate,
     startTime,
     endTime,
+    autoConfirm = false,
   }) {
-    if (requestLock.current) return
+    if (requestLock.current) throw new Error('이전 예약 요청을 처리 중입니다.')
 
     if (!username) {
       throw new Error('실제 회원 계정으로 로그인해 주세요.')
@@ -527,7 +534,7 @@ function App() {
 
       receivedResponse = true
 
-      const nextReservation = mapReservation(response, {
+      let nextReservation = mapReservation(response, {
         owner,
         popId,
         timeSlotId,
@@ -543,7 +550,24 @@ function App() {
       if (currentUsername.current !== owner) return
 
       uncertainCreation.current = false
+      if (autoConfirm && nextReservation.reservationStatus === 'HOLD') {
+        // 생성된 번호를 보존하고 확정합니다. 실패해도 새 예약을 만들지 않습니다.
+        const held = nextReservation
+        try {
+          const confirmed = await confirmReservation({ reservationId: held.reservationId })
+          nextReservation = mapReservation(confirmed, held)
+          rememberReservation(nextReservation)
+        } catch {
+          if (currentUsername.current === owner) {
+            applyReservation(held)
+            setReservationError('예약번호는 생성되었지만 확정 결과를 확인하지 못했습니다. 기존 예약 상태를 확인한 뒤 진행해 주세요.')
+          }
+          return held
+        }
+      }
+      if (currentUsername.current !== owner) return
       applyReservation(nextReservation)
+      return nextReservation
     } catch (error) {
       const unknownResult =
         receivedResponse ||
@@ -903,17 +927,13 @@ function App() {
           <Route path="/popups" element={<PopupList />} />
           <Route
             path="/popups/:popupId"
-            element={<PopupDetail />}
+            element={<PopupDetail onCreateHold={handleCreateHold} />}
           />
 
           {/* 예약 날짜 및 시간 선택 */}
           <Route
             path="/popups/:popupId/reserve"
-            element={guardReservationPage(
-              <ReservationPage
-                onCreateHold={handleCreateHold}
-              />
-            )}
+            element={<LegacyReservationRedirect />}
           />
 
           {/* 예약 정보 확인 */}
@@ -1004,6 +1024,11 @@ function App() {
 
           {/* 회원 및 장바구니 */}
           <Route path="/mypage" element={<MyPageHome />} />
+          <Route path="/mypage/orders" element={<MyPageServices section="orders" />} />
+          <Route path="/mypage/coupons" element={<MyPageServices section="coupons" />} />
+          <Route path="/mypage/recent" element={<MyPageServices section="recent" />} />
+          <Route path="/mypage/faq" element={<MyPageServices section="faq" />} />
+          <Route path="/mypage/inquiries" element={<MyPageServices section="inquiries" />} />
           <Route path="/my-activities" element={<MyPage />} />
           <Route path="/nearby" element={<NearbyPopups />} />
           <Route

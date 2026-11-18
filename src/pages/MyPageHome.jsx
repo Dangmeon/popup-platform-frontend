@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext.jsx'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import '../styles/MyPageHome.css'
 import '../styles/AccountRefine.css'
+import '../styles/MyPageServices.css'
+import { myPageMenus } from '../data/myPageDemo.js'
 
 // 마이페이지 공통 프로필·사이드바. 로그아웃은 사이드바 최하단에 배치합니다.
 export function MyPageFrame({ children }) {
@@ -20,25 +22,26 @@ export function MyPageFrame({ children }) {
     <div className="pq-my-grid">
       <aside className="pq-my-sidebar"><nav aria-label="마이페이지 메뉴">
         <NavLink to="/mypage" end>마이페이지 홈</NavLink>
-        <NavLink to="/cart">장바구니</NavLink>
+        {myPageMenus.map(menu=><NavLink to={menu.path} key={menu.path}><span>{menu.title}</span><span aria-hidden="true">›</span></NavLink>)}
       </nav><button type="button" onClick={logout}><PopqIcon name="logout" size={18} />로그아웃</button></aside>
       <section className="pq-my-content">{children}</section>
     </div>
   </div>
 }
 
-// 홈에는 정보 보기 카드만 표시합니다. 예약·웨이팅은 헤더의 티켓 메뉴로 이동합니다.
+// 회원 정보와 이용 서비스 바로가기. 예약·웨이팅은 헤더 티켓 메뉴를 유지합니다.
 export default function MyPageHome() {
   return <MyPageFrame>
     <h2>나의 POPQ</h2>
-    <p className="pq-my-muted">회원 정보와 계정 설정을 편하게 관리하세요.</p>
-    <div className="pq-my-tiles pq-my-single">
+    <p className="pq-my-muted">회원 정보부터 주문과 혜택까지 한곳에서 확인하세요.</p>
+    <div className="pq-my-tiles pq-my-service-tiles">
       <Link to="/mypage/account">
         <span className="pq-my-card-icon"><PopqIcon name="user" size={25} /></span>
         <h3>내 정보 보기</h3>
         <p>이메일·이름·연락처 확인부터 비밀번호 변경까지</p>
         <span>정보 확인하기 →</span>
       </Link>
+      {myPageMenus.map(menu=><Link to={menu.path} key={menu.path}><span className="pq-my-card-icon"><PopqIcon name={menu.icon} size={24}/></span><h3>{menu.title}</h3><p>{menu.description}</p><span>확인하기 →</span></Link>)}
     </div>
   </MyPageFrame>
 }

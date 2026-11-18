@@ -1,0 +1,12 @@
+.popup-status-chip {display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:11px;font-weight:750;line-height:1.4;padding:6px 11px;border-radius:999px;background:#edf3e5;color:#526840;}
+.popup-status-chip.is-ongoing:before {content:'';width:5px;height:5px;border-radius:50%;background:#738b55;}
+.popup-status-chip.is-closing {background:#faf0db;color:#967035;border:1px solid #eddfbd;}
+.popup-status-chip.is-upcoming {background:#f1f4eb;color:#80916b;}.popup-status-chip.is-ended {background:#f0f1ed;color:#969c8e;}.popup-status-chip.is-paused {background:#f6eee3;color:#9a7c55;}
+.fpd-detail-badges {display:flex;align-items:center;flex-wrap:wrap;gap:9px;}
+.bpd-badges {flex-wrap:wrap;}
+/* 사진과 같은 네 개의 동등한 탭. 기존 POPQ 올리브 색상 유지. */
+.pd-server .bpd-tabs,.pd-layout .fpd-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-bottom:1px solid #e2e8d9;}
+.pd-server .bpd-tab,.pd-layout .fpd-tab {padding:17px 6px;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-radius:0;color:#89937e;font-size:13px;text-align:center;}
+.pd-server .bpd-tab.active,.pd-layout .fpd-tab.active {color:#465235;border-bottom-color:#68754b;}
+.pd-server .bpd-tab:focus-visible,.pd-layout .fpd-tab:focus-visible {outline:2px solid #98ab7e;outline-offset:-4px;}
+@media(max-width:600px){.pd-server .bpd-tab,.pd-layout .fpd-tab {font-size:12px;padding:15px 3px;}.popup-status-chip {font-size:10px;}}
