@@ -4,10 +4,10 @@ import { createOrder, getApiError } from '../api/orderApi.js'
 import { requestTossPayment } from '../api/tossPayments.js'
 import '../styles/Checkout.css'
 
-// 장바구니에서 넘어온 상품이 없을 때 보여줄 임시 상품 (결제는 막아 둔다)
+// 장바구니에서 넘어온 상품이 없을 때 보여줄 임시 상품 (isSoldOut: true 추가)
 const SAMPLE_ITEMS = [
-  { id: 's1', name: 'KINETIC 러닝화', option: '270', price: 129000, qty: 1, image: '/kinetic/kinetic-shoe.png' },
-  { id: 's2', name: 'KINETIC 볼캡', option: '차콜', price: 39000, qty: 1, image: '/kinetic/kinetic-cap.png' },
+  { id: 's1', name: 'KINETIC 러닝화', option: '270', price: 129000, qty: 1, image: '/kinetic/kinetic-shoe.png', isSoldOut: false },
+  { id: 's2', name: 'KINETIC 볼캡', option: '차콜', price: 39000, qty: 1, image: '/kinetic/kinetic-cap.png', isSoldOut: true }, // 👈 여기 품절 상태 명시
 ]
 
 const MEMOS = [
@@ -47,17 +47,24 @@ export default function Checkout() {
   const passed = location.state?.items
   const isSample = !Array.isArray(passed) || passed.length === 0
 
-  const items = useMemo(() => {
-    if (isSample) return SAMPLE_ITEMS
-    return passed.map((it, i) => ({
-      id: it.prdId ?? it.id ?? i,
-      name: it.name ?? it.productName ?? '상품',
-      option: it.option ?? '',
-      price: Number(it.price ?? 0),
-      qty: Number(it.qty ?? it.quantity ?? 1),
-      image: it.image ?? it.imageUrl ?? '',
-    }))
-  }, [passed, isSample])
+  // 상품 목록 상태 관리 (품절 상품은 무조건 exclude: true로 자동 설정)
+  const [orderItems] = useState(() => {
+    const rawList = isSample ? SAMPLE_ITEMS : passed
+    return rawList.map((it, i) => {
+      // 💡 품절 판정 조건 강화 (purchasable이 false이거나, isSoldOut이 true이거나)
+      const soldOut = it.purchasable === false || it.isSoldOut === true || it.soldOut === true
+      return {
+        id: it.prdId ?? it.id ?? i,
+        name: it.name ?? it.productName ?? '상품',
+        option: it.option ?? '',
+        price: Number(it.price ?? 0),
+        qty: Number(it.qty ?? it.quantity ?? 1),
+        image: it.image ?? it.imageUrl ?? '',
+        isSoldOut: soldOut,
+        exclude: soldOut, // 품절이면 무조건 주문 제외
+      }
+    })
+  })
 
   const [form, setForm] = useState({
     name: '', phone: '', zip: '', address: '', detail: '', memo: MEMOS[0],
@@ -70,12 +77,18 @@ export default function Checkout() {
   
   const orderRef = useRef(null)
 
-  // 금액 계산
-  const total = items.reduce((sum, it) => sum + it.price * it.qty, 0)
+  // 주문에서 제외되지 않은 유효한 상품들만 필터링
+  const activeItems = useMemo(() => orderItems.filter(it => !it.exclude), [orderItems])
+
+  // 금액 계산: 오직 유효한(active) 상품들의 금액만 합산
+  const activeProductTotal = useMemo(() => {
+    return activeItems.reduce((sum, it) => sum + it.price * it.qty, 0)
+  }, [activeItems])
+
   const discount = 5000 // 예시 쿠폰 할인 금액
   const pointUsed = Number(usePoint) || 0
-  const finalTotal = Math.max(0, total - discount - pointUsed)
-  const count = items.reduce((sum, it) => sum + it.qty, 0)
+  const finalTotal = Math.max(0, activeProductTotal - discount - pointUsed)
+  const count = activeItems.reduce((sum, it) => sum + it.qty, 0)
 
   function setField(key, value) {
     setForm(f => ({ ...f, [key]: value }))
@@ -113,15 +126,19 @@ export default function Checkout() {
       setNotice('장바구니에서 담은 상품이 없어요. 임시 상품은 결제할 수 없어요.')
       return
     }
+    if (activeItems.length === 0) {
+      setNotice('결제할 수 있는 유효한 상품이 없습니다. 상품을 확인해 주세요.')
+      return
+    }
 
     setPaying(true)
     try {
-      const key = JSON.stringify(items.map(it => [it.id, it.qty]))
+      const key = JSON.stringify(activeItems.map(it => [it.id, it.qty]))
       let order = orderRef.current?.key === key ? orderRef.current.order : null
       if (order?.expiresAt && new Date(order.expiresAt) <= new Date()) order = null
       if (!order) {
         order = await createOrder({
-          items: items.map(it => ({ prdId: it.id, quantity: it.qty })),
+          items: activeItems.map(it => ({ prdId: it.id, quantity: it.qty })),
         })
         orderRef.current = { key, order }
       }
@@ -132,10 +149,10 @@ export default function Checkout() {
 
       sessionStorage.setItem('popq_pending_order', JSON.stringify({ tossOrderId, totalPrice }))
 
-      const first = items[0].name
+      const first = activeItems[0].name
       await requestTossPayment({
         orderId: tossOrderId,
-        orderName: items.length > 1 ? `${first} 외 ${items.length - 1}건` : first,
+        orderName: activeItems.length > 1 ? `${first} 외 ${activeItems.length - 1}건` : first,
         amount: Number(finalTotal),
         customerName: form.name.trim(),
         customerPhone: form.phone,
@@ -214,27 +231,50 @@ export default function Checkout() {
               </div>
             </section>
 
-            {/* 주문 상품 */}
+            {/* 주문 상품 (품절 상품 자동 제외 및 안내 UI) */}
             <section className="co-card">
               <div className="co-card-head">
                 <h2>주문 상품</h2>
-                <span className="co-req">총 {items.length}개 상품</span>
+                <span className="co-req">총 {orderItems.length}개 상품 중 결제 대상 {activeItems.length}개</span>
               </div>
               {isSample && (
                 <p className="co-sample">장바구니에서 넘어온 상품이 없어 임시 상품을 보여 주고 있어요.</p>
               )}
               <ul className="co-items">
-                {items.map(it => (
-                  <li key={it.id} className="co-item">
+                {orderItems.map(it => (
+                  <li 
+                    key={it.id} 
+                    className="co-item" 
+                    style={{ opacity: it.exclude ? 0.5 : 1, background: it.isSoldOut ? '#fffaf6' : '#fff' }}
+                  >
                     <div className="co-item-img">
                       {it.image && <img src={it.image} alt={it.name} />}
                     </div>
                     <div className="co-item-info">
-                      <div className="co-item-name">{it.name}</div>
+                      <div className="co-item-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{it.name}</span>
+                        {it.isSoldOut && (
+                          <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                            품절
+                          </span>
+                        )}
+                        <span style={{ background: it.isSoldOut ? '#fef3c7' : '#e5e8eb', color: it.isSoldOut ? '#d97706' : '#4b5563', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>
+                          {it.isSoldOut ? '자동 제외됨' : '주문 완료'}
+                        </span>
+                      </div>
                       {it.option && <div className="co-item-opt">옵션 {it.option}</div>}
+                      {it.isSoldOut && (
+                        <div style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px', fontWeight: '500' }}>
+                          ⚠️ 결제 진행 중 재고가 소진되어 자동으로 결제에서 제외되었습니다.
+                        </div>
+                      )}
                     </div>
                     <div className="co-item-qty">수량 {it.qty}개</div>
-                    <div className="co-item-price">{won(it.price * it.qty)}</div>
+                    <div className="co-item-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                      <span style={{ textDecoration: it.exclude ? 'line-through' : 'none', color: it.exclude ? '#9ca3af' : 'inherit' }}>
+                        {won(it.price * it.qty)}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -370,7 +410,7 @@ export default function Checkout() {
             <h2>최종 결제 정보</h2>
             <div className="co-sum-row">
               <span>상품 금액 ({count}개)</span>
-              <span>{won(total)}</span>
+              <span>{won(activeProductTotal)}</span>
             </div>
             <div className="co-sum-row">
               <span>할인 금액</span>
@@ -387,8 +427,8 @@ export default function Checkout() {
               type="button" 
               className="co-pay" 
               onClick={handlePay} 
-              disabled={paying}
-              style={{ backgroundColor: '#465235' }}
+              disabled={paying || activeItems.length === 0}
+              style={{ backgroundColor: '#465235', opacity: activeItems.length === 0 ? 0.5 : 1 }}
             >
               {paying ? '결제창 여는 중…' : <>결제하기 &nbsp;›</>}
             </button>

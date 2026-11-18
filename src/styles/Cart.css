@@ -35,7 +35,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 24px;
-  align-items: end;
+  align-items: start;
 }
 
 .cp-panel,
@@ -261,13 +261,13 @@
 .cp-btn-main {
   border: 0 !important;
   color: #fff !important;
-  background: #68754B !important; /* 평소 버튼 배경색 */
+  background: #68754B !important;
   box-shadow: 0 4px 12px rgba(104, 117, 75, 0.25) !important;
   transition: all 0.2s ease !important;
 }
 
 .cp-btn-main:hover:not(:disabled) {
-  background: #293323 !important; /* 마우스를 올렸을 때 배경색 */
+  background: #293323 !important;
   color: #fff !important;
   box-shadow: 0 4px 12px rgba(41, 51, 35, 0.3) !important;
 }
@@ -289,11 +289,15 @@
   padding: 12px 26px;
   font-size: 15px;
 }
-/* 주문 요약 */
+
+/* 주문 요약 (하단 정렬 적용) */
 .cp-summary {
   padding: 28px 24px 24px;
   position: sticky;
   top: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .cp-summary h2 {
@@ -346,11 +350,12 @@
   font-size: 19px;
 }
 
+/* 하단 안내 문구를 맨 아래로 밀어냄 */
 .cp-note {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 18px 0 0;
+  margin-top: auto;
   padding: 14px 16px;
   border-radius: 12px;
   background: #fff4ea;
