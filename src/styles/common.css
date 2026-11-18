@@ -108,3 +108,19 @@ button { font-family:inherit; }
 
 
 
+
+/* 모바일 상단·하단 오버스크롤에 노출되는 페이지 바탕색 통일 */
+html {
+  background-color: #ffffff;
+  color-scheme: light;
+}
+body {
+  background-color: #ffffff;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+#root {
+  background-color: #ffffff;
+  min-height: 100vh;
+  min-height: 100dvh;
+}

@@ -1,0 +1,38 @@
+/* 빠른 메뉴 및 보조 글자 대비 강화 */
+.popq-home .hm-quick-label { color:#293323; font-size:13px; font-weight:700; }
+.popq-home .hm-eyebrow,.popq-home .hm-card-cat { color:#56663e; }
+.popq-home .hm-card-sub,.popq-home .hm-card-date,.popq-home .hm-more { color:#5e6a50; }
+.popq-home .hm-mobile-slide-controls { display:none; }
+@media(max-width:768px) {
+  .popq-home .hm-quick { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin-top:24px; }
+  .popq-home .hm-quick-item { min-width:0; padding:3px; }.popq-home .hm-quick-label { font-size:11px; text-align:center; white-space:nowrap; }.popq-home .hm-quick-icon { width:48px; height:48px; border-radius:15px; }
+  .popq-home .hm-grid { display:grid; grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:calc((100% - 24px)/2.5); gap:12px; overflow-x:auto; scroll-snap-type:x proximity; scrollbar-width:none; padding:3px 0 10px; }
+  .popq-home .hm-grid::-webkit-scrollbar { display:none; }.popq-home .hm-grid>.hm-card { scroll-snap-align:start; min-width:0; }
+  .popq-home .hm-mobile-slide-controls { display:flex; align-items:center; gap:8px; margin:-8px 0 15px; }
+  .popq-home .hm-mobile-slide-controls span { font-size:10px; color:#5e6a50; margin-right:auto; }
+  .popq-home .hm-mobile-slide-controls button { border:1px solid #dbe3ce; border-radius:50%; background:white; color:#465235; width:29px; height:29px; line-height:1; font-size:21px; cursor:pointer; }
+  .popq-home .hm-grid .hm-card-title { font-size:13px; }.popq-home .hm-grid .hm-card-cat,.popq-home .hm-grid .hm-card-sub,.popq-home .hm-grid .hm-card-date { font-size:10px; }
+  .popq-home .hm-grid .opening-day-badge { width:64%; font-size:17px; border-width:3px; }.popq-home .hm-grid .hm-rank { font-size:13px; }
+}
+@media(max-width:390px) { .popq-home .hm-grid { grid-auto-columns:calc((100% - 12px)/2.15); }.popq-home .hm-quick-label { font-size:10px; } }
+
+/* 배너 아래 미니 아이콘까지 첫 화면에 배치 */
+@media (max-width: 768px) {
+  .popq-home { padding-top: 10px; }
+  .popq-home .hm-quick { margin-top: 14px; gap: 5px; }
+  .popq-home .hm-quick-item { gap: 8px; }
+  .popq-home .hm-quick-icon { width: 42px; height: 42px; border-radius: 14px; }
+  .popq-home .hm-quick-icon svg { width: 22px; height: 22px; }
+  .popq-home .hm-quick-label { font-size: 10px; color: #293323; }
+}
+/* 미니 바로가기: 과하지 않게 아이콘과 터치 영역 확대 */
+.popq-home .hm-quick { margin-top: 24px; }
+.popq-home .hm-quick-icon { width: 66px; height: 66px; border-radius: 20px; background: #f1f4eb; color: #465235; border: 1px solid #e8edde; }
+.popq-home .hm-quick-icon svg { width: 29px; height: 29px; }
+.popq-home .hm-quick-label { font-size: 13px; }
+@media (max-width: 768px) {
+  .popq-home .hm-quick { margin-top: 14px; }
+  .popq-home .hm-quick-icon { width: 50px; height: 50px; border-radius: 16px; }
+  .popq-home .hm-quick-icon svg { width: 26px; height: 26px; }
+  .popq-home .hm-quick-label { font-size: 11px; }
+}

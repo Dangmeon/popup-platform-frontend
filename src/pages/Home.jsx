@@ -1,24 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import HomeBanner from './HomeBanner.jsx'
-import HomeGoods from './HomeGoods.jsx'
 import HomeEvents from './HomeEvents.jsx'
 import { areaDemoPopups } from '../data/areaDemoPopups.js'
 import OpeningDayBadge from '../components/common/OpeningDayBadge.jsx'
-import { featuredCards, featuredGoods } from '../data/featuredPopups.js'
+import { featuredCards } from '../data/featuredPopups.js'
 import { usePopups } from '../hooks/usePopups'
 import '../styles/Home.css'
 import '../styles/FeaturedPopupDetail.css'
 import '../styles/HomeSections.css'
 import '../components/common/OpeningDayBadge.css'
 import '../styles/HomeRefresh.css'
+import '../styles/HomeMobile.css'
 
-// 메인에 표시할 굿즈
-const GOODS_IDS = [
-  'loopy-1', 'chiikawa-1', 'gal-1', 'kinetic-shoe',
-  'loopy-4', 'chiikawa-3', 'gal-6', 'kinetic-bag',
-]
 
 // 중간 바로가기
 const QUICK_MENUS = [
@@ -145,6 +140,15 @@ function PopupCard({ popup, today, rank }) {
 export default function Home() {
   const { data, loading, error } = usePopups({ status: 'ONGOING' })
   const [area, setArea] = useState('')
+  const popupTrack = useRef(null)
+
+  // 모바일 추천 목록은 버튼 또는 손가락으로 좌우 이동
+  function movePopups(direction) {
+    const track = popupTrack.current
+    if (!track) return
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    track.scrollBy({ left: direction * track.clientWidth * 0.85, behavior: reduced ? 'auto' : 'smooth' })
+  }
   const [today, setToday] = useState(getToday)
 
   // 날짜가 바뀌면 D-DAY도 갱신
@@ -203,9 +207,6 @@ export default function Home() {
   const currentArea =
     areaList.find((item) => item.label === area) || areaList[0]
 
-  const goods = GOODS_IDS.map((id) =>
-    featuredGoods.find((item) => item.id === id)
-  ).filter(Boolean)
 
 
   function scrollToSection(id) {
@@ -257,7 +258,8 @@ export default function Home() {
         {/* 추천 팝업 최대 5개 */}
         <section className="hm-sec">
           <SectionHeading eyebrow="POPQ PICKS" title="지금 눈여겨볼 팝업" />
-          <div className="hm-grid">
+          <div className="hm-mobile-slide-controls"><span>옆으로 넘겨 더 살펴보세요</span><button type="button" aria-label="이전 추천 팝업" onClick={() => movePopups(-1)}>‹</button><button type="button" aria-label="다음 추천 팝업" onClick={() => movePopups(1)}>›</button></div>
+          <div className="hm-grid" ref={popupTrack} role="region" aria-label="추천 팝업 목록" tabIndex={0}>
             {recommended.map((popup, index) => (
               <PopupCard
                 key={popup.id}
@@ -387,16 +389,6 @@ export default function Home() {
           </section>
         )}
 
-        {/* 추천 굿즈 가로 한 줄 */}
-        <section className="hm-sec" id="hm-goods">
-          <SectionHeading
-            eyebrow=""
-            title="굿즈"
-            to="/goods"
-            more="굿즈샵 보기"
-          />
-          <HomeGoods goods={goods} />
-        </section>
       </div>
     </div>
   )
