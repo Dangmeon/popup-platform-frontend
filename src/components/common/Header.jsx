@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useApp } from '../../context/AppContext.jsx'
+import HeaderSearch from './HeaderSearch.jsx'
 import PopqIcon from './PopqIcon.jsx'
 import './Header.css'
 
@@ -26,8 +27,6 @@ function HeaderLink({ to, icon, label }) {
 
 export default function Header() {
   const app = useApp()
-  const navigate = useNavigate()
-  const [keyword, setKeyword] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const menuButton = useRef(null)
   const location = useLocation()
@@ -61,17 +60,6 @@ export default function Header() {
   if (app.isAuthenticated && app.currentUser?.role === 'MANAGER') mobileMenus.push(['/manager','manager','매니저 센터','담당 팝업 예약·현장 운영'])
 
 
-  // 검색어를 팝업 목록 주소로 전달
-  function handleSearch(event) {
-    event.preventDefault()
-    const query = keyword.trim()
-
-    navigate(
-      query ? `/popups?q=${encodeURIComponent(query)}` : '/popups'
-    )
-  }
-
-
   return (
     <header className="header pq-header">
       <div className="pq-header-inner">
@@ -80,23 +68,7 @@ export default function Header() {
           <img src="/logo.png" alt="POPQ" />
         </Link>
 
-        {/* 검색창과 검색 버튼 */}
-        <form
-          className="pq-header-search"
-          role="search"
-          onSubmit={handleSearch}
-        >
-          <input
-            type="search"
-            aria-label="팝업스토어 검색"
-            placeholder="어떤 팝업을 찾으세요?"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
-          <button type="submit" aria-label="검색" title="검색">
-            <PopqIcon name="search" size={18} />
-          </button>
-        </form>
+        <HeaderSearch key={app.isAuthenticated ? app.currentUser.username : 'guest'} authenticated={app.isAuthenticated} />
 
         {/* 팝업·굿즈·예약·장바구니 메뉴 */}
         <nav className="pq-header-actions" aria-label="주요 메뉴">

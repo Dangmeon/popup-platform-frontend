@@ -18,6 +18,12 @@ export function getAccessToken() {
   return accessToken
 }
 
+// 브라우저가 이전 문서를 복원하면 탭에 저장된 세션을 다시 읽습니다.
+export function restoreAccessToken() {
+  accessToken = loadToken()
+  return accessToken
+}
+
 // 토큰 저장
 export function setAccessToken(token) {
   if (typeof token !== 'string' || !token.trim()) {

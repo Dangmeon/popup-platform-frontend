@@ -1,47 +1,34 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { featuredGoods } from '../data/featuredPopups.js'
+import { getPopups, getPopupProducts } from '../api/popupApi.js'
 import '../styles/Goods.css'
 
-// 팝업 id → 화면에 보여줄 이름 (TODO: 서버 연동 시 팝업 제목으로 교체)
-const POPUP_NAMES = {
-  loopy: '잔망루피',
-  chiikawa: '치이카와',
-  gal: 'GAL',
-  kinetic: 'KINETIC',
-}
-
-// 상품 이름에 들어 있는 단어로 카테고리를 자동 분류 (위에서부터 먼저 맞는 것)
-const CATEGORY_RULES = [
-  { label: '가방', words: ['가방', '백', '토트'] },
-  { label: '패션', words: ['티셔츠', '후드', '집업', '스커트', '바지', '캡', '선글라스', '러닝화', '맨투맨'] },
-  { label: '인형·키링', words: ['인형', '키링'] },
-  { label: '문구', words: ['캘린더', '달력', '노트', '스티커', '포스터'] },
-]
-
-function getCategory(name = '') {
-  for (const rule of CATEGORY_RULES) {
-    if (rule.words.some(w => name.includes(w))) return rule.label
-  }
-  return '리빙·소품'
-}
-
-// 전체 상품 (카테고리·팝업 이름을 붙여 둔다)
-const ALL_GOODS = (Array.isArray(featuredGoods) ? featuredGoods : []).map(g => ({
-  ...g,
-  category: getCategory(g.name),
-  popupName: POPUP_NAMES[g.popupId] || g.popupId,
-}))
-
-function formatPrice(price) {
-  return price > 0 ? `${price.toLocaleString()}원` : '가격 미정'
-}
+function formatPrice(price) { return price > 0 ? `${price.toLocaleString()}원` : '가격 미정' }
 
 export default function Goods() {
   const [params, setParams] = useSearchParams()
   const popup = params.get('popup') || 'all'
   const [category, setCategory] = useState('전체')
-  const [collection, setCollection] = useState('all')
+  const [goods, setGoods] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [retry, setRetry] = useState(0)
+  useEffect(() => {
+    let alive = true
+    setLoading(true); setError(''); setGoods([])
+    async function load() {
+      try {
+        const stores = await getPopups()
+        const batches = await Promise.all(stores.map(async store =>
+          (await getPopupProducts(store.id)).map(item => ({...item, popupId:String(store.id), popupName:store.title}))
+        ))
+        if(alive) setGoods(batches.flat())
+      } catch { if(alive) setError('상품을 불러오지 못했어요. 다시 시도해 주세요.') }
+      finally { if(alive) setLoading(false) }
+    }
+    load()
+  return () => { alive = false }
+  }, [retry])
   const [sort, setSort] = useState('default')
 
   const setPopup = (id) => {
@@ -54,36 +41,35 @@ export default function Goods() {
   // 사이드바: 카테고리별 개수
   const categories = useMemo(() => {
     const map = new Map()
-    ALL_GOODS.forEach(g => map.set(g.category, (map.get(g.category) || 0) + 1))
+    goods.forEach(g => map.set(g.category, (map.get(g.category) || 0) + 1))
     return [...map.entries()].map(([label, count]) => ({ label, count }))
-  }, [])
+  }, [goods])
 
   // 사이드바: 팝업 목록
   const popups = useMemo(() => {
     const ids = []
-    ALL_GOODS.forEach(g => { if (!ids.includes(g.popupId)) ids.push(g.popupId) })
-    return ids.map(id => ({ id, name: POPUP_NAMES[id] || id }))
-  }, [])
+    goods.forEach(g => { if (!ids.includes(g.popupId)) ids.push(g.popupId) })
+    return ids.map(id => ({ id, name: goods.find(g => g.popupId === id)?.popupName || '팝업스토어' }))
+  }, [goods])
 
   // 히어로에 보여줄 대표 상품 (팝업마다 1개씩, 최대 3개)
   const heroGoods = useMemo(
-    () => popups.slice(0, 3).map(p => ALL_GOODS.find(g => g.popupId === p.id)).filter(Boolean),
-    [popups]
+    () => popups.slice(0, 3).map(p => goods.find(g => g.popupId === p.id)).filter(Boolean),
+    [popups, goods]
   )
 
   const list = useMemo(() => {
-    let result = ALL_GOODS.filter(g =>
+    let result = goods.filter(g =>
       (category === '전체' || g.category === category) &&
       (popup === 'all' || g.popupId === popup)
     )
     if (sort === 'low') result = [...result].sort((a, b) => a.price - b.price)
     if (sort === 'high') result = [...result].sort((a, b) => b.price - a.price)
     return result
-  }, [category, popup, sort])
+  }, [goods, category, popup, sort])
 
   const resetAll = () => {
     setCategory('전체')
-    setCollection('all')
     setSort('default')
     setPopup('all')
   }
@@ -140,7 +126,7 @@ export default function Goods() {
             <ul className="gs-side-list">
               <li>
                 <button type="button" className={category === '전체' ? 'on' : ''} onClick={() => setCategory('전체')}>
-                  전체 <span>{ALL_GOODS.length}</span>
+                  전체 <span>{goods.length}</span>
                 </button>
               </li>
               {categories.map(c => (
@@ -176,8 +162,8 @@ export default function Goods() {
         <div className="gs-main">
           <div className="gs-toolbar">
             <div className="gs-count">
-              <h2>전체 굿즈</h2>
-              <span>총 {list.length}개</span>
+              <h2>{popup === 'all' ? (category === '전체' ? '전체 굿즈' : category) : `${popups.find(p => p.id === popup)?.name || '선택한 팝업'} 굿즈`}</h2>
+              <span>{list.length}개 / 전체 {goods.length}개</span>
             </div>
             <div className="gs-tools">
               <select className="gs-sort" value={sort} onChange={e => setSort(e.target.value)}>
@@ -188,7 +174,7 @@ export default function Goods() {
             </div>
           </div>
 
-          {list.length > 0 ? (
+          {loading ? <div className="empty-state" role="status">상품을 불러오고 있어요.</div> : error ? <div className="empty-state" role="alert">{error}<div><button type="button" className="gs-reset" onClick={()=>setRetry(v=>v+1)}>다시 시도</button></div></div> : list.length > 0 ? (
             <div className="gs-grid">
               {list.map(g => (
                 <article key={g.id} className="gs-card">

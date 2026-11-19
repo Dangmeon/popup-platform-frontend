@@ -1,0 +1,27 @@
+.popq-home .pq-popup-loop {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-behavior: auto;
+  padding: 4px 0 12px;
+}
+.pq-popup-loop::-webkit-scrollbar { display: none; }
+.pq-popup-loop-group {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--loop-gap, 20px);
+  padding-right: var(--loop-gap, 20px);
+}
+.pq-popup-loop-group > .hm-card {
+  width: var(--loop-card-width, 232px);
+  flex: 0 0 var(--loop-card-width, 232px);
+  min-width: 0;
+}
+@media (max-width: 768px) {
+  .pq-popup-loop .hm-card-title { font-size: 13px; }
+  .pq-popup-loop .hm-card-cat,
+  .pq-popup-loop .hm-card-sub,
+  .pq-popup-loop .hm-card-date { font-size: 10px; }
+  .pq-popup-loop .opening-day-badge { width: 64%; font-size: 17px; border-width: 3px; }
+  .pq-popup-loop .hm-rank { font-size: 13px; }
+}

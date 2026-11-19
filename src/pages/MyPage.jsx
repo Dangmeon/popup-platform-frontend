@@ -153,7 +153,14 @@ function ActivityPage({ owner }) {
           const title = row.title || popup?.title || `팝업 ${row.popId ?? ''}`
           const image = row.image || popup?.image || popup?.storeImg
           const id = reservation ? row.id : row.waitingId
-          return <article className="pa-ticket" key={id}>
+          const Ticket = reservation ? Link : 'article'
+          const ticketProps = reservation
+            ? {
+                to: `/reservations/complete?reservationId=${encodeURIComponent(id)}`,
+                'aria-label': `${title} 예약번호 ${id} 확인증 보기`,
+              }
+            : {}
+          return <Ticket className={reservation ? 'pa-ticket pa-ticket-link' : 'pa-ticket'} key={id} {...ticketProps}>
             <div className="pa-ticket-body"><div className="pa-poster">{image ? <img src={image} alt={title} /> : <PopqIcon name="ticket" size={32} />}</div><div className="pa-ticket-info"><span className="pa-ticket-type">{reservation ? 'RESERVATION' : 'WAITING'}</span><h3>{title}</h3><p>{popup?.location || '팝업 방문 내역'}</p>
               <dl>{reservation ? <><div><dt>방문 날짜</dt><dd>{row.date || '날짜 확인 필요'}</dd></div><div><dt>방문 시간</dt><dd>{row.time || '시간 확인 필요'}</dd></div><div><dt>방문 인원</dt><dd>{row.people ?? '—'}명</dd></div></> : <><div><dt>내 대기번호</dt><dd>{row.queueNumber ?? '—'}번</dd></div><div><dt>대기 인원</dt><dd>{row.peopleCount ?? '—'}명</dd></div>{row.status === 'WAITING' && <><div><dt>앞 대기 팀</dt><dd>{row.teamsAhead ?? '—'}팀</dd></div><div><dt>예상 대기</dt><dd>{row.estimatedWaitMins ?? '—'}분</dd></div></>}</>}</dl>
               {!reservation && row.status === 'CALLED' && <p className="pa-called-notice">입장 호출을 받았어요. 현장 직원에게 확인해 주세요.</p>}
@@ -161,7 +168,7 @@ function ActivityPage({ owner }) {
             <aside className="pa-ticket-stub"><span className={`pa-status ${row.status === 'CALLED' ? 'called' : ''}`}>{reservation ? '예약 확정' : row.status === 'CALLED' ? '입장 호출' : '대기 중'}</span><small>{reservation ? '예약번호' : '체크인 코드'}</small><strong>{reservation ? id : row.checkInCode || '확인 필요'}</strong>
               {!reservation && row.status === 'WAITING' && <button className="pa-secondary" type="button" disabled={cancelling !== null || busy} onClick={() => handleCancel(id)}>{cancelling === id ? '취소 중' : '대기 취소'}</button>}
             </aside>
-          </article>
+          </Ticket>
         })}</div>
       </>}
     </>}

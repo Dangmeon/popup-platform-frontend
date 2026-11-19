@@ -68,7 +68,6 @@ function BasicPopupDetail({ onCreateHold }) {
     popup.description ||
     popup.content ||
     `${popup.location || '지정된 장소'}에서 ${popup.startDate} ~ ${popup.endDate} 동안 열리는 팝업스토어예요.`
-  const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(popup.location || popup.title || '')}`
 
   return (
     <div className="container bpd pd-server">
@@ -183,9 +182,9 @@ function BasicPopupDetail({ onCreateHold }) {
             {tab === 'map' && (
               <div className="bpd-map">
                 <p className="bpd-map-place">📍 {popup.location}</p>
-                <a className="btn btn-outline" href={mapUrl} target="_blank" rel="noreferrer">
-                  네이버 지도에서 보기
-                </a>
+                <Link className="btn btn-outline" to={`/nearby?popup=${encodeURIComponent(popup.id)}`}>
+                  POPQ 지도에서 보기
+                </Link>
               </div>
             )}
           </div>

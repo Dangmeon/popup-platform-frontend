@@ -26,6 +26,8 @@ import Home from './pages/Home.jsx'
 import PopupList from './pages/PopupList.jsx'
 import PopupDetail from './pages/PopupDetail.jsx'
 import MyPage from './pages/MyPage.jsx'
+import MyPageHome, { MyPageFrame } from './pages/MyPageHome.jsx'
+import NearbyPopups from './pages/NearbyPopups.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
 import MyPageServices from './pages/MyPageServices.jsx'
 import Cart from './pages/Cart.jsx'
@@ -48,6 +50,7 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
 import AdminWaitings from './pages/admin/AdminWaitings'
 
+import ManagerCenter from './pages/manager/ManagerCenter.jsx'
 import Goods from './pages/Goods.jsx'
 import './styles/toast.css'
 
@@ -270,6 +273,10 @@ function ReservationRecovery({
 function App() {
   const app = useApp()
   const navigate = useNavigate()
+  const location = useLocation()
+  const requestedReservationId = location.pathname === '/reservations/complete'
+    ? new URLSearchParams(location.search).get('reservationId')
+    : null
 
   // 초기 로딩
   const [loading, setLoading] = useState(true)
@@ -323,8 +330,15 @@ function App() {
     async function restoreReservation() {
       try {
         const existing = reservationRef.current
-        const saved =
-          existing?.owner === username
+        if (requestedReservationId !== null &&
+            (!/^\d+$/.test(requestedReservationId) ||
+             !Number.isSafeInteger(Number(requestedReservationId)) ||
+             Number(requestedReservationId) < 1)) {
+          throw new Error('예약번호를 확인해 주세요.')
+        }
+        const saved = requestedReservationId !== null
+          ? { reservationId: Number(requestedReservationId) }
+          : existing?.owner === username
             ? { reservationId: existing.reservationId }
             : readSavedReservation(username)
 
@@ -391,7 +405,7 @@ function App() {
     return () => {
       active = false
     }
-  }, [username, restoreKey])
+  }, [username, restoreKey, requestedReservationId])
 
   const restoring = Boolean(
     username &&
@@ -433,7 +447,7 @@ function App() {
     setQrVersion((previous) => previous + 1)
 
     if (nextReservation.reservationStatus === 'CONFIRMED') {
-      navigate('/reservations/complete', { replace: true })
+      navigate(`/reservations/complete?reservationId=${nextReservation.reservationId}`, { replace: true })
     } else {
       navigate('/reservations/confirm', { replace: true })
     }
@@ -917,7 +931,11 @@ function App() {
       return <Navigate to="/login" replace />
     }
 
+    const requestedReservationMismatch = requestedReservationId !== null &&
+      Number(requestedReservationId) !== reservation?.reservationId
+
     if (
+      requestedReservationMismatch ||
       restoring ||
       recoveryFailed ||
       (requireReservation && !hasReservation)
@@ -1049,7 +1067,7 @@ function App() {
           <Route path="/nearby" element={<NearbyPopups />} />
           <Route
             path="/mypage/account"
-            element={<AccountSettings />}
+            element={<MyPageFrame><AccountSettings /></MyPageFrame>}
           />
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
@@ -1069,6 +1087,8 @@ function App() {
           {/* 없는 사용자 페이지 */}
           <Route path="*" element={<NotFound />} />
         </Route>
+
+        <Route path="/manager/*" element={<ManagerCenter />} />
 
         {/* 관리자 페이지 */}
         <Route path="/admin" element={<AdminLayout />}>

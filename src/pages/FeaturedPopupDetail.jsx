@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import ShopGoodsCard from '../components/common/ShopGoodsCard.jsx'
 import '../styles/FeaturedPopupDetail.css'
 import '../styles/FeaturedPopupDetailTabs.css'
@@ -20,7 +21,6 @@ export default function FeaturedPopupDetail({ popup, onCreateHold }) {
     p.description ||
     `${p.location}에서 ${p.period} 동안 열리는 ${p.tag}예요. 포토존과 굿즈샵 등 다양한 공간을 만나 보세요.`
 
-  const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(p.location || p.title || '')}`
 
   const tabs = [
     { key: 'about', label: '소개' },
@@ -153,9 +153,9 @@ export default function FeaturedPopupDetail({ popup, onCreateHold }) {
         {tab === 'map' && (
           <div className="fpd-map">
             <p className="fpd-map-place">📍 {p.location}</p>
-            <a className="btn btn-outline" href={mapUrl} target="_blank" rel="noreferrer">
-              네이버 지도에서 보기
-            </a>
+            <Link className="btn btn-outline" to={`/nearby?popup=${encodeURIComponent(p.id)}`}>
+                  POPQ 지도에서 보기
+                </Link>
           </div>
         )}
       </div>

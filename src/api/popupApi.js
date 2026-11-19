@@ -52,8 +52,13 @@ function toProduct(raw) {
     name,
     title: name,
     price: Number(pick(raw, ['price', 'prdPrice'], 0)),
-    image: pick(raw, ['image', 'imageUrl', 'thumbnailUrl']),
+    image: pick(raw, ['productImg', 'image', 'imageUrl', 'thumbnailUrl']),
     stock: Number(pick(raw, ['stock', 'stockQuantity'], 0)),
+    category: pick(raw, ['category']),
+    description: pick(raw, ['productDesc']),
+    maxQty: pick(raw, ['maxQty'], null),
+    saleStart: pick(raw, ['saleStart']),
+    saleEnd: pick(raw, ['saleEnd']),
     saleStatus: pick(raw, ['saleStatus']),
   }
 }

@@ -421,7 +421,7 @@ function CartPage({ authed }) {
         <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>함께 보면 좋은 상품</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           {recommendedGoods.map((g) => (
-            <Link key={g.id} to={`/popups/${g.popupId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link key={g.id} to="/goods" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div style={{ border: '1px solid #f1f3f5', borderRadius: '12px', overflow: 'hidden', background: '#fafafa' }}>
                 <img src={g.image} alt={g.name} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
                 <div style={{ padding: '12px' }}>

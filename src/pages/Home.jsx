@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PopqIcon from '../components/common/PopqIcon.jsx'
+import PopupLoop from '../components/common/PopupLoop.jsx'
 import HomeBanner from './HomeBanner.jsx'
 import HomeEvents from './HomeEvents.jsx'
-import { areaDemoPopups } from '../data/areaDemoPopups.js'
 import OpeningDayBadge from '../components/common/OpeningDayBadge.jsx'
-import { featuredCards } from '../data/featuredPopups.js'
 import { usePopups } from '../hooks/usePopups'
 import '../styles/Home.css'
 import '../styles/FeaturedPopupDetail.css'
@@ -138,17 +137,8 @@ function PopupCard({ popup, today, rank }) {
 }
 
 export default function Home() {
-  const { data, loading, error } = usePopups({ status: 'ONGOING' })
+  const { data, loading, error } = usePopups()
   const [area, setArea] = useState('')
-  const popupTrack = useRef(null)
-
-  // 모바일 추천 목록은 버튼 또는 손가락으로 좌우 이동
-  function movePopups(direction) {
-    const track = popupTrack.current
-    if (!track) return
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    track.scrollBy({ left: direction * track.clientWidth * 0.85, behavior: reduced ? 'auto' : 'smooth' })
-  }
   const [today, setToday] = useState(getToday)
 
   // 날짜가 바뀌면 D-DAY도 갱신
@@ -161,7 +151,7 @@ export default function Home() {
   const seen = new Set()
 
   // 추천 콘텐츠와 서버 목록의 중복 제거
-  const pool = [...featuredCards, ...serverPopups].filter((popup) => {
+  const pool = serverPopups.filter((popup) => {
     const key = String(popup.id)
     if (seen.has(key)) return false
     seen.add(key)
@@ -193,7 +183,7 @@ export default function Home() {
 
   const areaList = AREAS.map((item) => ({
     ...item,
-    items: [...pool, ...areaDemoPopups].filter((popup) => {
+    items: pool.filter((popup) => {
       const end = getDate(popup.endDate)
       return (
         (end === null || end >= today) &&
@@ -224,7 +214,7 @@ export default function Home() {
     <div className="popq-home">
       <div className="container">
         {/* 팝업별 설명과 수동 배너 이동 */}
-        <HomeBanner />
+        <HomeBanner popups={serverPopups} />
 
         {/* 중간 아이콘 바로가기 */}
         <nav className="hm-quick" aria-label="주요 기능 바로가기">
@@ -258,8 +248,7 @@ export default function Home() {
         {/* 추천 팝업 최대 5개 */}
         <section className="hm-sec">
           <SectionHeading eyebrow="POPQ PICKS" title="지금 눈여겨볼 팝업" />
-          <div className="hm-mobile-slide-controls"><span>옆으로 넘겨 더 살펴보세요</span><button type="button" aria-label="이전 추천 팝업" onClick={() => movePopups(-1)}>‹</button><button type="button" aria-label="다음 추천 팝업" onClick={() => movePopups(1)}>›</button></div>
-          <div className="hm-grid" ref={popupTrack} role="region" aria-label="추천 팝업 목록" tabIndex={0}>
+          <PopupLoop>
             {recommended.map((popup, index) => (
               <PopupCard
                 key={popup.id}
@@ -268,7 +257,7 @@ export default function Home() {
                 today={today}
               />
             ))}
-          </div>
+          </PopupLoop>
           {loading && <p role="status">팝업을 불러오는 중이에요.</p>}
           {error && (
             <p role="alert" className="hm-data-message">
