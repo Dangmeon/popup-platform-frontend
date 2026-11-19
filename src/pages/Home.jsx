@@ -150,7 +150,7 @@ export default function Home() {
   const serverPopups = Array.isArray(data) ? data : []
   const seen = new Set()
 
-  // 추천 콘텐츠와 서버 목록의 중복 제거
+  // 서버 목록의 중복 제거
   const pool = serverPopups.filter((popup) => {
     const key = String(popup.id)
     if (seen.has(key)) return false
@@ -159,12 +159,6 @@ export default function Home() {
   })
 
   const recommended = pool
-    .filter((popup) => {
-      const end = getDate(popup.endDate)
-      const start = getDate(popup.startDate)
-      return (end === null || end >= today) && (start === null || start <= today + 30 * 86400000)
-    })
-    .slice(0, 5)
 
   // 행사 시작일 기준 오늘부터 30일 이내 오픈 예정 팝업
   const upcoming = pool
@@ -245,7 +239,7 @@ export default function Home() {
           })}
         </nav>
 
-        {/* 추천 팝업 최대 5개 */}
+        {/* 전체 팝업 순환 목록 */}
         <section className="hm-sec">
           <SectionHeading eyebrow="POPQ PICKS" title="지금 눈여겨볼 팝업" />
           <PopupLoop>
@@ -261,7 +255,7 @@ export default function Home() {
           {loading && <p role="status">팝업을 불러오는 중이에요.</p>}
           {error && (
             <p role="alert" className="hm-data-message">
-              서버 팝업을 불러오지 못했어요. 현재 추천 콘텐츠를 표시합니다.
+              팝업을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.
             </p>
           )}
           {!loading && !error && recommended.length === 0 && (
