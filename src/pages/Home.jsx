@@ -243,11 +243,10 @@ export default function Home() {
         <section className="hm-sec">
           <SectionHeading eyebrow="POPQ PICKS" title="지금 눈여겨볼 팝업" />
           <PopupLoop>
-            {recommended.map((popup, index) => (
+            {recommended.map((popup) => (
               <PopupCard
                 key={popup.id}
                 popup={popup}
-                rank={index + 1}
                 today={today}
               />
             ))}

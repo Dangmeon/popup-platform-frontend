@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import PopqIcon from '../components/common/PopqIcon.jsx'
+import MyOrders from './MyOrders.jsx'
 import { MyPageFrame } from './MyPageHome.jsx'
-import { demoOrders, demoRecent, demoInquiries, faqItems, makeDemoCoupons } from '../data/myPageDemo.js'
+import { demoRecent, demoInquiries, faqItems, makeDemoCoupons } from '../data/myPageDemo.js'
 import { addCalendarMonths, couponState, extendDemoCoupon } from '../utils/couponPolicy.js'
 import '../styles/MyPageServices.css'
 
@@ -22,19 +23,13 @@ export default function MyPageServices({ section }) {
 function ServiceContent({section}) {
   const [eyebrow,title,description] = headings[section]
   return <div className="ms-page"><header className="ms-heading"><span>{eyebrow}</span><h2>{title}</h2><p>{description}</p></header>
-    {section==='orders'&&<Orders />}{section==='coupons'&&<Coupons />}{section==='recent'&&<Recent />}{section==='faq'&&<Faq />}{section==='inquiries'&&<Inquiries />}
+    {section==='orders'&&<MyOrders />}{section==='coupons'&&<Coupons />}{section==='recent'&&<Recent />}{section==='faq'&&<Faq />}{section==='inquiries'&&<Inquiries />}
   </div>
 }
 function Filter({items,value,onChange,label}) {
   return <div className="ms-filters" aria-label={label}>{items.map(([key,text])=><button type="button" key={key} aria-pressed={value===key} onClick={()=>onChange(key)}>{text}</button>)}</div>
 }
 function Empty({text}) {return <div className="ms-empty"><PopqIcon name="bag" size={30}/><p>{text}</p></div>}
-function Orders() {
-  const [filter,setFilter]=useState('all')
-  const rows=demoOrders.filter(row=>filter==='all'||(filter==='shipping'?row.step<3:row.step===3))
-  return <><Filter label="주문 상태" items={ [['all','전체'],['shipping','배송 중'],['complete','배송 완료']] } value={filter} onChange={setFilter}/>
-    <div className="ms-orders">{rows.map(row=><article key={row.id} className="ms-order"><header><span>{row.date}<b>{row.id}</b></span><strong>{row.status}</strong></header><div className="ms-order-product"><div className="ms-product-icon"><PopqIcon name="bag" size={30}/></div><div><small>POPQ GOODS</small><h3>{row.name}</h3><p>수량 {row.quantity}개</p></div><b>{row.price.toLocaleString()}원</b></div><ol className="ms-delivery" aria-label="배송 단계">{['결제 완료','상품 준비','배송 중','배송 완료'].map((step,i)=><li className={i<=row.step?'is-done':''} key={step} aria-current={i===row.step?'step':undefined}><span/>{step}</li>)}</ol></article>)}</div>{!rows.length&&<Empty text="해당 주문이 없어요."/>}</>
-}
 function Coupons() {
   const [rows,setRows]=useState(()=>makeDemoCoupons())
   const [filter,setFilter]=useState('available')

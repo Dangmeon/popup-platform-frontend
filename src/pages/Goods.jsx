@@ -1,11 +1,34 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getPopups, getPopupProducts } from '../api/popupApi.js'
+import { useApp } from '../context/AppContext.jsx'
+import { addCartItem } from '../api/cartApi'
 import '../styles/Goods.css'
 
 function formatPrice(price) { return price > 0 ? `${price.toLocaleString()}원` : '가격 미정' }
 
+function resolveDbPrdId(g) {
+  const candidate = g.prdId ?? g.serverId ?? g.productId ?? g.id
+  if (candidate === undefined || candidate === null || candidate === '') return null
+  const num = typeof candidate === 'number' ? candidate : Number(candidate)
+  return Number.isSafeInteger(num) && num >= 1 ? num : null
+}
+
+function getAddCartErrorMessage(error) {
+  const data = error?.response?.data
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    if (typeof data.message === 'string' && data.message.trim()) return data.message
+    const fieldMsgs = Object.values(data).filter((v) => typeof v === 'string' && v.trim())
+    if (fieldMsgs.length > 0) return fieldMsgs.join('\n')
+  }
+  return error?.message || '장바구니에 담지 못했습니다. 다시 시도해 주세요.'
+}
+
 export default function Goods() {
+  const app = useApp()
+  const navigate = useNavigate()
+  const [addingId, setAddingId] = useState(null)
+  const lockRef = useRef(false)
   const [params, setParams] = useSearchParams()
   const popup = params.get('popup') || 'all'
   const [category, setCategory] = useState('전체')
@@ -74,25 +97,39 @@ export default function Goods() {
     setPopup('all')
   }
 
-  // 장바구니 담기 핸들러 함수
-  const handleAddToCart = (g) => {
-    const existingCart = JSON.parse(localStorage.getItem('popq_cart') || '[]')
-    const itemIndex = existingCart.findIndex(cartItem => cartItem.id === g.id)
+  // 장바구니 담기 핸들러 함수 (POST /api/cart/items)
+  const handleAddToCart = async (g) => {
+    if (lockRef.current) return
 
-    if (itemIndex > -1) {
-      existingCart[itemIndex].qty = (existingCart[itemIndex].qty || 1) + 1
-    } else {
-      existingCart.push({
-        id: g.id,
-        name: g.name,
-        price: g.price,
-        image: g.image,
-        option: g.option || '기본',
-        qty: 1
-      })
+    if (!app.isAuthenticated) {
+      app.showToast?.('로그인 후 담을 수 있어요')
+      navigate('/login')
+      return
     }
-    localStorage.setItem('popq_cart', JSON.stringify(existingCart))
-    alert(`'${g.name}' 상품이 장바구니에 담겼어요!`)
+
+    const dbPrdId = resolveDbPrdId(g)
+    if (!dbPrdId) {
+      app.showToast?.('아직 판매 준비 중인 상품이에요')
+      return
+    }
+
+    lockRef.current = true
+    setAddingId(g.id)
+    try {
+      await addCartItem(dbPrdId, 1)
+      app.showToast?.('장바구니에 담았어요')
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 401 || status === 403) {
+        app.showToast?.('로그인 인증을 확인하지 못했습니다. 다시 로그인해 주세요.')
+        navigate('/login')
+      } else {
+        alert(getAddCartErrorMessage(err))
+      }
+    } finally {
+      lockRef.current = false
+      setAddingId(null)
+    }
   }
 
   return (
@@ -200,9 +237,10 @@ export default function Goods() {
                         type="button"
                         className="gs-btn"
                         style={{ flex: 1, backgroundColor: '#293323', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '8px 0', fontWeight: '600' }}
+                        disabled={addingId !== null}
                         onClick={() => handleAddToCart(g)}
                       >
-                        장바구니 담기
+                        {addingId === g.id ? '담는 중…' : '장바구니 담기'}
                       </button>
                     </div>
 

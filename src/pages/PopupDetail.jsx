@@ -5,8 +5,6 @@ import {
 } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import GoodsCard from '../components/common/GoodsCard.jsx'
-import FeaturedPopupDetail from './FeaturedPopupDetail.jsx'
-import { featuredPopups } from '../data/featuredPopups.js'
 import { usePopup, usePopupProducts } from '../hooks/usePopups'
 import './PopupDetail.css'
 import PopupLifecycleBadge from '../components/common/PopupLifecycleBadge.jsx'
@@ -201,16 +199,8 @@ export default function PopupDetail({ onCreateHold }) {
   const { popupId } = useParams()
   const app = useApp()
 
-  const featured = featuredPopups.find(
-    (popup) => String(popup.id) === String(popupId)
-  )
-
-  return featured ? (
-    <FeaturedPopupDetail popup={featured} onCreateHold={onCreateHold} />
-  ) : (
-    <BasicPopupDetail
-      onCreateHold={onCreateHold}
-      key={`${popupId}:${app.currentUser?.username || app.currentUser?.email || 'guest'}`}
-    />
-  )
+  return <BasicPopupDetail
+    onCreateHold={onCreateHold}
+    key={`${popupId}:${app.currentUser?.username || app.currentUser?.email || 'guest'}`}
+  />
 }
