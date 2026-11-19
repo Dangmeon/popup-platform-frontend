@@ -6,15 +6,19 @@ import { getCart, deleteCartItem, updateCartItem } from '../api/cartApi'
 import { featuredGoods } from '../data/featuredPopups.js'
 
 function getErrorMessage(error) {
-  const status = error.response?.status
+  const status = error?.response?.status
   if (status === 401 || status === 403) {
     return '로그인 인증을 확인하지 못했습니다. 다시 로그인해 주세요.'
   }
-  const message = error.response?.data?.message
-  if (typeof message === 'string' && message.trim()) return message
-  return error.response
+  const data = error?.response?.data
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    if (typeof data.message === 'string' && data.message.trim()) return data.message
+    const fieldMsgs = Object.values(data).filter((v) => typeof v === 'string' && v.trim())
+    if (fieldMsgs.length > 0) return fieldMsgs.join(' ')
+  }
+  return error?.response
     ? '요청을 처리하지 못했습니다. 다시 시도해 주세요.'
-    : error.message || '장바구니를 불러오지 못했습니다.'
+    : error?.message || '장바구니를 불러오지 못했습니다.'
 }
 
 function formatPrice(value) {
@@ -60,7 +64,7 @@ function CartPage({ authed }) {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    
+
     let active = true
 
     async function load() {
@@ -69,38 +73,17 @@ function CartPage({ authed }) {
       setActionError('')
 
       try {
-        let list = []
-        if (authed) {
-          try {
-            const data = await getCart()
-            list = Array.isArray(data) ? data : []
-          } catch (apiErr) {
-            const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
-            list = localData.map((it, idx) => ({
-              cartId: it.id || idx,
-              prdId: it.id,
-              productName: it.name,
-              productImg: it.image,
-              price: it.price,
-              quantity: it.qty || 1,
-              purchasable: true,
-            }))
-          }
-        } else {
-          const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
-          list = localData.map((it, idx) => ({
-            cartId: it.id || idx,
-            prdId: it.id,
-            productName: it.name,
-            productImg: it.image,
-            price: it.price,
-            quantity: it.qty || 1,
-            purchasable: true,
-          }))
+        if (!authed) {
+          if (!active) return
+          setItems([])
+          setSelected(new Set())
+          return
         }
 
+        const data = await getCart()
         if (!active) return
 
+        const list = Array.isArray(data) ? data : []
         setItems(list)
         setSelected(new Set(list.filter(isBuyable).map((i) => i.cartId)))
       } catch (requestError) {
@@ -145,27 +128,14 @@ function CartPage({ authed }) {
     setActionError('')
 
     try {
-      if (authed) {
-        await updateCartItem(item.cartId, next)
-      } else {
-        const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
-        const updated = localData.map(it => (it.id === item.prdId || it.id === item.cartId) ? { ...it, qty: next } : it)
-        localStorage.setItem('popq_cart', JSON.stringify(updated))
-      }
-
+      await updateCartItem(item.cartId, next)
+      const latest = await getCart()
       if (mounted.current) {
-        setItems((prev) =>
-          prev.map((i) =>
-            i.cartId === item.cartId
-              ? {
-                  ...i,
-                  quantity: next,
-                  itemTotalPrice:
-                    typeof i.price === 'number' ? i.price * next : i.itemTotalPrice,
-                }
-              : i
-          )
-        )
+        setItems(latest)
+        setSelected((prev) => {
+          const validIds = new Set(latest.map((i) => i.cartId))
+          return new Set([...prev].filter((id) => validIds.has(id)))
+        })
       }
     } catch (requestError) {
       if (mounted.current) setActionError(getErrorMessage(requestError))
@@ -182,28 +152,29 @@ function CartPage({ authed }) {
     setBusy(true)
     setActionError('')
 
-    if (authed) {
-      const results = await Promise.allSettled(cartIds.map((id) => deleteCartItem(id)))
-      if (mounted.current) {
-        const removed = new Set(cartIds.filter((_, idx) => results[idx].status === 'fulfilled'))
-        const failed = results.find((r) => r.status === 'rejected')
+    const results = await Promise.allSettled(cartIds.map((id) => deleteCartItem(id)))
+    let latest = null
+    try {
+      latest = await getCart()
+    } catch {
+      latest = null
+    }
 
+    if (mounted.current) {
+      const removed = new Set(cartIds.filter((_, idx) => results[idx].status === 'fulfilled'))
+      const failed = results.find((r) => r.status === 'rejected')
+
+      if (Array.isArray(latest)) {
+        setItems(latest)
+        const validIds = new Set(latest.map((i) => i.cartId))
+        setSelected((prev) => new Set([...prev].filter((id) => !removed.has(id) && validIds.has(id))))
+      } else {
         setItems((prev) => prev.filter((i) => !removed.has(i.cartId)))
         setSelected((prev) => new Set([...prev].filter((id) => !removed.has(id))))
-        if (failed) setActionError(getErrorMessage(failed.reason))
-        setBusy(false)
       }
-    } else {
-      const localData = JSON.parse(localStorage.getItem('popq_cart') || '[]')
-      const removedSet = new Set(cartIds)
-      const updated = localData.filter((it, idx) => !removedSet.has(it.id || idx))
-      localStorage.setItem('popq_cart', JSON.stringify(updated))
 
-      if (mounted.current) {
-        setItems((prev) => prev.filter((i) => !removedSet.has(i.cartId)))
-        setSelected((prev) => new Set([...prev].filter((id) => !removedSet.has(id))))
-        setBusy(false)
-      }
+      if (failed) setActionError(getErrorMessage(failed.reason))
+      setBusy(false)
     }
 
     lock.current = false
@@ -256,6 +227,15 @@ function CartPage({ authed }) {
         </button>
       </div>
     )
+  } else if (!authed) {
+    body = (
+      <div className="cp-empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <p>로그인 후 장바구니를 확인할 수 있어요.</p>
+        <Link to="/login" className="cp-btn-main cp-btn-inline" style={{ backgroundColor: '#293323' }}>
+          로그인하러 가기
+        </Link>
+      </div>
+    )
   } else if (items.length === 0) {
     body = (
       <div className="cp-empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
@@ -294,9 +274,9 @@ function CartPage({ authed }) {
               </div>
 
               <div className="cp-qty" style={{ display: 'flex', alignItems: 'center', border: '1px solid #d1d5db', borderRadius: '6px', overflow: 'hidden', marginRight: '24px' }}>
-                <button type="button" disabled={busy || item.quantity <= 1} onClick={() => changeQty(item, -1)} style={{ padding: '6px 12px', background: '#fff', border: 'none', cursor: 'pointer' }}>−</button>
+                <button type="button" disabled={busy || !ok || item.quantity <= 1} onClick={() => changeQty(item, -1)} style={{ padding: '6px 12px', background: '#fff', border: 'none', cursor: 'pointer' }}>−</button>
                 <span style={{ padding: '0 10px', fontSize: '14px', fontWeight: '600' }}>{item.quantity}</span>
-                <button type="button" disabled={busy} onClick={() => changeQty(item, 1)} style={{ padding: '6px 12px', background: '#fff', border: 'none', cursor: 'pointer' }}>+</button>
+                <button type="button" disabled={busy || !ok} onClick={() => changeQty(item, 1)} style={{ padding: '6px 12px', background: '#fff', border: 'none', cursor: 'pointer' }}>+</button>
               </div>
 
               <div className="cp-line" style={{ fontWeight: '700', fontSize: '15px', width: '90px', textAlign: 'right', marginRight: '20px' }}>{formatPrice(lineTotal(item))}</div>
@@ -318,7 +298,7 @@ function CartPage({ authed }) {
       <h1 className="cp-title" style={{ fontSize: '28px', fontWeight: '800', marginBottom: '24px' }}>장바구니</h1>
 
       <div className="cp-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'stretch' }}>
-        
+
         {/* 왼쪽: 장바구니 목록 카드 박스 */}
         <section className="cp-panel" style={{ background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
           <div className="cp-panel-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e8eb', paddingBottom: '16px', marginBottom: '16px' }}>

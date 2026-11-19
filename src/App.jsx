@@ -5,7 +5,7 @@ import {
   Outlet,
   Navigate,
   useNavigate,
-  useLocation, // 1. useLocation 임포트 추가
+  useLocation,
 } from 'react-router-dom'
 
 import Header from './components/common/Header.jsx'
@@ -24,7 +24,8 @@ import {
 import Home from './pages/Home.jsx'
 import PopupList from './pages/PopupList.jsx'
 import PopupDetail from './pages/PopupDetail.jsx'
-import MyPage from './pages/MyPage.jsx'
+import MyPage from './pages/MyPage.jsx' // 👈 예약·웨이팅 화면 컴포넌트 임포트
+import MyPageHome, { MyPageFrame } from './pages/MyPageHome.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
 import Cart from './pages/Cart.jsx'
 import Login from './pages/Login.jsx'
@@ -53,7 +54,7 @@ import './styles/toast.css'
 import Checkout from './pages/Checkout.jsx'
 import { PaymentSuccess, PaymentFail } from './pages/PaymentResult.jsx'
 
-// 2. 페이지 이동 시 스크롤을 맨 위로 올려주는 공통 컴포넌트 추가
+// 페이지 이동 시 스크롤을 맨 위로 올려주는 공통 컴포넌트
 function ScrollToTop() {
   const { pathname } = useLocation()
 
@@ -528,7 +529,6 @@ function App() {
     let receivedResponse = false
 
     try {
-      // 응답 유실에 대비한 생성 기록
       sessionStorage.setItem(
         getStorageKey(owner),
         JSON.stringify({ pendingCreation: true })
@@ -551,7 +551,6 @@ function App() {
         endTime,
       })
 
-      // 계정 변경 시에도 예약번호 보관
       rememberReservation(nextReservation)
 
       if (currentUsername.current !== owner) return
@@ -735,7 +734,6 @@ function App() {
     setReservationError('')
 
     try {
-      // 변경 전 서버 상태 확인
       const response = await getReservation({
         reservationId: currentReservation.reservationId,
       })
@@ -773,7 +771,6 @@ function App() {
       const changed = mapReservation(result, latest)
       rememberReservation(changed)
 
-      // 변경된 방문 정보 다시 조회
       const detail = await getReservation({
         reservationId: changed.reservationId,
       })
@@ -812,7 +809,6 @@ function App() {
         )
 
       if (unknownResult) {
-        // 결과 확인 전 중복 변경 방지
         setRecovery({
           owner,
           status: 'error',
@@ -859,17 +855,14 @@ function App() {
     })
   }
 
-  // 변경 요청
   function handleUpdateReservation(changes) {
     return handleManageReservation('update', changes)
   }
 
-  // 취소 요청
   function handleCancelReservation() {
     return handleManageReservation('cancel')
   }
 
-  // 예약 복원 안내
   function renderRecovery() {
     return (
       <ReservationRecovery
@@ -884,7 +877,6 @@ function App() {
     )
   }
 
-  // 예약 화면 진입 확인
   function guardReservationPage(
     element,
     requireReservation = false
@@ -910,7 +902,6 @@ function App() {
 
   return (
     <>
-      {/* 3. 라우터 내부 상단에 ScrollToTop 배치 */}
       <ScrollToTop />
       <Routes>
         {/* 사용자 페이지 */}
@@ -922,7 +913,6 @@ function App() {
             element={<PopupDetail />}
           />
 
-          {/* 예약 날짜 및 시간 선택 */}
           <Route
             path="/popups/:popupId/reserve"
             element={guardReservationPage(
@@ -932,7 +922,6 @@ function App() {
             )}
           />
 
-          {/* 예약 정보 확인 */}
           <Route
             path="/reservations/confirm"
             element={guardReservationPage(
@@ -963,7 +952,6 @@ function App() {
             )}
           />
 
-          {/* 예약 완료 */}
           <Route
             path="/reservations/complete"
             element={guardReservationPage(
@@ -996,7 +984,6 @@ function App() {
             )}
           />
 
-          {/* 예약 변경 */}
           <Route
             path="/reservations/edit"
             element={guardReservationPage(
@@ -1018,13 +1005,16 @@ function App() {
             )}
           />
 
-          {/* 회원 및 장바구니 */}
-          <Route path="/mypage" element={<MyPage />} />
-          <Route
-            path="/mypage/account"
-            element={<AccountSettings />}
-          />
+          {/* 회원 및 마이페이지 라우트 */}
+          <Route path="/mypage" element={<MyPageFrame />}>
+            <Route index element={<MyPageHome />} />
+            <Route path="account" element={<AccountSettings />} />
+          </Route>
+
+          {/* 상단 헤더 '내 예약·웨이팅' 아이콘 연결 */}
+          <Route path="/my-activities" element={<MyPage />} />
           <Route path="/cart" element={<Cart />} />
+          
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route
@@ -1039,7 +1029,6 @@ function App() {
           <Route path="/payments/success" element={<PaymentSuccess />} />
           <Route path="/payments/fail" element={<PaymentFail />} />
 
-          {/* 없는 사용자 페이지 */}
           <Route path="*" element={<NotFound />} />
         </Route>
 
@@ -1060,7 +1049,6 @@ function App() {
         </Route>
       </Routes>
 
-      {/* 공통 알림 */}
       <div className="toast-wrap">
         {app.toasts.map((toast) => (
           <div className="toast" key={toast.id}>

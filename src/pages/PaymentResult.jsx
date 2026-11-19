@@ -90,7 +90,7 @@ export function PaymentSuccess() {
           <h1 className="pr-title">결제를 완료하지 못했어요</h1>
           <p className="pr-desc">{message}</p>
           <div className="pr-actions">
-            <Link to="/cart" className="pr-btn pr-btn-primary">장바구니로</Link>
+            <Link to="/cart" className="pr-btn pr-btn-primary" style={{ backgroundColor: '#465235 !important', background: '#465235', borderColor: '#465235' }}>장바구니로</Link>
             <Link to="/" className="pr-btn">홈으로</Link>
           </div>
         </div>
@@ -101,7 +101,7 @@ export function PaymentSuccess() {
   return (
     <div className="pr-page">
       <div className="pr-card">
-        <div className="pr-icon pr-icon-ok">✓</div>
+        <div className="pr-icon pr-icon-ok" style={{ backgroundColor: '#465235 !important', background: '#465235', color: '#fff' }}>✓</div>
         <h1 className="pr-title">결제가 완료됐어요</h1>
         <p className="pr-desc">주문이 정상적으로 접수됐어요.</p>
         <dl className="pr-rows">
@@ -112,7 +112,7 @@ export function PaymentSuccess() {
           )}
         </dl>
         <div className="pr-actions">
-          <Link to="/mypage" className="pr-btn pr-btn-primary">마이페이지</Link>
+          <Link to="/mypage" className="pr-btn pr-btn-primary" style={{ backgroundColor: '#465235 !important', background: '#465235', borderColor: '#465235' }}>마이페이지</Link>
           <Link to="/" className="pr-btn">홈으로</Link>
         </div>
       </div>
@@ -134,7 +134,7 @@ export function PaymentFail() {
         <p className="pr-desc">{message}</p>
         {code && <p className="pr-code">오류 코드: {code}</p>}
         <div className="pr-actions">
-          <Link to="/cart" className="pr-btn pr-btn-primary">장바구니로</Link>
+          <Link to="/cart" className="pr-btn pr-btn-primary" style={{ backgroundColor: '#465235 !important', background: '#465235', borderColor: '#465235' }}>장바구니로</Link>
           <Link to="/" className="pr-btn">홈으로</Link>
         </div>
       </div>
