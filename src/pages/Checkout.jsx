@@ -65,7 +65,7 @@ export default function Checkout() {
     name: '', phone: '', zip: '', address: '', detail: '', memo: MEMOS[0],
   })
   const [paymentMethod, setPaymentMethod] = useState('toss')
-  const [selectedCoupon, setSelectedCoupon] = useState('5000') // 💡 쿠폰 선택 상태 추가 ('0'이면 미사용, '5000'이면 5천원 할인)
+  const [selectedCoupon, setSelectedCoupon] = useState('5000') 
   const [usePoint, setUsePoint] = useState('')
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
@@ -79,7 +79,7 @@ export default function Checkout() {
     return activeItems.reduce((sum, it) => sum + it.price * it.qty, 0)
   }, [activeItems])
 
-  const discount = Number(selectedCoupon) || 0 // 💡 선택된 쿠폰 금액 반영 (안함 선택 시 0원)
+  const discount = Number(selectedCoupon) || 0 
   const pointUsed = Number(usePoint) || 0
   const finalTotal = Math.max(0, activeProductTotal - discount - pointUsed)
   const count = activeItems.reduce((sum, it) => sum + it.qty, 0)
@@ -203,7 +203,15 @@ export default function Checkout() {
                 <div className="co-field">
                   <div className="co-zip">
                     <input value={form.zip} readOnly placeholder="우편번호" />
-                    <button type="button" className="co-sub-btn" onClick={searchAddress}>주소 검색</button>
+                    {/* 💡 주소 검색 버튼을 초록 톤으로 맞춤 */}
+                    <button 
+                      type="button" 
+                      className="co-sub-btn" 
+                      onClick={searchAddress}
+                      style={{ backgroundColor: '#465235', color: '#fff', border: 'none' }}
+                    >
+                      주소 검색
+                    </button>
                   </div>
                   <input value={form.address} readOnly placeholder="주소 검색을 눌러 주세요" />
                   <input
@@ -225,14 +233,14 @@ export default function Checkout() {
               </div>
             </section>
 
-            {/* 주문 상품 */}
+            {/* 주문 상품 (💡 불필요한 '주문 완료' 뱃지 제거 및 품절 상태만 명시) */}
             <section className="co-card">
               <div className="co-card-head">
                 <h2>주문 상품</h2>
                 <span className="co-req">총 {orderItems.length}개 상품 중 결제 대상 {activeItems.length}개</span>
               </div>
               {isSample && (
-                <p className="co-sample">장바구니에서 넘어온 상품이 없어 임시 상품을 보여 주고 있어요.</p>
+                <p className="co-sample">장바구니에서 넘어온 상품이 없어요. 임시 상품을 보여 주고 있어요.</p>
               )}
               <ul className="co-items">
                 {orderItems.map(it => (
@@ -252,9 +260,6 @@ export default function Checkout() {
                             품절
                           </span>
                         )}
-                        <span style={{ background: it.isSoldOut ? '#fef3c7' : '#e5e8eb', color: it.isSoldOut ? '#d97706' : '#4b5563', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>
-                          {it.isSoldOut ? '자동 제외됨' : '주문 완료'}
-                        </span>
                       </div>
                       {it.option && <div className="co-item-opt">옵션 {it.option}</div>}
                       {it.isSoldOut && (
@@ -282,7 +287,6 @@ export default function Checkout() {
               <div className="co-row">
                 <label>쿠폰 사용</label>
                 <div className="co-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  {/* 💡 쿠폰 사용 안함 옵션 추가 */}
                   <select 
                     style={{ flex: 1 }} 
                     value={selectedCoupon} 
