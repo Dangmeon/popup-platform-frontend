@@ -37,3 +37,19 @@ export function getPopupLifecycle(popup,now=Date.now()) {
   if(['ENDED','FINISHED','종료'].includes(raw))return {label:'종료',className:'is-ended'}
   return null
 }
+
+export function getPopupStage(popup, now = Date.now()) {
+  const op = String(popup.opStatus || '').toUpperCase()
+  if (op === 'CANCELLED') return 'ENDED'
+  const {start,end} = popupDates(popup)
+  const today = new Date(now + 9 * 3600000).toISOString().slice(0,10)
+  if (start && end && start <= end) {
+    if (today > end) return 'ENDED'
+    if (today < start) return 'UPCOMING'
+    return op === 'PAUSED' ? null : 'ONGOING'
+  }
+  const status = String(popup.status || '').toUpperCase()
+  if (['ENDED','FINISHED'].includes(status)) return 'ENDED'
+  if (['UPCOMING','SCHEDULED'].includes(status)) return 'UPCOMING'
+  return op !== 'PAUSED' && status === 'ONGOING' ? 'ONGOING' : null
+}

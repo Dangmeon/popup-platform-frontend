@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import MyOrders from './MyOrders.jsx'
+import QnaCenter from '../components/common/QnaCenter.jsx'
 import { MyPageFrame } from './MyPageHome.jsx'
-import { demoRecent, demoInquiries, faqItems, makeDemoCoupons } from '../data/myPageDemo.js'
+import { demoRecent, faqItems, makeDemoCoupons } from '../data/myPageDemo.js'
 import { addCalendarMonths, couponState, extendDemoCoupon } from '../utils/couponPolicy.js'
 import '../styles/MyPageServices.css'
 
@@ -66,9 +67,4 @@ function Faq() {
   const rows=faqItems.filter(row=>(category==='all'||row.category===category)&&`${row.question} ${row.answer}`.includes(query.trim()))
   return <><label className="ms-search"><PopqIcon name="search" size={20}/><input type="search" placeholder="궁금한 내용을 검색해 보세요" aria-label="FAQ 검색" value={query} onChange={e=>setQuery(e.target.value)}/></label><Filter label="FAQ 종류" items={ [['all','전체'],['예약·웨이팅','예약·웨이팅'],['주문·배송','주문·배송'],['쿠폰','쿠폰']] } value={category} onChange={setCategory}/><div className="ms-faq">{rows.map(row=><details key={row.question}><summary><span>{row.category}</span><strong>{row.question}</strong><b>+</b></summary><p>{row.answer}</p></details>)}</div>{!rows.length&&<Empty text="검색 결과가 없어요."/>}<div className="ms-help"><div><strong>찾는 답변이 없나요?</strong><p>내 문의에서 확인해 보세요.</p></div><Link to="/mypage/inquiries">내 문의 보기 →</Link></div></>
 }
-function Inquiries() {
-  const [rows]=useState(demoInquiries),[writing,setWriting]=useState(false),[notice,setNotice]=useState('')
-  const [form,setForm]=useState({category:'주문·배송',title:'',body:''})
-  function submit(event){event.preventDefault();setNotice('문의 접수를 준비 중입니다. 잠시 후 다시 이용해 주세요.')}
-  return <><div className="ms-list-toolbar"><span>문의 {rows.length}건</span><button type="button" className="ms-action" onClick={()=>setWriting(value=>!value)}>{writing?'작성 닫기':'문의 작성'}</button></div>{notice&&<p role="status" className="ms-feedback">{notice}</p>}{writing&&<form className="ms-inquiry-form" onSubmit={submit}><h3>문의 작성</h3><label>문의 유형<select value={form.category} onChange={e=>setForm(previous=>({...previous,category:e.target.value}))}>{['주문·배송','쿠폰','예약·웨이팅','기타'].map(value=><option key={value}>{value}</option>)}</select></label><label>제목<input value={form.title} maxLength={80} required onChange={e=>setForm(previous=>({...previous,title:e.target.value}))}/></label><label>내용<textarea value={form.body} maxLength={1000} rows={5} required onChange={e=>setForm(previous=>({...previous,body:e.target.value}))}/></label><button className="ms-action" type="submit">문의 등록</button></form>}<div className="ms-inquiries">{rows.map(row=><details key={row.id}><summary><span className={`ms-inquiry-status${row.answered?' answered':''}`}>{row.answered?'답변 완료':'답변 대기'}</span><div><small>{row.category} · {row.date}</small><h3>{row.title}</h3></div><span>⌄</span></summary><div className="ms-inquiry-body"><p>{row.body}</p>{row.answer?<blockquote><strong>POPQ 답변</strong><p>{row.answer}</p></blockquote>:<p className="ms-footnote">답변을 기다리고 있어요.</p>}</div></details>)}</div></>
-}
+function Inquiries() { return <QnaCenter /> }

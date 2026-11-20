@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import AdminDetailModal from '../../components/admin/AdminDetailModal.jsx'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   getProducts,
   getProduct,
+  addProductStock,
 } from '../../api/admin/productApi'
 import AdminProductForm from '../../components/admin/AdminProductForm'
 import './AdminProducts.css'
@@ -46,6 +49,8 @@ function getStockNotice(stock) {
 }
 
 function AdminProducts() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const lowStockOnly = searchParams.get('stock') === 'low'
   // 상품 목록
   const [products, setProducts] = useState([])
   const [total, setTotal] = useState(0)
@@ -60,6 +65,12 @@ function AdminProducts() {
   // 상품 상세
   const [selectedId, setSelectedId] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [showStockForm, setShowStockForm] = useState(false)
+  const [stockQuantity, setStockQuantity] = useState('')
+  const [stockBusy, setStockBusy] = useState(false)
+  const [stockMessage, setStockMessage] = useState('')
+  const [stockError, setStockError] = useState('')
+  const stockLock = useRef(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState('')
 
@@ -70,6 +81,40 @@ function AdminProducts() {
   // 재조회
   const [listRetryKey, setListRetryKey] = useState(0)
   const [detailRetryKey, setDetailRetryKey] = useState(0)
+
+  useEffect(() => {
+    setShowStockForm(false)
+    setStockQuantity('')
+    setStockError('')
+    setStockMessage('')
+  }, [selectedId])
+
+  async function handleAddStock(event) {
+    event.preventDefault()
+    if (stockLock.current) return
+    const quantity = Number(stockQuantity)
+    if (!stockQuantity.trim() || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 2147483647) {
+      setStockError('입고 수량은 1개 이상의 정수로 입력해 주세요.')
+      return
+    }
+    stockLock.current = true
+    setStockBusy(true)
+    setStockError('')
+    setStockMessage('')
+    try {
+      const updated = await addProductStock(selectedId, quantity)
+      setSelectedProduct(previous => ({...previous, ...updated, popupName: previous.popupName, description: updated.productDesc || previous.description}))
+      setStockMessage(`재고 ${quantity.toLocaleString()}개가 추가되었습니다.`)
+      setStockQuantity('')
+      setShowStockForm(false)
+      setListRetryKey(previous => previous + 1)
+    } catch (error) {
+      setStockError(error.response?.data?.message || '재고 추가 결과를 확인하지 못했습니다. 상품 정보를 다시 조회한 뒤 재고를 확인해 주세요.')
+    } finally {
+      stockLock.current = false
+      setStockBusy(false)
+    }
+  }
 
   // 상품 목록 조회
   useEffect(() => {
@@ -151,6 +196,19 @@ function AdminProducts() {
     setSaleStatus('')
   }
 
+  function changeStockSection(low) {
+    const next = new URLSearchParams(searchParams)
+    if (low) next.set('stock', 'low')
+    else next.delete('stock')
+    setSearchParams(next)
+    handleReset()
+  }
+
+  const visibleProducts = lowStockOnly
+    ? products.filter(product => Number.isFinite(product.stock) && product.stock >= 0 && product.stock < 3)
+        .sort((a, b) => a.stock - b.stock)
+    : products
+
   // 등록 화면 열기
   function handleOpenCreate() {
     setNotice('')
@@ -167,7 +225,7 @@ function AdminProducts() {
     setListRetryKey((previous) => previous + 1)
 
     setNotice(
-      `${product.productName} 상품이 데모에 등록됐습니다. 새로고침하면 초기화됩니다.`
+      `${product.productName} 상품이 등록되었습니다.`
     )
   }
 
@@ -179,7 +237,7 @@ function AdminProducts() {
         ['팝업명', selectedProduct.popupName],
         ['가격', formatPrice(selectedProduct.price)],
         ['온라인 재고', `${selectedProduct.stock}개`],
-        ['회원 누적 구매 제한', `${selectedProduct.maxQty}개`],
+        ['회원 누적 구매 제한', selectedProduct.maxQty == null ? '제한 없음' : `${selectedProduct.maxQty}개`],
         [
           '판매 상태',
           saleStatuses[selectedProduct.saleStatus] ||
@@ -202,7 +260,6 @@ function AdminProducts() {
 
         <div className="product-admin-heading-actions">
           {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
-          <span className="admin-demo-badge">DEMO DATA</span>
 
           <button
             type="button"
@@ -218,11 +275,6 @@ function AdminProducts() {
       </div>
 
       {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 제거 */}
-      <p className="product-admin-demo">
-        가상 상품으로 조회·등록을 테스트하는 화면입니다.
-        모든 상품은 한정판이며 재고는 온라인 판매 재고입니다.
-        등록 결과는 서버에 저장되지 않고 새로고침하면 초기화됩니다.
-      </p>
 
       {/* 등록 결과 */}
       <p className="product-admin-notice" role="status">
@@ -240,6 +292,11 @@ function AdminProducts() {
       </div>
 
       {/* 검색 및 필터 */}
+      <nav className="product-admin-stock-tabs" aria-label="상품 재고 분류">
+        <button type="button" aria-current={!lowStockOnly ? 'page' : undefined} onClick={() => changeStockSection(false)}>전체 상품</button>
+        <button type="button" aria-current={lowStockOnly ? 'page' : undefined} onClick={() => changeStockSection(true)}>재고 부족</button>
+        {lowStockOnly && <span>재고 3개 미만 · 품절 포함</span>}
+      </nav>
       <section className="admin-panel" aria-label="상품 검색">
         <div className="product-admin-filters">
           <label>
@@ -283,10 +340,10 @@ function AdminProducts() {
         aria-busy={listLoading}
       >
         <div className="admin-panel-header">
-          <h3>상품 목록</h3>
+          <h3>{lowStockOnly ? '재고 부족 상품' : '상품 목록'}</h3>
           {!listLoading && !listError && (
             <span>
-              검색 {total}개 / 전체 {totalAll}개
+              검색 {lowStockOnly ? visibleProducts.length : total}개 / 전체 {totalAll}개
             </span>
           )}
         </div>
@@ -330,7 +387,7 @@ function AdminProducts() {
               </thead>
 
               <tbody>
-                {products.map((product) => (
+                {visibleProducts.map((product) => (
                   <tr key={product.prdId}>
                     <td>{product.prdId}</td>
                     <td>{product.productName}</td>
@@ -358,7 +415,7 @@ function AdminProducts() {
                         className="product-admin-button"
                         aria-label={`${product.productName} 상세 보기`}
                         aria-expanded={selectedId === product.prdId}
-                        aria-controls="product-admin-detail"
+                        aria-haspopup="dialog"
                         onClick={() => setSelectedId(product.prdId)}
                       >
                         상세 보기
@@ -367,7 +424,7 @@ function AdminProducts() {
                   </tr>
                 ))}
 
-                {products.length === 0 && (
+                {visibleProducts.length === 0 && (
                   <tr>
                     <td colSpan={7} className="product-admin-empty">
                       검색 조건에 맞는 상품이 없습니다.
@@ -381,8 +438,9 @@ function AdminProducts() {
       </section>
 
       {/* 상품 상세 */}
-      <div id="product-admin-detail">
+
         {selectedId !== null && (
+          <AdminDetailModal title="상품 상세" busy={stockBusy} onClose={() => setSelectedId(null)}>
           <section
             className="admin-panel product-admin-detail"
             aria-labelledby="product-admin-detail-title"
@@ -393,6 +451,7 @@ function AdminProducts() {
               <button
                 type="button"
                 className="product-admin-button"
+                disabled={stockBusy}
                 onClick={() => setSelectedId(null)}
               >
                 닫기
@@ -429,16 +488,20 @@ function AdminProducts() {
                   ))}
                 </dl>
 
-                <p className="product-admin-help">
-                  구매 제한은 회원의 누적 구매 수량 기준입니다.
-                  재고 선점과 구매 대기열 권한 검증은 실제 주문 API에서
-                  처리해야 합니다.
-                </p>
+                {stockMessage && <p role="status">{stockMessage}</p>}
+                {stockError && <div role="alert"><p>{stockError}</p><button type="button" className="product-admin-button" disabled={stockBusy} onClick={() => { setShowStockForm(false); setDetailRetryKey(v => v + 1); setListRetryKey(v => v + 1) }}>상품 정보 다시 조회</button></div>}
+                {showStockForm ? <form onSubmit={handleAddStock}>
+                  <label htmlFor="product-stock-quantity">입고 수량</label>
+                  <input id="product-stock-quantity" type="number" min="1" max="2147483647" step="1" required value={stockQuantity} disabled={stockBusy} onChange={e => setStockQuantity(e.target.value)} />
+                  <p>현재 재고에 입력한 수량을 추가합니다.</p>
+                  <button type="submit" className="product-admin-button primary" disabled={stockBusy}>{stockBusy ? '저장 중…' : '재고 추가 저장'}</button>{' '}
+                  <button type="button" className="product-admin-button" disabled={stockBusy} onClick={() => setShowStockForm(false)}>취소</button>
+                </form> : <button type="button" className="product-admin-button primary" disabled={stockBusy} onClick={() => { setShowStockForm(true); setStockMessage(''); setStockError('') }}>재고 추가</button>}
               </>
             )}
           </section>
+          </AdminDetailModal>
         )}
-      </div>
     </div>
   )
 }

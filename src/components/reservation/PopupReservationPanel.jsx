@@ -48,6 +48,7 @@ function Panel({ popup, popId, demo, onCreateHold }) {
   const [retry,setRetry] = useState(0)
   const [now,setNow] = useState(Date.now)
   const [review,setReview] = useState(false)
+  const [reviewHold,setReviewHold] = useState(null)
   const [busy,setBusy] = useState(false)
   const [submitError,setSubmitError] = useState('')
   const [notice,setNotice] = useState('')
@@ -78,34 +79,50 @@ function Panel({ popup, popId, demo, onCreateHold }) {
   const reason=selected ? getSlotUnavailableReason(selected,people,now) : ''
   // 회차 마감 시 선택을 해제합니다. 전송 중에는 선택을 유지합니다.
   useEffect(()=>{
-    if (busy || !slotId || loading || error) return
+    if (busy || reviewHold?.reservationStatus === 'HOLD' || !slotId || loading || error) return
     if (!selected || reason) {setSlotId(null);setReview(false);setNotice(`${reason || '회차가 변경되었습니다.'} 다른 회차를 선택해 주세요.`)}
   },[selected,reason,slotId,busy,loading,error])
 
+  async function prepareReview() {
+    if (lock.current) return
+    if (reviewHold) {setReview(true);return}
+    if (!selected) return
+    if (demo) {setReview(true);return}
+    lock.current=true;setBusy(true);setSubmitError('')
+    try {
+      if(typeof onCreateHold!=='function')throw new Error('예약을 진행하지 못했습니다.')
+      const held=await onCreateHold({popId,timeSlotId:selected.timeSlotId,peopleCount:people,slotDate:selected.slotDate,startTime:selected.startTime,endTime:selected.endTime,reviewOnly:true})
+      if(alive.current && held?.reservationStatus==='HOLD'){setReviewHold({...held,slot:selected});setReview(true)}
+    } catch(err){if(alive.current)setSubmitError(message(err))}
+    finally{lock.current=false;if(alive.current)setBusy(false)}
+  }
+
   async function confirm() {
-    if(lock.current || !selected || demo) return
-    const latestReason=getSlotUnavailableReason(selected,people,Date.now())
+    if(lock.current || (!selected && !reviewHold?.slot) || demo) return
+    const latestReason=reviewHold?.reservationStatus==='HOLD' ? '' : getSlotUnavailableReason(selected,people,Date.now())
     if(latestReason){setSubmitError(latestReason);return}
     if(typeof onCreateHold!=='function'){setSubmitError('현재 예약을 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.');return}
     lock.current=true;setBusy(true);setSubmitError('')
-    try {await onCreateHold({popId,timeSlotId:selected.timeSlotId,peopleCount:people,slotDate:selected.slotDate,startTime:selected.startTime,endTime:selected.endTime,autoConfirm:true})}
+    try {await onCreateHold({popId,timeSlotId:reviewHold?.timeSlotId || selected.timeSlotId,peopleCount:reviewHold?.peopleCount || people,slotDate:reviewHold?.slot.slotDate || selected.slotDate,startTime:reviewHold?.slot.startTime || selected.startTime,endTime:reviewHold?.slot.endTime || selected.endTime,autoConfirm:true})}
     catch(requestError){if(alive.current)setSubmitError(message(requestError))}
     finally {lock.current=false;if(alive.current)setBusy(false)}
   }
 
   return <div className="rp-panel">
-    <div className="rp-mode" aria-label="방문 방식"><button type="button" aria-pressed={mode==='reservation'} disabled={busy} onClick={()=>setMode('reservation')}>방문 예약</button><button type="button" aria-pressed={mode==='waiting'} disabled={busy} onClick={()=>setMode('waiting')}>현장 웨이팅</button></div>
+    <div className="rp-mode" aria-label="방문 방식"><button type="button" aria-pressed={mode==='reservation'} disabled={busy || Boolean(reviewHold)} onClick={()=>setMode('reservation')}>방문 예약</button><button type="button" aria-pressed={mode==='waiting'} disabled={busy || Boolean(reviewHold)} onClick={()=>setMode('waiting')}>현장 웨이팅</button></div>
     {mode==='waiting' ? <PopupWaitingPanel popup={popup} popId={popId} demo={demo} /> : <>
       <div className="rp-panel-heading"><span className="rp-eyebrow">VISIT RESERVATION</span><h2>방문할 날짜를 선택하세요</h2><p>날짜와 회차를 고르면 마지막에 한 번 더 확인해요.</p></div>
       {!demo && !app.isAuthenticated ? <div className="rp-login"><p>예약 회차는 로그인 후 확인할 수 있어요.</p><Link className="rp-primary" to="/login">로그인하기</Link></div> : <>
         {error && <div className="rp-error" role="alert">{error}<button type="button" className="rp-secondary" disabled={busy} onClick={()=>setRetry(v=>v+1)}>다시 조회</button></div>}
-        <ReservationCalendar selectedDate={date} onDateSelect={value=>{setDate(value);setSlotId(null);setNotice('')}} timeSlots={error ? [] : slots} peopleCount={people} now={now} loading={loading} disabled={busy || Boolean(error)} />
-        <TimeSlotSelector selectedDate={date} selectedTimeSlotId={slotId} onTimeSelect={slot=>{setSlotId(slot.timeSlotId);setNotice('')}} timeSlots={slots} peopleCount={people} now={now} loading={loading} disabled={busy || Boolean(error)} />
-        <div className="rp-people"><div><strong>예약 인원</strong><small>본인 포함 최대 3명</small></div><div><button type="button" aria-label="예약 인원 줄이기" disabled={people<=1||busy} onClick={()=>setPeople(v=>v-1)}>−</button><span>{people}</span><button type="button" aria-label="예약 인원 늘리기" disabled={people>=3||busy} onClick={()=>setPeople(v=>v+1)}>+</button></div></div>
+        <ReservationCalendar selectedDate={date} onDateSelect={value=>{setDate(value);setSlotId(null);setNotice('')}} timeSlots={error ? [] : slots} peopleCount={people} now={now} loading={loading} disabled={busy || Boolean(reviewHold) || Boolean(error)} />
+        <TimeSlotSelector selectedDate={date} selectedTimeSlotId={slotId} onTimeSelect={slot=>{setSlotId(slot.timeSlotId);setNotice('')}} timeSlots={slots} peopleCount={people} now={now} loading={loading} disabled={busy || Boolean(reviewHold) || Boolean(error)} />
+        <div className="rp-people"><div><strong>예약 인원</strong><small>본인 포함 최대 3명</small></div><div><button type="button" aria-label="예약 인원 줄이기" disabled={people<=1||busy||Boolean(reviewHold)} onClick={()=>setPeople(v=>v-1)}>−</button><span>{people}</span><button type="button" aria-label="예약 인원 늘리기" disabled={people>=3||busy||Boolean(reviewHold)} onClick={()=>setPeople(v=>v+1)}>+</button></div></div>
+        {reviewHold && !review && <p className="rp-message">진행 중인 임시 예약이 있습니다. 예약하기를 눌러 확정을 완료해 주세요.</p>}
         {notice && <p className="rp-message" role="status">{notice}</p>}
-        <button className="rp-primary rp-full" type="button" disabled={!selected||Boolean(reason)||Boolean(error)||loading||busy} onClick={()=>{setSubmitError('');setReview(true)}}>{selected ? `${selected.slotDate.slice(5).replace('-','/')} ${selected.startTime} · ${people}명 ${demo?'선택 확인':'예약하기'}` : '날짜와 회차를 선택해 주세요'}</button>
+        {!review && submitError && <p className="rp-error" role="alert">{submitError}</p>}
+        <button className="rp-primary rp-full" type="button" disabled={busy || (!reviewHold && (!selected||Boolean(reason)||Boolean(error)||loading))} onClick={prepareReview}>{selected ? `${selected.slotDate.slice(5).replace('-','/')} ${selected.startTime} · ${people}명 ${demo?'선택 확인':'예약하기'}` : '날짜와 회차를 선택해 주세요'}</button>
       </>}
-      {review && selected && <ReservationReviewModal title={popup.title} slot={selected} peopleCount={people} demo={demo} busy={busy} error={submitError} onClose={()=>{if(!busy)setReview(false)}} onConfirm={confirm} />}
+      {review && (reviewHold?.slot || selected) && <ReservationReviewModal title={popup.title} slot={reviewHold?.slot || selected} peopleCount={reviewHold?.peopleCount || people} expiresAt={reviewHold?.expiresAt} demo={demo} busy={busy} error={submitError} onClose={()=>{if(!busy)setReview(false)}} onConfirm={confirm} />}
     </>}
   </div>
 }
