@@ -1,0 +1,63 @@
+/* 마이페이지의 주문·쿠폰·고객지원 화면 */
+.pq-my-sidebar nav a {display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.pq-my-sidebar nav a>span:last-child {font-size:17px;opacity:.65;}
+.pq-my-tiles.pq-my-service-tiles {grid-template-columns:repeat(2,minmax(0,1fr));}
+.pq-my-service-tiles>a {position:relative;min-height:190px;background:#fff;transition:background .18s,border-color .18s;}
+.pq-my-service-tiles>a:first-child {background:linear-gradient(120deg,#f4f7ed,#fff);}
+.pq-my-service-tiles .pq-my-card-icon {display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#edf2e4;color:#68754b;margin-top:0;}
+.pq-my-service-tiles h3 {margin:18px 0 10px;font-size:18px;}
+.pq-my-service-tiles p {line-height:1.7;margin:0;}
+.pq-my-service-tiles>a>span:last-child {margin-top:20px;}
+.pq-my-home-preview {display:flex;align-items:center;gap:10px;margin-top:24px;font-size:12px;line-height:1.8;color:#78816c;}
+.pq-my-home-preview>b {font-size:9px;letter-spacing:1px;padding:4px 7px;border-radius:5px;background:#eef2e7;color:#68754b;flex-shrink:0;}
+.ms-page {padding-bottom:36px;color:#293323;}
+.ms-heading>span {font-size:10px;letter-spacing:2px;font-weight:800;color:#7f8b6d;}
+.pq-my-content .ms-heading h2 {font-size:28px;margin:12px 0 10px;letter-spacing:-.7px;}
+.ms-heading p {font-size:13px;line-height:1.8;color:#78816d;margin:0;}
+.ms-demo {display:flex;gap:10px;align-items:center;background:#f5f7f1;border:1px solid #e8edde;border-radius:10px;padding:13px 15px;margin:24px 0;font-size:11px;line-height:1.8;color:#78836b;}
+.ms-demo>span {flex-shrink:0;font-size:9px;font-weight:800;letter-spacing:1px;color:#68754b;}
+.ms-filters {display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;}
+.ms-filters button {border:1px solid #e0e6d8;border-radius:999px;background:#fff;color:#78816d;padding:9px 16px;font-size:12px;cursor:pointer;}
+.ms-filters button[aria-pressed=true] {background:#465235;border-color:#465235;color:#fff;font-weight:700;}
+.ms-page button:focus-visible,.ms-page a:focus-visible,.ms-page summary:focus-visible {outline:2px solid #8ca16c;outline-offset:4px;}
+.ms-page button:disabled {opacity:.5;cursor:not-allowed;}
+.ms-orders {display:grid;gap:20px;}
+.ms-order {border:1px solid #e1e7d8;border-radius:16px;background:#fff;overflow:hidden;}
+.ms-order>header {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:17px 22px;border-bottom:1px solid #edf0e7;font-size:12px;}
+.ms-order>header>span {display:flex;flex-wrap:wrap;gap:12px;color:#69745e;}.ms-order>header b {font-size:10px;font-weight:500;color:#98a18c;}
+.ms-order>header>strong {color:#68754b;background:#f0f4e8;border-radius:999px;padding:6px 10px;font-size:11px;white-space:nowrap;}
+.ms-order-product {display:flex;align-items:center;gap:16px;padding:24px 22px;}.ms-product-icon {display:grid;place-items:center;flex:0 0 72px;height:76px;border-radius:12px;background:#f3f6ec;color:#82936b;}
+.ms-order-product small {font-size:9px;letter-spacing:1px;color:#8d987e;}.ms-order-product h3 {margin:9px 0;font-size:16px;}.ms-order-product p {font-size:12px;color:#8a957c;margin:0;}.ms-order-product>b {margin-left:auto;white-space:nowrap;font-size:16px;}
+.ms-delivery {list-style:none;display:grid;grid-template-columns:repeat(4,1fr);margin:0 22px 23px;padding:20px 12px;background:#f8faf4;border-radius:10px;}
+.ms-delivery li {position:relative;text-align:center;font-size:11px;color:#9ba58f;}.ms-delivery li>span {position:relative;display:block;width:9px;height:9px;margin:0 auto 10px;border-radius:50%;background:#dae2cf;z-index:1;}
+.ms-delivery li:before {content:'';position:absolute;left:-50%;right:50%;top:3px;height:2px;background:#e3e9db;}.ms-delivery li:first-child:before {display:none;}.ms-delivery .is-done>span,.ms-delivery .is-done:before {background:#84956b;}.ms-delivery .is-done {color:#5c6b49;}.ms-delivery li[aria-current=step] {font-weight:800;}
+.ms-order>footer {border-top:1px solid #edf0e7;padding:13px 22px;color:#8d9781;font-size:10px;line-height:1.8;}
+.ms-coupon-policy {display:flex;gap:15px;padding:21px;border-radius:14px;background:#f4f7ed;color:#68754b;}.ms-coupon-policy>svg {flex-shrink:0;margin-top:3px;}.ms-coupon-policy strong {color:#465235;font-size:15px;}.ms-coupon-policy p {font-size:11px;line-height:1.9;margin:8px 0;}.ms-coupon-policy small {font-size:10px;line-height:1.8;color:#859273;}
+.ms-coupons {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}
+.ms-coupon {min-width:0;overflow:hidden;border:1px solid #e0e7d5;border-radius:17px;background:#fff;}
+.ms-coupon-art {position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(120deg,#53653a,#859e61);color:#fff;}
+.ms-coupon-original {position:relative;padding:25px 24px 23px;overflow:hidden;min-height:225px;}
+.ms-coupon-label {font-size:9px;letter-spacing:1.8px;font-weight:700;color:#e4edd8;}
+.ms-coupon-value {position:relative;font-size:51px;font-weight:800;letter-spacing:-2px;margin:13px 0 12px;line-height:1;z-index:1;}.ms-coupon-value>span {font-size:31px;margin-left:3px;}.ms-coupon-value>small {font-size:11px;letter-spacing:2px;margin-left:9px;}
+.ms-coupon-original h3 {font-size:17px;margin:0 0 6px;}.ms-coupon-original p {margin:0 0 12px;font-size:12px;}.ms-coupon-original>small {font-size:10px;color:#e0e9d5;}.ms-coupon-original>i {position:absolute;right:-12px;top:55px;transform:rotate(-24deg);opacity:.12;}
+/* D-3부터 원래 쿠폰이 비치는 회색 레이어와 큰 만료 문구를 겹칩니다. */
+.ms-coupon-art.is-urgent .ms-coupon-original {filter:grayscale(.8);}
+.ms-coupon-overlay {position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;background:rgba(221,225,215,.78);color:#35412c;text-align:center;pointer-events:none;}
+.ms-coupon-overlay>span {font-size:11px;font-weight:600;}.ms-coupon-overlay>strong {font-size:37px;font-weight:800;letter-spacing:-1px;line-height:1.2;}.ms-coupon-overlay>small {font-size:10px;color:#56624b;line-height:1.7;}
+.ms-coupon-overlay.is-inactive {background:rgba(235,237,231,.88);color:#7d8770;}.ms-coupon-overlay.is-inactive>strong {font-size:23px;}
+.ms-coupon>footer {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:17px 16px;}.ms-coupon>footer strong {display:block;font-size:11px;color:#5d6a4b;}.ms-coupon>footer small {display:block;font-size:9px;color:#8f9982;margin-top:5px;}
+.ms-coupon>footer button {flex-shrink:0;font-size:11px;padding:8px 10px;border:1px solid #d7e1c9;border-radius:7px;color:#617447;background:#fff;cursor:pointer;}.ms-coupon>footer button:hover {background:#f2f6ea;}.ms-coupon>footer button span {margin-left:5px;}.ms-extension-state {font-size:10px;color:#8c987c;}
+.ms-feedback {padding:12px 15px;border-radius:9px;background:#f0f5e7;color:#63794a;font-size:12px;line-height:1.8;}.ms-footnote {font-size:11px;line-height:1.9;color:#8b967d;margin-top:20px;}
+.ms-list-toolbar {display:flex;justify-content:space-between;align-items:center;gap:15px;margin:24px 0 18px;font-size:12px;color:#7d896d;}.ms-list-toolbar button {border:0;background:none;font-size:12px;color:#68754b;cursor:pointer;}
+.ms-recent {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}.ms-recent article {position:relative;border:1px solid #e2e8d9;border-radius:15px;overflow:hidden;}.ms-recent article>a {display:block;text-decoration:none;}.ms-recent img {width:100%;height:190px;display:block;object-fit:cover;background:#f4f6ee;}.ms-recent article>a>div {padding:18px;}.ms-recent small {font-size:10px;color:#8a9975;}.ms-recent h3 {font-size:15px;line-height:1.6;margin:7px 0;}.ms-recent p {font-size:11px;color:#8b967e;line-height:1.8;margin:7px 0;}.ms-recent article span {font-size:10px;color:#8b967e;}.ms-recent article>button {position:absolute;top:10px;right:10px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#ffffffed;border:1px solid #e4e8dc;color:#68754b;font-size:21px;cursor:pointer;}
+.ms-search {display:flex;align-items:center;gap:12px;border:1px solid #dfe6d4;background:#fafbf7;border-radius:10px;padding:12px 15px;color:#81916c;}.ms-search input {width:100%;border:0;outline:0;background:none;color:#465235;font:inherit;font-size:13px;}.ms-search:focus-within {outline:2px solid #93a776;outline-offset:2px;}
+.ms-faq details {border-bottom:1px solid #e5eadc;}.ms-faq summary {display:flex;align-items:center;gap:16px;padding:22px 2px;cursor:pointer;list-style:none;}.ms-faq summary::-webkit-details-marker,.ms-inquiries summary::-webkit-details-marker {display:none;}.ms-faq summary>span {flex:0 0 74px;font-size:10px;color:#8b987b;}.ms-faq summary>strong {font-size:13px;line-height:1.7;font-weight:600;}.ms-faq summary>b {margin-left:auto;color:#81916c;}.ms-faq details[open] summary>b {transform:rotate(45deg);}.ms-faq details>p {margin:0 0 20px;padding:18px 22px;background:#f7f9f2;border-radius:10px;font-size:12px;line-height:2;color:#78866a;}
+.ms-help {display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:30px;padding:22px;border-radius:12px;background:#f4f7ee;}.ms-help strong {font-size:13px;}.ms-help p {font-size:11px;color:#879479;margin:8px 0 0;}.ms-help a {font-size:12px;color:#68754b;white-space:nowrap;}
+.ms-page .ms-action {display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border:1px solid #68754b;border-radius:8px;background:#68754b;color:#fff;font-size:12px;cursor:pointer;}
+.ms-inquiries {display:grid;gap:12px;}.ms-inquiries details {border:1px solid #e1e7d8;border-radius:13px;overflow:hidden;}.ms-inquiries summary {display:flex;align-items:center;gap:16px;padding:20px;cursor:pointer;list-style:none;}.ms-inquiry-status {flex-shrink:0;padding:7px 9px;border-radius:6px;background:#f5f2e9;color:#9c8d64;font-size:10px;}.ms-inquiry-status.answered {background:#eef4e5;color:#71865b;}.ms-inquiries summary>div {min-width:0;}.ms-inquiries summary small {font-size:10px;color:#98a18d;}.ms-inquiries summary h3 {font-size:13px;line-height:1.7;margin:7px 0 0;overflow-wrap:anywhere;}.ms-inquiries summary>span:last-child {margin-left:auto;color:#82916c;}
+.ms-inquiry-body {padding:0 20px 20px;font-size:12px;line-height:1.9;color:#7d896f;overflow-wrap:anywhere;}.ms-inquiry-body>p {white-space:pre-wrap;}.ms-inquiry-body blockquote {margin:20px 0 0;padding:18px;border-radius:9px;background:#f6f8f1;}.ms-inquiry-body blockquote strong {font-size:11px;color:#718359;}.ms-inquiry-body blockquote p {margin-bottom:0;}
+.ms-inquiry-form {padding:23px;border:1px solid #e0e7d4;border-radius:13px;margin-bottom:24px;background:#fafbf7;}.ms-inquiry-form h3 {font-size:16px;margin:0 0 10px;}.ms-inquiry-form>p {font-size:11px;color:#8c987c;line-height:1.8;}.ms-inquiry-form label {display:block;font-size:12px;color:#7b886b;margin:18px 0;}.ms-inquiry-form input,.ms-inquiry-form textarea,.ms-inquiry-form select {display:block;width:100%;box-sizing:border-box;margin-top:9px;padding:12px;border:1px solid #dce5cf;border-radius:8px;background:#fff;font:inherit;color:#465235;}.ms-inquiry-form textarea {resize:vertical;}.ms-inquiry-form :is(input,textarea,select):focus {outline:2px solid #93a776;outline-offset:2px;}
+.ms-empty {display:flex;flex-direction:column;align-items:center;gap:10px;padding:55px 20px;border:1px dashed #dce4d0;border-radius:15px;color:#91a17b;}.ms-empty p {font-size:13px;}
+@media(max-width:1000px) {.ms-coupons {grid-template-columns:1fr;}.ms-coupon-original {min-height:210px;}}
+@media(max-width:700px) {.pq-my-tiles.pq-my-service-tiles {gap:12px;}.pq-my-service-tiles>a {padding:20px;min-height:180px;}.pq-my-service-tiles h3 {font-size:16px;}.pq-my-sidebar nav a {flex:1 1 auto;justify-content:center;padding:12px;font-size:12px;}.pq-my-sidebar nav a>span:last-child {display:none;}.pq-my-content .ms-heading h2 {font-size:25px;}.ms-demo {align-items:flex-start;}.ms-order-product {flex-wrap:wrap;padding:20px;}.ms-order-product>b {flex-basis:100%;text-align:right;}.ms-recent {gap:12px;}.ms-recent img {height:150px;}.ms-recent article>a>div {padding:13px;}.ms-recent h3 {font-size:13px;}.ms-faq summary {gap:10px;}.ms-faq summary>span {flex-basis:60px;}.ms-help {padding:18px;}.ms-inquiries summary {padding:16px;gap:10px;}.ms-coupon-policy {padding:18px;}.ms-coupon>footer {padding:16px;}}
+@media(max-width:380px) {.pq-my-tiles.pq-my-service-tiles {grid-template-columns:1fr;}.ms-recent {grid-template-columns:1fr;}.ms-coupon-overlay>strong {font-size:32px;}}

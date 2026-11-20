@@ -30,12 +30,16 @@ function toPopup(raw) {
     location: pick(raw, ['location', 'address', 'place']),
     startDate: toDate(pick(raw, ['startDate', 'startAt', 'openDate'])),
     endDate: toDate(pick(raw, ['endDate', 'endAt', 'closeDate'])),
-    image: pick(raw, ['image', 'imageUrl', 'thumbnailUrl', 'posterUrl']),
+    image: pick(raw, ['image', 'imageUrl', 'thumbnailUrl', 'posterUrl', 'storeImg']),
     description: pick(raw, ['description', 'content', 'detail']),
     reserved: Number(pick(raw, ['reserved', 'reservedCount'], 0)),
     capacity: Number(pick(raw, ['capacity', 'maxCapacity'], 0)),
     status: pick(raw, ['status', 'popupStatus']),
     waitingStatus: pick(raw, ['waitingStatus']),
+    walkinStatus: pick(raw, ['walkinStatus']),
+    opStatus: pick(raw, ['opStatus']),
+    waitingOpenAt: pick(raw, ['waitingOpenAt']),
+    waitingCloseAt: pick(raw, ['waitingCloseAt']),
   }
 }
 
@@ -48,8 +52,13 @@ function toProduct(raw) {
     name,
     title: name,
     price: Number(pick(raw, ['price', 'prdPrice'], 0)),
-    image: pick(raw, ['image', 'imageUrl', 'thumbnailUrl']),
+    image: pick(raw, ['productImg', 'image', 'imageUrl', 'thumbnailUrl']),
     stock: Number(pick(raw, ['stock', 'stockQuantity'], 0)),
+    category: pick(raw, ['category']),
+    description: pick(raw, ['productDesc']),
+    maxQty: pick(raw, ['maxQty'], null),
+    saleStart: pick(raw, ['saleStart']),
+    saleEnd: pick(raw, ['saleEnd']),
     saleStatus: pick(raw, ['saleStatus']),
   }
 }

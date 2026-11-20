@@ -13,6 +13,7 @@ import {
   getAccessToken,
   setAccessToken,
   clearAccessToken,
+  restoreAccessToken,
 } from '../api/authToken'
 
 const AppContext = createContext(null)
@@ -29,21 +30,29 @@ function loadLS(key, fallback) {
   }
 }
 
+function readSavedUser() {
+  const savedUser = loadLS('popQ_user', null)
+  if (savedUser?.authMode === 'jwt' && !getAccessToken()) return null
+  return savedUser
+}
+
 export function AppProvider({ children }) {
   // 상품 및 팝업
   const [popupsData] = useState(initialPopups)
   const [productsData] = useState(initialProducts)
 
   // 사용자 표시 정보
-  const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = loadLS('popQ_user', null)
+  const [currentUser, setCurrentUser] = useState(readSavedUser)
 
-    if (savedUser?.authMode === 'jwt' && !getAccessToken()) {
-      return null
+  useEffect(() => {
+    function restoreSession(event) {
+      if (!event.persisted) return
+      restoreAccessToken()
+      setCurrentUser(readSavedUser())
     }
-
-    return savedUser
-  })
+    window.addEventListener('pageshow', restoreSession)
+    return () => window.removeEventListener('pageshow', restoreSession)
+  }, [])
 
   // 임시 사용자 데이터
   const [likedPopups, setLikedPopups] = useState(() =>

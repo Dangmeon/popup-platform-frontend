@@ -1,29 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { featuredPopups } from '../data/featuredPopups.js'
+import { selectCategoryBanners } from '../utils/categoryBanners.js'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import './HomeBanner.css'
 
-// 팝업별 짧은 소개 문구
-const descriptions = {
-  loopy: '잔망루피의 포토존과 일상에 함께할 굿즈를 만나보세요.',
-  chiikawa: '치이카와의 귀여운 공간과 다양한 캐릭터 굿즈를 둘러보세요.',
-  gal: 'GAL의 의류와 액세서리로 나만의 스타일을 찾아보세요.',
-  kinetic: 'KINETIC의 러닝화와 스포츠 굿즈를 한곳에서 만나보세요.',
-}
-
-// 오른쪽 배너용 이미지. 목록·상세 포스터와 분리해 관리합니다.
-const bannerImages = {'black-white-cooks': '/promo/black-white-cooks-banner.png', 'squid-game': '/promo/squid-game-banner.png', 'rescene': '/promo/rescene-banner.png', 'chimchakman': '/promo/chimchakman-banner.png'}
-
-const banners = featuredPopups.filter((popup) => popup.mainBanner && popup.poster)
-
-export default function HomeBanner() {
+export default function HomeBanner({ popups = [] }) {
+  const banners = selectCategoryBanners(popups)
   const [index, setIndex] = useState(0)
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(true)
   const [visible, setVisible] = useState(true)
-  const popup = banners[index]
+  const activeIndex = banners.length ? index % banners.length : 0
+  const popup = banners[activeIndex]
 
   // 화면을 보지 않거나 움직임 줄이기를 설정하면 자동 넘김 중지
   useEffect(() => {
@@ -47,7 +36,7 @@ export default function HomeBanner() {
       setIndex((previous) => (previous + 1) % banners.length)
     }, 5000)
     return () => clearTimeout(timer)
-  }, [index, hovered, focused, reducedMotion, visible])
+  }, [index, hovered, focused, reducedMotion, visible, banners.length])
 
   if (!popup) return null
 
@@ -87,13 +76,13 @@ export default function HomeBanner() {
       {/* 현재 팝업의 소개와 포스터 */}
       <div className="pq-banner-slide">
         <div className="pq-banner-copy">
-          <span className="pq-banner-tag">{popup.tag}</span>
+          <span className="pq-banner-tag">{popup.bannerCategory}</span>
           <h1>{popup.title}</h1>
           <p className="pq-banner-description">
-            {popup.description || descriptions[popup.id] || '팝업의 공간과 굿즈를 만나보세요.'}
+            {popup.description || '팝업의 공간과 굿즈를 만나보세요.'}
           </p>
           <dl className="pq-banner-details">
-            <div><dt>일정</dt><dd>{popup.period}</dd></div>
+            <div><dt>일정</dt><dd>{popup.startDate} ~ {popup.endDate}</dd></div>
             <div><dt>장소</dt><dd>{popup.location}</dd></div>
           </dl>
           <Link to={`/popups/${popup.id}`} className="pq-banner-link">
@@ -107,14 +96,14 @@ export default function HomeBanner() {
           className="pq-banner-poster"
           aria-label={`${popup.title} 상세 보기`}
         >
-          <img src={bannerImages[popup.id] || popup.poster} alt={popup.title} />
+          <img src={popup.image} alt={popup.title} />
         </Link>
       </div>
 
       {/* 현재 배너 번호와 전체 개수 */}
       <p className="pq-banner-count" aria-live="off">
         <span className="pq-banner-sr-only">현재 배너 </span>
-        <strong>{String(index + 1).padStart(2, '0')}</strong>
+        <strong>{String(activeIndex + 1).padStart(2, '0')}</strong>
         <span aria-hidden="true">/</span>
         <span className="pq-banner-sr-only">전체 </span>
         <span>{String(banners.length).padStart(2, '0')}</span>

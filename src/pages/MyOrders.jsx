@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import axiosInstance from '../api/axiosInstance.js'
 import '../styles/MyOrders.css'
 
 const won = (n) => `₩${Math.round(Number(n) || 0).toLocaleString()}`
 
 const STATUS_LABELS = {
   PENDING: '결제 대기',
+  EXPIRED: '결제 시간 만료',
   PAID: '결제 완료',
   PREPARE: '배송 준비',
   PREPARING: '배송 준비',
@@ -14,42 +16,13 @@ const STATUS_LABELS = {
   CANCELLED: '주문 취소',
 }
 
-function getAuthHeaders() {
-  const token =
-    localStorage.getItem('accessToken') ||
-    localStorage.getItem('token') ||
-    sessionStorage.getItem('accessToken')
-
-  return token
-    ? {
-        Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}`,
-      }
-    : {}
-}
-
 async function requestApi(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: 'include',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...(options.headers || {}),
-    },
-  })
-
-  const contentType = response.headers.get('content-type') || ''
-  const data = contentType.includes('application/json')
-    ? await response.json()
-    : null
-
-  if (!response.ok) {
-    const message =
-      data?.message || data?.error || `요청에 실패했습니다. (${response.status})`
-    throw new Error(message)
+  try {
+    const response = await axiosInstance.request({ url, method: options.method || 'GET' })
+    return response.data
+  } catch (error) {
+    throw new Error(error.response?.data?.message || error.response?.data?.error || '주문 요청을 처리하지 못했습니다.')
   }
-
-  return data
 }
 
 function normalizeOrder(raw = {}) {

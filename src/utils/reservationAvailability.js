@@ -38,6 +38,8 @@ export function getSlotUnavailableReason(
     return '예약 인원은 1~3명입니다.'
   }
 
+  if (slot.slotStatus === 'CANCELLED') return '취소된 회차'
+
   const openAt = parseReservationDateTime(slot.reservOpenAt)
   const closeAt = parseReservationDateTime(slot.reservCloseAt)
 

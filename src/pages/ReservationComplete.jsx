@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import PopqLogo from '../components/reservation/PopqLogo'
+import { Link } from 'react-router-dom'
 import ReservationTimer from '../components/reservation/ReservationTimer'
 import { getReservationQr } from '../api/reservationApi'
 import './ReservationPage.css'
 import './ReservationConfirm.css'
 import './ReservationComplete.css'
+import './ReservationReceipt.css'
 
 // 예약 상태 표시
 const statusLabels = {
@@ -183,46 +184,15 @@ function ReservationComplete({
   }
 
   return (
-    <main className="reservation-page" aria-busy={isBusy}>
+    <main className="reservation-page pq-receipt" aria-busy={isBusy}>
       {/* 예약 페이지 상단 */}
       <div className="reservation-hero">
-        <div className="reservation-brand">
-          <PopqLogo />
-          <span className="reservation-brand-tag">
-            POP-UP EXPERIENCE
-          </span>
-        </div>
-
         <h1>예약 확인증</h1>
         <p>
           {isConfirmed
             ? '확정된 예약 정보와 입장용 QR코드를 확인해 주세요.'
             : '현재 예약 상태를 확인해 주세요.'}
         </p>
-      </div>
-
-      {/* 예약 진행 단계 */}
-      <div className="reservation-steps">
-        <div className="reservation-step">
-          <span>01</span>
-          날짜 · 시간 선택
-        </div>
-
-        <span className="reservation-step-arrow">→</span>
-
-        <div className="reservation-step">
-          <span>02</span>
-          예약 확인
-        </div>
-
-        <span className="reservation-step-arrow">→</span>
-
-        <div
-          className={`reservation-step${isConfirmed ? ' active' : ''}`}
-        >
-          <span>03</span>
-          예약 완료
-        </div>
       </div>
 
       {/* 예약 정보 */}
@@ -234,6 +204,7 @@ function ReservationComplete({
           </span>
         </div>
 
+        <div className="pq-receipt-grid"><div className="pq-receipt-info">
         <div className="reservation-summary-row">
           <span>예약 날짜</span>
           <strong>{selectedDate}</strong>
@@ -269,8 +240,9 @@ function ReservationComplete({
           />
         )}
 
+        </div>
         {/* QR 이미지 */}
-        <div className="reservation-qr-section">
+        <div className="reservation-qr-section"><span className="pq-receipt-qr-label">입장 QR</span>
           {!isConfirmed ? (
             <p>예약이 확정된 경우에만 QR코드를 조회할 수 있습니다.</p>
           ) : !isValidId ? (
@@ -312,6 +284,7 @@ function ReservationComplete({
           ) : null}
         </div>
 
+        </div>
         {/* 요청 결과 */}
         {(error || actionError) && (
           <p className="reservation-confirm-notice" role="alert">
@@ -326,7 +299,7 @@ function ReservationComplete({
           <>
             <p className="reservation-confirm-notice">
               예약 취소는 방문 시작 1시간 전까지만 가능합니다.
-              변경·취소 가능 여부는 서버에서 최종 확인합니다.
+
             </p>
 
             <div
@@ -338,7 +311,7 @@ function ReservationComplete({
             >
               <button
                 type="button"
-                className="reservation-next-button"
+                className="reservation-next-button pq-receipt-edit"
                 style={{ flex: '1 1 180px' }}
                 disabled={isBusy || typeof onChange !== 'function'}
                 onClick={onChange}
@@ -348,7 +321,7 @@ function ReservationComplete({
 
               <button
                 type="button"
-                className="reservation-next-button"
+                className="reservation-next-button pq-receipt-cancel"
                 style={{ flex: '1 1 180px' }}
                 disabled={isBusy || typeof onCancel !== 'function'}
                 onClick={handleCancel}
@@ -362,20 +335,15 @@ function ReservationComplete({
         {typeof onCheckStatus === 'function' && (
           <button
             type="button"
-            className="reservation-next-button"
+            className="reservation-next-button pq-receipt-refresh"
             disabled={isBusy}
             onClick={onCheckStatus}
           >
-            예약 상태 다시 조회
+            예약 상태 새로고침
           </button>
         )}
 
-        {/* 예약 안내 */}
-        <p className="reservation-confirm-notice">
-          예약 상태는 서버에서 관리됩니다. QR 이미지를 불러오지
-          못하더라도 예약이 취소되는 것은 아닙니다.
-        </p>
-
+        <Link className="pq-receipt-activities" to="/my-activities">내 예약·웨이팅 보기 →</Link>
         {/* 메인 이동 */}
         <button
           type="button"

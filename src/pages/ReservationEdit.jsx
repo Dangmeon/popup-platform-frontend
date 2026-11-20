@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import ReservationCalendar from '../components/reservation/ReservationCalendar'
 import TimeSlotSelector from '../components/reservation/TimeSlotSelector'
-import PopqLogo from '../components/reservation/PopqLogo'
 import { getTimeSlots } from '../api/timeSlotApi'
 import { getSlotUnavailableReason } from '../utils/reservationAvailability'
 import './ReservationPage.css'
+import './ReservationEdit.css'
 
 // 요청 오류 안내
 function getErrorMessage(error) {
@@ -183,16 +183,9 @@ function ReservationEdit({
   }
 
   return (
-    <main className="reservation-page" aria-busy={isBusy}>
+    <main className="reservation-page pq-edit" aria-busy={isBusy}>
       {/* 페이지 상단 */}
       <div className="reservation-hero">
-        <div className="reservation-brand">
-          <PopqLogo />
-          <span className="reservation-brand-tag">
-            POP-UP EXPERIENCE
-          </span>
-        </div>
-
         <h1>예약 변경</h1>
         <p>변경할 날짜와 회차, 방문 인원을 선택해 주세요.</p>
       </div>
@@ -226,8 +219,7 @@ function ReservationEdit({
         </div>
 
         <p className="reservation-confirm-notice">
-          변경이 완료되기 전까지 기존 예약은 유지됩니다.
-          변경 성공 시 QR코드가 다시 발급됩니다.
+          예약을 변경하면 새 입장 QR이 발급돼요.
         </p>
 
         {!isConfirmed && (
@@ -238,140 +230,139 @@ function ReservationEdit({
         )}
       </section>
 
-      {/* 방문 인원 */}
-      <section className="reservation-summary">
-        <h3>변경할 방문 인원</h3>
-
-        <div className="reservation-summary-row">
-          <label htmlFor="edit-reservation-people">
-            방문 인원
-          </label>
-
-          <select
-            id="edit-reservation-people"
-            value={peopleCount}
-            disabled={isBusy || !isConfirmed}
-            onChange={(event) => {
-              setPeopleCount(Number(event.target.value))
-              setSaveError('')
-            }}
-          >
-            {[1, 2, 3].map((count) => (
-              <option key={count} value={count}>
-                {count}명
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
-
-      {/* 회차 조회 오류 */}
-      {loadError && (
+      <div className="pq-edit-grid">
+        <div className="pq-edit-selection">
+        {/* 방문 인원 */}
         <section className="reservation-summary">
-          <p role="alert">{loadError}</p>
+          <h3>변경할 방문 인원</h3>
+
+          <div className="reservation-summary-row">
+            <label htmlFor="edit-reservation-people">
+              방문 인원
+            </label>
+
+            <select
+              id="edit-reservation-people"
+              value={peopleCount}
+              disabled={isBusy || !isConfirmed}
+              onChange={(event) => {
+                setPeopleCount(Number(event.target.value))
+                setSaveError('')
+              }}
+            >
+              {[1, 2, 3].map((count) => (
+                <option key={count} value={count}>
+                  {count}명
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        {/* 회차 조회 오류 */}
+        {loadError && (
+          <section className="reservation-summary">
+            <p role="alert">{loadError}</p>
+
+            <button
+              type="button"
+              className="reservation-next-button pq-edit-secondary"
+              disabled={isBusy || loading}
+              onClick={() => setRetryKey((previous) => previous + 1)}
+            >
+              회차 다시 불러오기
+            </button>
+          </section>
+        )}
+
+        {/* 날짜 선택 */}
+        <ReservationCalendar
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
+          timeSlots={selectableSlots}
+          peopleCount={peopleCount}
+          now={now}
+          loading={loading}
+          disabled={isBusy || Boolean(loadError) || !isConfirmed}
+        />
+
+        {/* 회차 선택 */}
+        <TimeSlotSelector
+          selectedDate={selectedDate}
+          selectedTimeSlotId={selectedTimeSlotId}
+          onTimeSelect={handleTimeSelect}
+          timeSlots={selectableSlots}
+          peopleCount={peopleCount}
+          now={now}
+          loading={loading}
+          disabled={isBusy || Boolean(loadError) || !isConfirmed}
+        />
+
+        </div>
+        {/* 변경 정보 */}
+        <section className="reservation-summary">
+          <h3>변경할 예약 정보</h3>
+
+          <div className="reservation-summary-row">
+            <span>방문 날짜</span>
+            <strong>{selectedDate || '날짜를 선택해 주세요.'}</strong>
+          </div>
+
+          <div className="reservation-summary-row">
+            <span>방문 시간</span>
+            <strong>
+              {selectedSlot
+                ? `${selectedSlot.startTime} ~ ${selectedSlot.endTime}`
+                : '회차를 선택해 주세요.'}
+            </strong>
+          </div>
+
+          <div className="reservation-summary-row">
+            <span>방문 인원</span>
+            <strong>{peopleCount}명</strong>
+          </div>
+
+          {saveError && (
+            <p className="reservation-confirm-notice" role="alert">
+              {saveError}
+            </p>
+          )}
+
+          {!loading && selectedSlot && unavailableReason && (
+            <p role="status">{unavailableReason}</p>
+          )}
+
+          {unchanged && (
+            <p>현재 예약과 다른 회차 또는 인원을 선택해 주세요.</p>
+          )}
 
           <button
             type="button"
             className="reservation-next-button"
-            disabled={isBusy || loading}
-            onClick={() => setRetryKey((previous) => previous + 1)}
+            disabled={
+              isBusy ||
+              loading ||
+              Boolean(loadError) ||
+              !isConfirmed ||
+              unchanged ||
+              Boolean(unavailableReason) ||
+              typeof onSave !== 'function'
+            }
+            onClick={handleSave}
           >
-            회차 다시 불러오기
+            {isBusy ? '변경 처리 중…' : '선택한 정보로 변경하기'}
+          </button>
+
+          <button
+            type="button"
+            className="reservation-next-button pq-edit-secondary"
+            disabled={isBusy || typeof onBack !== 'function'}
+            onClick={onBack}
+          >
+            변경하지 않고 돌아가기
           </button>
         </section>
-      )}
-
-      {/* 날짜 선택 */}
-      <ReservationCalendar
-        selectedDate={selectedDate}
-        onDateSelect={handleDateSelect}
-        timeSlots={selectableSlots}
-        peopleCount={peopleCount}
-        now={now}
-        loading={loading}
-        disabled={isBusy || Boolean(loadError) || !isConfirmed}
-      />
-
-      {/* 회차 선택 */}
-      <TimeSlotSelector
-        selectedDate={selectedDate}
-        selectedTimeSlotId={selectedTimeSlotId}
-        onTimeSelect={handleTimeSelect}
-        timeSlots={selectableSlots}
-        peopleCount={peopleCount}
-        now={now}
-        loading={loading}
-        disabled={isBusy || Boolean(loadError) || !isConfirmed}
-      />
-
-      {/* 변경 정보 */}
-      <section className="reservation-summary">
-        <h3>변경할 예약 정보</h3>
-
-        <div className="reservation-summary-row">
-          <span>방문 날짜</span>
-          <strong>{selectedDate || '날짜를 선택해 주세요.'}</strong>
-        </div>
-
-        <div className="reservation-summary-row">
-          <span>방문 시간</span>
-          <strong>
-            {selectedSlot
-              ? `${selectedSlot.startTime} ~ ${selectedSlot.endTime}`
-              : '회차를 선택해 주세요.'}
-          </strong>
-        </div>
-
-        <div className="reservation-summary-row">
-          <span>방문 인원</span>
-          <strong>{peopleCount}명</strong>
-        </div>
-
-        {saveError && (
-          <p className="reservation-confirm-notice" role="alert">
-            {saveError}
-          </p>
-        )}
-
-        {!loading && selectedSlot && unavailableReason && (
-          <p role="status">{unavailableReason}</p>
-        )}
-
-        {unchanged && (
-          <p>현재 예약과 다른 회차 또는 인원을 선택해 주세요.</p>
-        )}
-
-        <p className="reservation-confirm-notice">
-          기존 회차의 선택 가능 인원에는 이미 확보한 인원이 포함됩니다.
-          실제 변경 가능 여부는 서버에서 최종 확인합니다.
-        </p>
-
-        <button
-          type="button"
-          className="reservation-next-button"
-          disabled={
-            isBusy ||
-            loading ||
-            Boolean(loadError) ||
-            !isConfirmed ||
-            unchanged ||
-            Boolean(unavailableReason) ||
-            typeof onSave !== 'function'
-          }
-          onClick={handleSave}
-        >
-          {isBusy ? '변경 처리 중…' : '선택한 정보로 변경하기'}
-        </button>
-
-        <button
-          type="button"
-          className="reservation-next-button"
-          disabled={isBusy || typeof onBack !== 'function'}
-          onClick={onBack}
-        >
-          변경하지 않고 돌아가기
-        </button>
-      </section>
+      </div>
     </main>
   )
 }
