@@ -1,26 +1,14 @@
-import {
-  getMockWaitings,
-  getMockWaiting,
-} from './mockWaitings'
+import http from '../axiosInstance.js'
+import {getPopup} from './popupApi.js'
+import {filterRows,id} from './liveUtils.js'
 
-// 현장 대기 목록 조회
-export async function getWaitings(params = {}) {
-  // 나중에 바꿀 부분: 실제 관리자 팝업별 웨이팅 목록 API 호출
-  const response = await getMockWaitings(params)
-
-  // 나중에 바꿀 부분: 서버의 목록 응답을 화면 형식으로 변환
-  return {
-    items: response.items,
-    total: response.total,
-    totalAll: response.totalAll,
-  }
+export async function getWaitings({popId,keyword='',status=''} = {}) {
+  const data=(await http.get(`/api/admin/popups/${id(popId)}/waitings`)).data
+  if(!Array.isArray(data?.waitings))throw new Error('대기 목록을 확인하지 못했습니다.')
+  const word=keyword.trim().toLowerCase()
+  return filterRows(data.waitings,row=>(!status||row.status===status)&&(!word||`${row.queueNumber} ${row.checkInCode}`.toLowerCase().includes(word)))
 }
-
-// 현장 대기 상세 조회
 export async function getWaiting(waitingId) {
-  // 나중에 바꿀 부분: 관리자 권한에 맞는 웨이팅 상세 조회 방식으로 교체
-  const response = await getMockWaiting(waitingId)
-
-  // 나중에 바꿀 부분: 서버 필드와 상태값을 화면 형식으로 변환
-  return response
+  const raw=(await http.get(`/api/waitings/${id(waitingId)}`)).data
+  return {...raw,popupName:(await getPopup(raw.popId)).title}
 }

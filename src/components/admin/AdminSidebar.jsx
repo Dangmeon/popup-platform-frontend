@@ -1,7 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import PopqIcon from '../common/PopqIcon.jsx'
 
-// 현장 운영 메뉴는 매니저 센터에서 관리합니다.
+// 전체 현황 조회는 관리자, 담당 팝업의 현장 운영은 매니저가 관리합니다.
 const menus = [
   { name:'대시보드',path:'/admin',icon:'calendar',end:true },
   { name:'팝업 관리',path:'/admin/popups',icon:'location' },
@@ -9,6 +9,8 @@ const menus = [
   { name:'주문 관리',path:'/admin/orders',icon:'cart' },
   { name:'매출 관리',path:'/admin/sales',icon:'chart' },
   { name:'회원 관리',path:'/admin/members',icon:'user' },
+  { name:'예약·웨이팅 현황',path:'/admin/visits',icon:'ticket' },
+  { name:'사이트 문의 관리',path:'/admin/qnas',icon:'ticket' },
 ]
 export default function AdminSidebar() {
   return <aside className="admin-sidebar">

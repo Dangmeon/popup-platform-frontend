@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import axiosInstance from '../api/axiosInstance.js'
+import { getProduct } from '../api/popupApi.js'
 import '../styles/MyOrders.css'
 
 const won = (n) => `₩${Math.round(Number(n) || 0).toLocaleString()}`
@@ -85,6 +86,20 @@ function normalizeOrder(raw = {}) {
   }
 }
 
+async function hydrateOrder(raw) {
+  let detail = raw
+  try { detail = await requestApi(`/api/orders/${encodeURIComponent(raw.orderId ?? raw.id)}`) }
+  catch { return {...normalizeOrder(raw), item:{...normalizeOrder(raw).item,name:'상품 정보를 불러오지 못했어요'}} }
+  const items = await Promise.all((detail.items || []).map(async item => {
+    if (!item.prdId) return item
+    try {
+      const product = await getProduct(item.prdId)
+      return {...item, productName:item.productName || product.name, image:product.image}
+    } catch { return item }
+  }))
+  return normalizeOrder({...detail,items})
+}
+
 export default function MyOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -109,7 +124,7 @@ export default function MyOrders() {
               ? data.data
               : []
 
-      setOrders(list.map(normalizeOrder))
+      setOrders(await Promise.all(list.map(hydrateOrder)))
     } catch (err) {
       setError(err.message || '주문 내역을 불러오지 못했습니다.')
       setOrders([])
@@ -133,7 +148,7 @@ export default function MyOrders() {
         method: 'GET',
       })
       if (detail) {
-        setSelectedOrder(normalizeOrder(detail))
+        setSelectedOrder(await hydrateOrder(detail))
       }
     } catch {
       // 목록 데이터로 우선 표시 유지
@@ -212,7 +227,7 @@ export default function MyOrders() {
           {orders.map((order, idx) => (
             <div key={order.id || idx} className="order-card">
               <div className="order-card-top">
-                <span className="order-date">{order.date}</span>
+                <span className="order-date">{String(order.date).slice(0,16).replace('T',' ')}</span>
                 <span className="order-number">주문번호 {order.orderNumber}</span>
                 <span className={`status-badge status-${order.status}`}>
                   {order.statusLabel}
@@ -261,9 +276,9 @@ export default function MyOrders() {
                     <button
                       type="button"
                       className="action-btn repurchase-btn"
-                      onClick={() => alert('장바구니에 상품을 담았습니다!')}
+                      onClick={() => window.location.assign('/goods')}
                     >
-                      다시 구매
+                      굿즈 둘러보기
                     </button>
                   )}
                 </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import PopqLogo from '../components/reservation/PopqLogo'
+import ReservationCancelledDialog from '../components/reservation/ReservationCancelledDialog.jsx'
 import { parseReservationDateTime } from '../utils/reservationAvailability'
 import './ReservationPage.css'
 import './ReservationConfirm.css'
@@ -70,6 +71,8 @@ function ReservationConfirm({
     Boolean(reservationId) &&
     remainingSeconds !== null &&
     typeof onConfirm === 'function'
+
+  if (reservationStatus === 'CANCELLED') return <ReservationCancelledDialog onClose={onBack} />
 
   return (
     <main className="reservation-page">

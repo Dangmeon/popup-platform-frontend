@@ -34,11 +34,6 @@ function formatDateTime(value) {
   }).format(date)
 }
 
-// 연락처 표시
-function maskPhone(phone) {
-  return phone.replace(/^(\d{3})-\d{4}-(\d{4})$/, '$1-****-$2')
-}
-
 function AdminWaitings() {
   // 팝업 선택
   const [popups, setPopups] = useState([])
@@ -98,6 +93,8 @@ function AdminWaitings() {
       active = false
     }
   }, [popupRetryKey])
+
+  useEffect(()=>{const timer=setInterval(()=>{if(!document.hidden)setListRetryKey(v=>v+1)},30000);return()=>clearInterval(timer)},[])
 
   // 웨이팅 목록 조회
   useEffect(() => {
@@ -201,7 +198,7 @@ function AdminWaitings() {
     ? [
         ['팝업명', selectedWaiting.popupName],
         ['대기번호', selectedWaiting.queueNumber],
-        ['연락처', selectedWaiting.phone],
+        ['체크인 코드', selectedWaiting.checkInCode],
         ['대기 인원', `${selectedWaiting.peopleCount}명`],
         [
           '상태',
@@ -210,7 +207,6 @@ function AdminWaitings() {
         ],
         ['등록일시', formatDateTime(selectedWaiting.joinedAt)],
         ['호출일시', formatDateTime(selectedWaiting.calledAt)],
-        ['호출 만료시각', formatDateTime(selectedWaiting.expiresAt)],
       ]
     : []
 
@@ -224,15 +220,9 @@ function AdminWaitings() {
         </div>
 
         {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 표시 제거 */}
-        <span className="admin-demo-badge">DEMO DATA</span>
       </div>
 
       {/* 나중에 바꿀 부분: 실제 API 연결 후 데모 안내 제거 */}
-      <p className="waiting-admin-demo">
-        가상 현장 대기 정보를 사용하는 조회 화면입니다.
-        현재 시각과 관계없이 예시 상태를 표시합니다.
-        실제 호출·입장 처리·자동 만료는 실행하지 않습니다.
-      </p>
 
       {/* 팝업 선택 및 검색 */}
       <section className="admin-panel" aria-label="웨이팅 검색">
@@ -256,13 +246,13 @@ function AdminWaitings() {
           </label>
 
           <label>
-            대기번호 / 연락처
+            대기번호 / 체크인 코드
             <input
               type="search"
               value={keyword}
               disabled={!popId}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="대기번호 또는 연락처 끝자리"
+              placeholder="대기번호 또는 체크인 코드"
             />
           </label>
 
@@ -357,7 +347,7 @@ function AdminWaitings() {
               <thead>
                 <tr>
                   <th scope="col">대기번호</th>
-                  <th scope="col">연락처</th>
+                  <th scope="col">체크인 코드</th>
                   <th scope="col">인원</th>
                   <th scope="col">등록일시</th>
                   <th scope="col">상태</th>
@@ -369,7 +359,7 @@ function AdminWaitings() {
                 {waitings.map((waiting) => (
                   <tr key={waiting.waitingId}>
                     <td>{waiting.queueNumber}</td>
-                    <td>{maskPhone(waiting.phone)}</td>
+                    <td>{waiting.checkInCode || '—'}</td>
                     <td>{waiting.peopleCount}명</td>
                     <td>{formatDateTime(waiting.joinedAt)}</td>
                     <td>

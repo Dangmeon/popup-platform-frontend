@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getPopups } from '../../api/admin/popupApi'
-import { createProduct } from '../../api/admin/productApi'
+import { createProduct, uploadProductImage } from '../../api/admin/productApi'
 import AdminSaleDatePicker from './AdminSaleDatePicker'
 
 // 초기 입력값
@@ -8,6 +8,8 @@ function createInitialForm() {
   return {
     popId: '',
     productName: '',
+    category: '',
+    productImg: '',
     price: '',
     stock: '',
     maxQty: '1',
@@ -35,6 +37,8 @@ function AdminProductForm({ onSuccess, onCancel }) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const submitting = useRef(false)
+  const [imageFile,setImageFile] = useState(null)
+  const uploadedImage = useRef(null)
 
   // 팝업 목록 조회
   useEffect(() => {
@@ -167,7 +171,14 @@ function AdminProductForm({ onSuccess, onCancel }) {
     let createdProduct
 
     try {
+      let productImg = form.productImg.trim()
+      if (imageFile) {
+        if (!uploadedImage.current) uploadedImage.current = await uploadProductImage(imageFile)
+        productImg = uploadedImage.current
+      }
       createdProduct = await createProduct({
+        category:form.category.trim(),
+        productImg,
         popId,
         productName: form.productName.trim(),
         price,
@@ -203,10 +214,7 @@ function AdminProductForm({ onSuccess, onCancel }) {
         </div>
       </div>
 
-      <p className="product-admin-form-guide">
-        데모 등록 정보는 새로고침하면 초기화됩니다.
-        이미지 업로드는 아직 지원하지 않습니다.
-      </p>
+      <p className="product-admin-form-guide">판매 시작은 팝업 종료 다음 날부터 설정할 수 있습니다.</p>
 
       <form onSubmit={handleSubmit}>
         <fieldset
@@ -295,6 +303,11 @@ function AdminProductForm({ onSuccess, onCancel }) {
             </label>
           </div>
 
+          <div className="product-admin-form-grid">
+            <label>카테고리<input name="category" value={form.category} onChange={handleChange} placeholder="예: 리빙, 의류" /></label>
+            <label>상품 이미지<input type="file" accept="image/jpeg,image/png,image/webp" onChange={event=>{setImageFile(event.target.files?.[0] || null);uploadedImage.current=null}} /></label>
+            {!imageFile && <label>기존 이미지 경로<input name="productImg" value={form.productImg} onChange={handleChange} placeholder="등록된 이미지 경로" /></label>}
+          </div>
           {/* 판매기간 */}
           <div className="product-admin-period-heading">
             <h4>판매기간</h4>
