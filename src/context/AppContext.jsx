@@ -75,7 +75,7 @@ export function AppProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const [mascotVisible, setMascotVisible] = useState(false)
 
-  // 토큰 보유 여부
+// 토큰 보유 여부
   const isAuthenticated =
     currentUser?.authMode === 'jwt' &&
     Boolean(getAccessToken())
