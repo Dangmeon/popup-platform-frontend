@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import '../styles/Cart.css'
 import { useApp } from '../context/AppContext.jsx'
@@ -31,6 +31,15 @@ function lineTotal(item) {
   if (typeof item.itemTotalPrice === 'number') return item.itemTotalPrice
   if (typeof item.price === 'number') return item.price * item.quantity
   return 0
+}
+
+function pickRandomGoods(list, count = 4) {
+  const copy = [...list]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy.slice(0, count)
 }
 
 const isBuyable = (item) => item.purchasable !== false
@@ -208,12 +217,19 @@ function CartPage({ authed }) {
     })
   }
 
-  // 추천 상품 목록 (다양한 팝업 상품이 골고루 섞이도록 랜덤 추출)
-  const recommendedGoods = useMemo(() => {
-    if (!Array.isArray(featuredGoods) || featuredGoods.length === 0) return []
-    const shuffled = [...featuredGoods].sort(() => 0.5 - Math.random())
-    return shuffled.slice(0, 4)
-  }, [])
+  const [recommendedGoods, setRecommendedGoods] = useState([])
+  useEffect(() => {
+    let active = true
+    setRecommendedGoods([])
+    if (authed) getPopups().then(async stores => {
+      const batches = await Promise.allSettled(stores.map(store => getPopupProducts(store.id)))
+      const rows = batches.flatMap(result => result.status === 'fulfilled' ? result.value : [])
+      const seen = new Set()
+      const unique = rows.filter(item => !seen.has(item.id) && seen.add(item.id))
+      if (active) setRecommendedGoods(unique.slice(0, 4))
+    }).catch(() => {})
+    return () => { active = false }
+  }, [authed])
 
   let body
   if (loading) {
@@ -397,11 +413,11 @@ function CartPage({ authed }) {
       </div>
 
       {/* 하단: 함께 보면 좋은 상품 추천 영역 */}
-      <section style={{ marginTop: '48px', background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px' }}>
+      {recommendedGoods.length > 0 && <section style={{ marginTop: '48px', background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px' }}>
         <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>함께 보면 좋은 상품</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           {recommendedGoods.map((g) => (
-            <Link key={g.id} to={`/popups/${g.popupId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link key={g.id} to="/goods" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div style={{ border: '1px solid #f1f3f5', borderRadius: '12px', overflow: 'hidden', background: '#fafafa' }}>
                 <img src={g.image} alt={g.name} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
                 <div style={{ padding: '12px' }}>
@@ -412,7 +428,7 @@ function CartPage({ authed }) {
             </Link>
           ))}
         </div>
-      </section>
+      </section>}
 
       <div style={{ marginTop: '24px' }}>
         <Link to="/goods" style={{ color: '#4b5563', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}>
