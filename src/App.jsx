@@ -5,6 +5,7 @@ import {
   Outlet,
   Navigate,
   useNavigate,
+  useParams,
   useLocation,
 } from 'react-router-dom'
 
@@ -24,16 +25,17 @@ import {
 import Home from './pages/Home.jsx'
 import PopupList from './pages/PopupList.jsx'
 import PopupDetail from './pages/PopupDetail.jsx'
-import MyPage from './pages/MyPage.jsx' // 👈 예약·웨이팅 화면 컴포넌트 임포트
+import MyPage from './pages/MyPage.jsx'
 import MyPageHome, { MyPageFrame } from './pages/MyPageHome.jsx'
+import NearbyPopups from './pages/NearbyPopups.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
+import MyPageServices from './pages/MyPageServices.jsx'
 import Cart from './pages/Cart.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 
-import ReservationPage from './pages/ReservationPage'
 import ReservationConfirm from './pages/ReservationConfirm'
 import ReservationComplete from './pages/ReservationComplete'
 import ReservationEdit from './pages/ReservationEdit'
@@ -48,13 +50,15 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
 import AdminWaitings from './pages/admin/AdminWaitings'
 
+import ManagerCenter from './pages/manager/ManagerCenter.jsx'
 import Goods from './pages/Goods.jsx'
 import './styles/toast.css'
 
 import Checkout from './pages/Checkout.jsx'
 import { PaymentSuccess, PaymentFail } from './pages/PaymentResult.jsx'
+import GoodsDetail from './pages/GoodsDetail.jsx'
 
-// 페이지 이동 시 스크롤을 맨 위로 올려주는 공통 컴포넌트
+// 2. 페이지 이동 시 스크롤을 맨 위로 올려주는 공통 컴포넌트 추가
 function ScrollToTop() {
   const { pathname } = useLocation()
 
@@ -163,6 +167,11 @@ function getReservationError(error) {
 }
 
 // 사용자 화면 레이아웃
+function LegacyReservationRedirect() {
+  const { popupId } = useParams()
+  return <Navigate to={`/popups/${popupId}`} replace />
+}
+
 function UserLayout() {
   return (
     <div className="app">
@@ -265,6 +274,10 @@ function ReservationRecovery({
 function App() {
   const app = useApp()
   const navigate = useNavigate()
+  const location = useLocation()
+  const requestedReservationId = location.pathname === '/reservations/complete'
+    ? new URLSearchParams(location.search).get('reservationId')
+    : null
 
   // 초기 로딩
   const [loading, setLoading] = useState(true)
@@ -318,8 +331,15 @@ function App() {
     async function restoreReservation() {
       try {
         const existing = reservationRef.current
-        const saved =
-          existing?.owner === username
+        if (requestedReservationId !== null &&
+            (!/^\d+$/.test(requestedReservationId) ||
+             !Number.isSafeInteger(Number(requestedReservationId)) ||
+             Number(requestedReservationId) < 1)) {
+          throw new Error('예약번호를 확인해 주세요.')
+        }
+        const saved = requestedReservationId !== null
+          ? { reservationId: Number(requestedReservationId) }
+          : existing?.owner === username
             ? { reservationId: existing.reservationId }
             : readSavedReservation(username)
 
@@ -386,7 +406,7 @@ function App() {
     return () => {
       active = false
     }
-  }, [username, restoreKey])
+  }, [username, restoreKey, requestedReservationId])
 
   const restoring = Boolean(
     username &&
@@ -428,7 +448,7 @@ function App() {
     setQrVersion((previous) => previous + 1)
 
     if (nextReservation.reservationStatus === 'CONFIRMED') {
-      navigate('/reservations/complete', { replace: true })
+      navigate(`/reservations/complete?reservationId=${nextReservation.reservationId}`, { replace: true })
     } else {
       navigate('/reservations/confirm', { replace: true })
     }
@@ -499,8 +519,9 @@ function App() {
     slotDate,
     startTime,
     endTime,
+    autoConfirm = false,
   }) {
-    if (requestLock.current) return
+    if (requestLock.current) throw new Error('이전 예약 요청을 처리 중입니다.')
 
     if (!username) {
       throw new Error('실제 회원 계정으로 로그인해 주세요.')
@@ -529,6 +550,7 @@ function App() {
     let receivedResponse = false
 
     try {
+      // 응답 유실에 대비한 생성 기록
       sessionStorage.setItem(
         getStorageKey(owner),
         JSON.stringify({ pendingCreation: true })
@@ -541,7 +563,7 @@ function App() {
 
       receivedResponse = true
 
-      const nextReservation = mapReservation(response, {
+      let nextReservation = mapReservation(response, {
         owner,
         popId,
         timeSlotId,
@@ -551,12 +573,30 @@ function App() {
         endTime,
       })
 
+      // 계정 변경 시에도 예약번호 보관
       rememberReservation(nextReservation)
 
       if (currentUsername.current !== owner) return
 
       uncertainCreation.current = false
+      if (autoConfirm && nextReservation.reservationStatus === 'HOLD') {
+        // 생성된 번호를 보존하고 확정합니다. 실패해도 새 예약을 만들지 않습니다.
+        const held = nextReservation
+        try {
+          const confirmed = await confirmReservation({ reservationId: held.reservationId })
+          nextReservation = mapReservation(confirmed, held)
+          rememberReservation(nextReservation)
+        } catch {
+          if (currentUsername.current === owner) {
+            applyReservation(held)
+            setReservationError('예약번호는 생성되었지만 확정 결과를 확인하지 못했습니다. 기존 예약 상태를 확인한 뒤 진행해 주세요.')
+          }
+          return held
+        }
+      }
+      if (currentUsername.current !== owner) return
       applyReservation(nextReservation)
+      return nextReservation
     } catch (error) {
       const unknownResult =
         receivedResponse ||
@@ -734,6 +774,7 @@ function App() {
     setReservationError('')
 
     try {
+      // 변경 전 서버 상태 확인
       const response = await getReservation({
         reservationId: currentReservation.reservationId,
       })
@@ -771,6 +812,7 @@ function App() {
       const changed = mapReservation(result, latest)
       rememberReservation(changed)
 
+      // 변경된 방문 정보 다시 조회
       const detail = await getReservation({
         reservationId: changed.reservationId,
       })
@@ -809,6 +851,7 @@ function App() {
         )
 
       if (unknownResult) {
+        // 결과 확인 전 중복 변경 방지
         setRecovery({
           owner,
           status: 'error',
@@ -855,14 +898,17 @@ function App() {
     })
   }
 
+  // 변경 요청
   function handleUpdateReservation(changes) {
     return handleManageReservation('update', changes)
   }
 
+  // 취소 요청
   function handleCancelReservation() {
     return handleManageReservation('cancel')
   }
 
+  // 예약 복원 안내
   function renderRecovery() {
     return (
       <ReservationRecovery
@@ -877,6 +923,7 @@ function App() {
     )
   }
 
+  // 예약 화면 진입 확인
   function guardReservationPage(
     element,
     requireReservation = false
@@ -885,7 +932,11 @@ function App() {
       return <Navigate to="/login" replace />
     }
 
+    const requestedReservationMismatch = requestedReservationId !== null &&
+      Number(requestedReservationId) !== reservation?.reservationId
+
     if (
+      requestedReservationMismatch ||
       restoring ||
       recoveryFailed ||
       (requireReservation && !hasReservation)
@@ -902,6 +953,7 @@ function App() {
 
   return (
     <>
+      {/* 3. 라우터 내부 상단에 ScrollToTop 배치 */}
       <ScrollToTop />
       <Routes>
         {/* 사용자 페이지 */}
@@ -910,18 +962,16 @@ function App() {
           <Route path="/popups" element={<PopupList />} />
           <Route
             path="/popups/:popupId"
-            element={<PopupDetail />}
+            element={<PopupDetail onCreateHold={handleCreateHold} />}
           />
 
+          {/* 예약 날짜 및 시간 선택 */}
           <Route
             path="/popups/:popupId/reserve"
-            element={guardReservationPage(
-              <ReservationPage
-                onCreateHold={handleCreateHold}
-              />
-            )}
+            element={<LegacyReservationRedirect />}
           />
 
+          {/* 예약 정보 확인 */}
           <Route
             path="/reservations/confirm"
             element={guardReservationPage(
@@ -952,6 +1002,7 @@ function App() {
             )}
           />
 
+          {/* 예약 완료 */}
           <Route
             path="/reservations/complete"
             element={guardReservationPage(
@@ -984,6 +1035,7 @@ function App() {
             )}
           />
 
+          {/* 예약 변경 */}
           <Route
             path="/reservations/edit"
             element={guardReservationPage(
@@ -1005,16 +1057,20 @@ function App() {
             )}
           />
 
-          {/* 회원 및 마이페이지 라우트 */}
-          <Route path="/mypage" element={<MyPageFrame />}>
-            <Route index element={<MyPageHome />} />
-            <Route path="account" element={<AccountSettings />} />
-          </Route>
-
-          {/* 상단 헤더 '내 예약·웨이팅' 아이콘 연결 */}
+          {/* 회원 및 장바구니 */}
+          <Route path="/mypage" element={<MyPageHome />} />
+          <Route path="/mypage/orders" element={<MyPageServices section="orders" />} />
+          <Route path="/mypage/coupons" element={<MyPageServices section="coupons" />} />
+          <Route path="/mypage/recent" element={<MyPageServices section="recent" />} />
+          <Route path="/mypage/faq" element={<MyPageServices section="faq" />} />
+          <Route path="/mypage/inquiries" element={<MyPageServices section="inquiries" />} />
           <Route path="/my-activities" element={<MyPage />} />
+          <Route path="/nearby" element={<NearbyPopups />} />
+          <Route
+            path="/mypage/account"
+            element={<MyPageFrame><AccountSettings /></MyPageFrame>}
+          />
           <Route path="/cart" element={<Cart />} />
-          
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route
@@ -1023,14 +1079,18 @@ function App() {
           />
 
           <Route path="/goods" element={<Goods />} />
+          <Route path="/goods/:prdId" element={<GoodsDetail />} />
 
           {/* 주문·결제 */}
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/payments/success" element={<PaymentSuccess />} />
           <Route path="/payments/fail" element={<PaymentFail />} />
 
+          {/* 없는 사용자 페이지 */}
           <Route path="*" element={<NotFound />} />
         </Route>
+
+        <Route path="/manager/*" element={<ManagerCenter />} />
 
         {/* 관리자 페이지 */}
         <Route path="/admin" element={<AdminLayout />}>
@@ -1049,6 +1109,7 @@ function App() {
         </Route>
       </Routes>
 
+      {/* 공통 알림 */}
       <div className="toast-wrap">
         {app.toasts.map((toast) => (
           <div className="toast" key={toast.id}>
