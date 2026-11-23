@@ -80,7 +80,7 @@ function getProductSaleInfo(g) {
     (typeof g.stock === 'number' && g.stock <= 0)
 
   if (isSoldOut) {
-    return { canPurchase: false, badge: '품절', buttonLabel: '품절' }
+    return { phase: 'ENDED', canPurchase: false, badge: '품절', buttonLabel: '품절' }
   }
 
   if (
@@ -88,7 +88,7 @@ function getProductSaleInfo(g) {
       ? now < startMs
       : ['UPCOMING', 'SCHEDULED', 'BEFORE_SALE', '판매예정'].includes(status)
   ) {
-    return { canPurchase: false, badge: '판매예정', buttonLabel: '판매예정' }
+    return { phase: 'UPCOMING', canPurchase: false, badge: '판매예정', buttonLabel: '판매예정' }
   }
 
   if (
@@ -96,10 +96,10 @@ function getProductSaleInfo(g) {
       ? now > endMs
       : ['ENDED', 'CLOSED', '판매종료'].includes(status)
   ) {
-    return { canPurchase: false, badge: '판매종료', buttonLabel: '판매종료' }
+    return { phase: 'ENDED', canPurchase: false, badge: '판매종료', buttonLabel: '판매종료' }
   }
 
-  return { canPurchase: true, badge: null, buttonLabel: null }
+  return { phase: 'ON_SALE', canPurchase: true, badge: null, buttonLabel: null }
 }
 
 function getAddCartErrorMessage(error) {
@@ -120,6 +120,8 @@ export default function Goods() {
   const [params, setParams] = useSearchParams()
   const popup = params.get('popup') || 'all'
   const [category, setCategory] = useState('전체')
+  const [saleFilter, setSaleFilter] = useState('ON_SALE')
+  const [bannerIdx, setBannerIdx] = useState(0)
   const [goods, setGoods] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -159,6 +161,13 @@ export default function Goods() {
   }, [retry])
 
   useEffect(() => {
+    const timer = setInterval(() => {
+      setBannerIdx((prev) => (prev + 1) % 3)
+    }, 6000)
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
     if (isFirstFilterRender.current) {
       isFirstFilterRender.current = false
       return
@@ -169,7 +178,7 @@ export default function Goods() {
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [popup, category, sort])
+  }, [popup, category, sort, saleFilter])
 
   const setPopup = (id) => {
     const next = new URLSearchParams(params)
@@ -179,11 +188,17 @@ export default function Goods() {
     setPage(1)
   }
 
+  // 판매 상태 필터를 먼저 적용한 기준 상품 목록 (카테고리 카운트와 일치)
+  const statusScopedGoods = useMemo(() => {
+    if (saleFilter === 'ALL') return goods
+    return goods.filter((g) => getProductSaleInfo(g).phase === saleFilter)
+  }, [goods, saleFilter])
+
   const categories = useMemo(() => {
     const map = new Map()
-    goods.forEach((g) => map.set(g.category, (map.get(g.category) || 0) + 1))
+    statusScopedGoods.forEach((g) => map.set(g.category, (map.get(g.category) || 0) + 1))
     return [...map.entries()].map(([label, count]) => ({ label, count }))
-  }, [goods])
+  }, [statusScopedGoods])
 
   const popups = useMemo(() => {
     const ids = []
@@ -196,13 +211,80 @@ export default function Goods() {
     }))
   }, [goods])
 
-  const heroGoods = useMemo(
-    () => popups.slice(0, 3).map((p) => goods.find((g) => g.popupId === p.id)).filter(Boolean),
-    [popups, goods]
+  const rescenePopup = useMemo(
+    () => popups.find((p) => p.name.includes('리센느') || p.name.toUpperCase().includes('RESCENE')),
+    [popups]
   )
 
+  const heroGoods = useMemo(() => {
+    const onSalePool = goods.filter((g) => getProductSaleInfo(g).canPurchase)
+    const source = onSalePool.length > 0 ? onSalePool : goods
+    if (bannerIdx >= 1 && rescenePopup) {
+      const resceneItems = source.filter((g) => g.popupId === rescenePopup.id)
+      if (resceneItems.length > 0) return resceneItems.slice(0, 3)
+    }
+    const picked = popups
+      .slice(0, 3)
+      .map((p) => source.find((g) => g.popupId === p.id))
+      .filter(Boolean)
+    return picked.length > 0 ? picked : source.slice(0, 3)
+  }, [popups, goods, bannerIdx, rescenePopup])
+
+  const banners = useMemo(
+    () => [
+      {
+        eyebrow: "THIS WEEK'S DROP",
+        title: '이번 주 인기 굿즈\n지금 바로 만나보세요',
+        sub: '팝업 종료 후에도\n온라인 판매는 계속됩니다.',
+        period: null,
+        cta: '판매중 굿즈 보기 →',
+        badgeTop: 'WEEKLY',
+        badgeBottom: 'PICK',
+        onAction: () => {
+          setSaleFilter('ON_SALE')
+          setPopup('all')
+          setCategory('전체')
+          document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        },
+      },
+      {
+        eyebrow: 'NOW OPEN',
+        title: '리센느 팝업 굿즈\n온라인 판매 시작',
+        sub: '현장에서 놓친 한정 굿즈를\n지금 온라인에서 만나보세요.',
+        period: null,
+        cta: '리센느 굿즈 보러가기 →',
+        badgeTop: 'NOW',
+        badgeBottom: 'OPEN',
+        onAction: () => {
+          setSaleFilter('ON_SALE')
+          setCategory('전체')
+          if (rescenePopup) setPopup(rescenePopup.id)
+          document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        },
+      },
+      {
+        eyebrow: 'NOW OPEN',
+        title: '리센느 굿즈\n온라인 판매 시작',
+        sub: null,
+        period: '11.18 - 12.02',
+        cta: '지금 쇼핑하기 →',
+        badgeTop: 'LIMITED',
+        badgeBottom: 'EDITION',
+        onAction: () => {
+          setSaleFilter('ON_SALE')
+          setCategory('전체')
+          if (rescenePopup) setPopup(rescenePopup.id)
+          document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        },
+      },
+    ],
+    [rescenePopup]
+  )
+
+  const currentBanner = banners[bannerIdx]
+
   const list = useMemo(() => {
-    let result = goods.filter(
+    let result = statusScopedGoods.filter(
       (g) =>
         (category === '전체' || g.category === category) &&
         (popup === 'all' || g.popupId === popup)
@@ -210,7 +292,7 @@ export default function Goods() {
     if (sort === 'low') result = [...result].sort((a, b) => a.price - b.price)
     if (sort === 'high') result = [...result].sort((a, b) => b.price - a.price)
     return result
-  }, [goods, category, popup, sort])
+  }, [statusScopedGoods, category, popup, sort])
 
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
@@ -229,6 +311,7 @@ export default function Goods() {
   const resetAll = () => {
     setCategory('전체')
     setSort('default')
+    setSaleFilter('ON_SALE')
     setPopup('all')
     setPage(1)
   }
@@ -305,82 +388,221 @@ export default function Goods() {
     })
   }
 
+  const saleStatusLabel =
+    saleFilter === 'ON_SALE'
+      ? '판매중'
+      : saleFilter === 'UPCOMING'
+      ? '판매예정'
+      : saleFilter === 'ENDED'
+      ? '판매종료'
+      : '전체'
+
   return (
     <div className="container gs-page">
-      <section className="gs-hero">
+      {/* 개편된 굿즈샵 배너 */}
+      <section className="gs-hero" style={{ position: 'relative' }}>
         <div className="gs-hero-text">
-          <div className="gs-eyebrow">GOODS SHOP</div>
-          <h1 className="gs-hero-title">팝업의 설렘을<br />집까지 가져가요</h1>
-          <p className="gs-hero-sub">팝업에서만 만날 수 있는 한정 굿즈를 모아봤어요.</p>
-          <button
-            type="button"
-            className="gs-hero-btn"
-            onClick={() => document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          >
-            전체 굿즈 보기 →
-          </button>
+          <div className="gs-eyebrow" style={{ color: '#68754B', fontWeight: 800 }}>
+            {currentBanner.eyebrow}
+          </div>
+          <h1 className="gs-hero-title" style={{ whiteSpace: 'pre-line' }}>
+            {currentBanner.title}
+          </h1>
+          {currentBanner.sub && (
+            <p className="gs-hero-sub" style={{ whiteSpace: 'pre-line' }}>
+              {currentBanner.sub}
+            </p>
+          )}
+          {currentBanner.period && (
+            <div
+              style={{
+                display: 'inline-block',
+                padding: '6px 14px',
+                borderRadius: '999px',
+                backgroundColor: '#eef2ea',
+                color: '#293323',
+                fontWeight: 700,
+                fontSize: '14px',
+                letterSpacing: '0.04em',
+                marginBottom: '18px',
+              }}
+            >
+              {currentBanner.period}
+            </div>
+          )}
+          <div>
+            <button
+              type="button"
+              className="gs-hero-btn"
+              style={{ backgroundColor: '#293323', color: '#fff' }}
+              onClick={currentBanner.onAction}
+            >
+              {currentBanner.cta}
+            </button>
+          </div>
+
+          {/* 배너 슬라이드 인디케이터 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '20px' }}>
+            {banners.map((b, idx) => (
+              <button
+                key={b.title + idx}
+                type="button"
+                aria-label={`${idx + 1}번 배너 보기`}
+                onClick={() => setBannerIdx(idx)}
+                style={{
+                  width: bannerIdx === idx ? '26px' : '8px',
+                  height: '8px',
+                  borderRadius: '999px',
+                  border: 'none',
+                  backgroundColor: bannerIdx === idx ? '#68754B' : '#d1d5db',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  padding: 0,
+                }}
+              />
+            ))}
+          </div>
         </div>
+
         <div className="gs-hero-stack">
-          {heroGoods.map(g => (
-            <div key={g.id} className="gs-hero-img">
-              <img src={g.image} alt={g.name} style={g.imageFit ? { objectFit: g.imageFit } : undefined} />
+          {heroGoods.map((g) => (
+            <div
+              key={g.id}
+              className="gs-hero-img"
+              style={{ cursor: 'pointer' }}
+              onClick={() => goToGoodsDetail(g)}
+            >
+              <img
+                src={g.image}
+                alt={g.name}
+                style={g.imageFit ? { objectFit: g.imageFit } : undefined}
+              />
             </div>
           ))}
-          <span className="gs-hero-badge">NEW<br />DROP</span>
+          <span className="gs-hero-badge" style={{ backgroundColor: '#68754B' }}>
+            {currentBanner.badgeTop}
+            <br />
+            {currentBanner.badgeBottom}
+          </span>
         </div>
       </section>
 
       <section className="gs-layout" id="gs-list">
         <aside className="gs-side">
           <div className="gs-side-block">
-            <div className="gs-eyebrow">CATEGORY</div>
+            <div className="gs-eyebrow" style={{ color: '#68754B' }}>CATEGORY</div>
             <div className="gs-side-title">굿즈 카테고리</div>
             <ul className="gs-side-list">
               <li>
                 <button
                   type="button"
                   className={category === '전체' ? 'on' : ''}
+                  style={
+                    category === '전체'
+                      ? {
+                          backgroundColor: '#eef2ea',
+                          color: '#293323',
+                          fontWeight: 800,
+                          borderLeft: '3px solid #68754B',
+                          borderRadius: '8px',
+                          paddingLeft: '10px',
+                        }
+                      : undefined
+                  }
                   onClick={() => {
                     setCategory('전체')
                     setPage(1)
                   }}
                 >
-                  전체 <span>{goods.length}</span>
+                  전체 <span style={category === '전체' ? { color: '#68754B', fontWeight: 800 } : undefined}>{statusScopedGoods.length}</span>
                 </button>
               </li>
-              {categories.map(c => (
-                <li key={c.label}>
-                  <button
-                    type="button"
-                    className={category === c.label ? 'on' : ''}
-                    onClick={() => {
-                      setCategory(c.label)
-                      setPage(1)
-                    }}
-                  >
-                    {c.label} <span>{c.count}</span>
-                  </button>
-                </li>
-              ))}
+              {categories.map((c) => {
+                const active = category === c.label
+                return (
+                  <li key={c.label}>
+                    <button
+                      type="button"
+                      className={active ? 'on' : ''}
+                      style={
+                        active
+                          ? {
+                              backgroundColor: '#eef2ea',
+                              color: '#293323',
+                              fontWeight: 800,
+                              borderLeft: '3px solid #68754B',
+                              borderRadius: '8px',
+                              paddingLeft: '10px',
+                            }
+                          : undefined
+                      }
+                      onClick={() => {
+                        setCategory(c.label)
+                        setPage(1)
+                      }}
+                    >
+                      {c.label}{' '}
+                      <span style={active ? { color: '#68754B', fontWeight: 800 } : undefined}>
+                        {c.count}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           </div>
 
           <div className="gs-side-block">
-            <div className="gs-eyebrow">POP-UP STORE</div>
+            <div className="gs-eyebrow" style={{ color: '#68754B' }}>POP-UP STORE</div>
             <div className="gs-side-title">팝업스토어별</div>
             <ul className="gs-side-list">
               <li>
-                <button type="button" className={popup === 'all' ? 'on' : ''} onClick={() => setPopup('all')}>
+                <button
+                  type="button"
+                  className={popup === 'all' ? 'on' : ''}
+                  style={
+                    popup === 'all'
+                      ? {
+                          backgroundColor: '#eef2ea',
+                          color: '#293323',
+                          fontWeight: 800,
+                          borderLeft: '3px solid #68754B',
+                          borderRadius: '8px',
+                          paddingLeft: '10px',
+                        }
+                      : undefined
+                  }
+                  onClick={() => setPopup('all')}
+                >
                   전체 팝업
                 </button>
               </li>
-              {popups.map(p => (
-                <li key={p.id}>
-                  <button type="button" className={popup === p.id ? 'on' : ''} onClick={() => setPopup(p.id)}>
-                    {p.name}
-                  </button>
-                </li>
-              ))}
+              {popups.map((p) => {
+                const active = popup === p.id
+                return (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      className={active ? 'on' : ''}
+                      style={
+                        active
+                          ? {
+                              backgroundColor: '#eef2ea',
+                              color: '#293323',
+                              fontWeight: 800,
+                              borderLeft: '3px solid #68754B',
+                              borderRadius: '8px',
+                              paddingLeft: '10px',
+                            }
+                          : undefined
+                      }
+                      onClick={() => setPopup(p.id)}
+                    >
+                      {p.name}
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         </aside>
@@ -391,16 +613,41 @@ export default function Goods() {
               <h2>
                 {popup === 'all'
                   ? category === '전체'
-                    ? '전체 굿즈'
+                    ? `${saleStatusLabel} 굿즈`
                     : category
                   : `${popups.find((p) => p.id === popup)?.name || '선택한 팝업'} 굿즈`}
               </h2>
               <span>
-                {list.length}개 / 전체 {goods.length}개 (페이지 {safePage}/{totalPages})
+                {list.length}개 / {saleStatusLabel} {statusScopedGoods.length}개 (페이지 {safePage}/{totalPages})
               </span>
             </div>
-            <div className="gs-tools">
+
+            <div className="gs-tools" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {/* 판매 상태 셀렉트 필터 (기본값: 판매중) */}
               <select
+                aria-label="상품 판매 상태 필터"
+                className="gs-sort"
+                value={saleFilter}
+                onChange={(e) => {
+                  setSaleFilter(e.target.value)
+                  setCategory('전체')
+                  setPage(1)
+                }}
+                style={{
+                  borderColor: '#68754B',
+                  backgroundColor: '#f5f7f3',
+                  color: '#293323',
+                  fontWeight: 700,
+                }}
+              >
+                <option value="ON_SALE">판매중</option>
+                <option value="UPCOMING">판매예정</option>
+                <option value="ENDED">판매종료</option>
+                <option value="ALL">전체 상태</option>
+              </select>
+
+              <select
+                aria-label="상품 정렬"
                 className="gs-sort"
                 value={sort}
                 onChange={(e) => {
@@ -453,7 +700,11 @@ export default function Goods() {
                             {saleInfo.badge}
                           </span>
                         ) : (
-                          g.limited && <span className="gs-badge">한정판</span>
+                          g.limited && (
+                            <span className="gs-badge" style={{ backgroundColor: '#68754B', color: '#fff' }}>
+                              한정판
+                            </span>
+                          )
                         )}
                         <img src={g.image} alt={g.name} style={g.imageFit ? { objectFit: g.imageFit } : undefined} />
                       </div>
@@ -492,8 +743,8 @@ export default function Goods() {
                                   flex: 1,
                                   height: '40px',
                                   backgroundColor: '#ffffff',
-                                  color: '#374151',
-                                  border: '1px solid #d1d5db',
+                                  color: '#293323',
+                                  border: '1px solid #cfd6c9',
                                   cursor: isDisabled ? 'not-allowed' : 'pointer',
                                   borderRadius: '8px',
                                   fontWeight: '600',
@@ -567,9 +818,9 @@ export default function Goods() {
                     style={{
                       padding: '8px 14px',
                       borderRadius: '10px',
-                      border: '1px solid #eadfd5',
+                      border: '1px solid #d6dcd2',
                       background: '#fff',
-                      color: safePage <= 1 ? '#c4b8ad' : '#2b2118',
+                      color: safePage <= 1 ? '#c4b8ad' : '#293323',
                       fontWeight: 700,
                       cursor: safePage <= 1 ? 'not-allowed' : 'pointer',
                     }}
@@ -590,9 +841,9 @@ export default function Goods() {
                           height: '38px',
                           padding: '0 10px',
                           borderRadius: '10px',
-                          border: active ? 'none' : '1px solid #eadfd5',
+                          border: active ? 'none' : '1px solid #d6dcd2',
                           background: active ? '#68754B' : '#fff',
-                          color: active ? '#fff' : '#2b2118',
+                          color: active ? '#fff' : '#293323',
                           fontWeight: 800,
                           cursor: 'pointer',
                         }}
@@ -609,9 +860,9 @@ export default function Goods() {
                     style={{
                       padding: '8px 14px',
                       borderRadius: '10px',
-                      border: '1px solid #eadfd5',
+                      border: '1px solid #d6dcd2',
                       background: '#fff',
-                      color: safePage >= totalPages ? '#c4b8ad' : '#2b2118',
+                      color: safePage >= totalPages ? '#c4b8ad' : '#293323',
                       fontWeight: 700,
                       cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
                     }}

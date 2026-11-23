@@ -42,6 +42,13 @@ function pickRandomGoods(list, count = 4) {
   return copy.slice(0, count)
 }
 
+function resolveRecommendedId(item) {
+  const candidate = item?.prdId ?? item?.serverId ?? item?.productId ?? item?.id
+  if (candidate === undefined || candidate === null || candidate === '') return null
+  const num = typeof candidate === 'number' ? candidate : Number(candidate)
+  return Number.isSafeInteger(num) && num >= 1 ? num : String(candidate)
+}
+
 const isBuyable = (item) => item.purchasable !== false
 
 export default function Cart() {
@@ -226,7 +233,7 @@ function CartPage({ authed }) {
       const rows = batches.flatMap(result => result.status === 'fulfilled' ? result.value : [])
       const seen = new Set()
       const unique = rows.filter(item => !seen.has(item.id) && seen.add(item.id))
-      if (active) setRecommendedGoods(unique.slice(0, 4))
+      if (active) setRecommendedGoods(pickRandomGoods(unique, 4))
     }).catch(() => {})
     return () => { active = false }
   }, [authed])
@@ -413,22 +420,36 @@ function CartPage({ authed }) {
       </div>
 
       {/* 하단: 함께 보면 좋은 상품 추천 영역 */}
-      {recommendedGoods.length > 0 && <section style={{ marginTop: '48px', background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>함께 보면 좋은 상품</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          {recommendedGoods.map((g) => (
-            <Link key={g.id} to="/goods" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ border: '1px solid #f1f3f5', borderRadius: '12px', overflow: 'hidden', background: '#fafafa' }}>
-                <img src={g.image} alt={g.name} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
-                <div style={{ padding: '12px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#111', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.name}</div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#293323' }}>{formatPrice(g.price)}</div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>}
+      {recommendedGoods.length > 0 && (
+        <section style={{ marginTop: '48px', background: '#fff', border: '1px solid #e5e8eb', borderRadius: '16px', padding: '24px', overflow: 'hidden' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>함께 보면 좋은 상품</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '16px' }}>
+            {recommendedGoods.map((g) => {
+              const targetId = resolveRecommendedId(g)
+              return (
+                <Link
+                  key={g.id}
+                  to={targetId ? `/goods/${targetId}` : '/goods'}
+                  state={targetId ? { goods: g } : undefined}
+                  style={{ textDecoration: 'none', color: 'inherit', minWidth: 0, display: 'block' }}
+                >
+                  <div style={{ border: '1px solid #f1f3f5', borderRadius: '12px', overflow: 'hidden', background: '#fafafa', height: '100%' }}>
+                    <img src={g.image} alt={g.name} style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ padding: '12px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#111', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {g.name}
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#293323' }}>
+                        {formatPrice(g.price)}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       <div style={{ marginTop: '24px' }}>
         <Link to="/goods" style={{ color: '#4b5563', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}>
