@@ -1,0 +1,71 @@
+.pq-edit {
+  max-width: 1000px;
+  margin: 32px auto;
+  color: #293323;
+}
+.pq-edit .reservation-hero { padding: 12px 0 24px; }
+.pq-edit .reservation-hero h1 { color: #293323; letter-spacing: -1px; }
+.pq-edit .reservation-hero p { color: #626d59; }
+.pq-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  margin-top: 24px;
+}
+.pq-edit-selection { min-width: 0; }
+.pq-edit .reservation-summary,
+.pq-edit .reservation-calendar,
+.pq-edit .time-slot-selector {
+  background: #fff;
+  border: 1px solid #dfe5d8;
+  border-radius: 18px;
+  box-shadow: none;
+}
+.pq-edit .reservation-summary { margin-top: 0; padding: 24px; }
+.pq-edit-selection .reservation-summary + .reservation-summary { margin-top: 16px; }
+.pq-edit .reservation-summary-badge,
+.pq-edit .reservation-confirm-notice {
+  background: #f2f5ec;
+  color: #465235;
+  border-color: #e2e8da;
+}
+.pq-edit .reservation-confirm-notice[role="alert"] { color: #913e34; background: #fff3ef; }
+.pq-edit .reservation-summary-row { border-color: #e7ece1; gap: 16px; }
+.pq-edit .reservation-summary-row strong { text-align: right; overflow-wrap: anywhere; }
+.pq-edit select {
+  border: 1px solid #d5ddcb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #293323;
+  background: #fff;
+}
+.pq-edit .calendar-day.selected,
+.pq-edit .reservation-next-button {
+  color: #fff;
+  background: #465235;
+  border-color: #465235;
+  box-shadow: none;
+}
+.pq-edit .calendar-day:not(.selected):not(:disabled):not(.unavailable),
+.pq-edit .calendar-navigation button,
+.pq-edit .time-slot.selected {
+  color: #465235;
+  background: #eef2e8;
+  border-color: #b6c2a6;
+}
+.pq-edit .time-slot-time { color: #293323; }
+.pq-edit .reservation-next-button { margin-top: 12px; }
+.pq-edit .reservation-next-button:not(:disabled):hover { background: #35402a; transform: none; }
+.pq-edit .reservation-next-button.pq-edit-secondary {
+  color: #465235;
+  background: #fff;
+  border: 1px solid #cfd8c3;
+}
+.pq-edit .reservation-next-button.pq-edit-secondary:not(:disabled):hover { background: #f2f5ec; }
+.pq-edit :is(button, select):focus-visible { outline: 2px solid #82916e; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .pq-edit { margin-top: 20px; padding-inline: 16px; }
+  .pq-edit-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .pq-edit .reservation-summary { padding: 18px; }
+}

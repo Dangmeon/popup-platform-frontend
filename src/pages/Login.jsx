@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 
@@ -52,6 +52,10 @@ export default function Login() {
   const [error, setError] = useState('')
   const submitting = useRef(false)
 
+  useEffect(() => {
+    if (app.isAuthenticated) navigate('/', { replace: true })
+  }, [app.isAuthenticated, navigate])
+
   // 실제 로그인
   async function handleSubmit(event) {
     event.preventDefault()
@@ -73,7 +77,6 @@ export default function Login() {
         password,
       })
 
-      navigate('/', { replace: true })
     } catch (requestError) {
       setError(getLoginError(requestError))
     } finally {

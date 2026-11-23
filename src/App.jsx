@@ -42,13 +42,15 @@ import ReservationEdit from './pages/ReservationEdit'
 
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminReservations from './pages/admin/AdminReservations'
+
 import AdminMembers from './pages/admin/AdminMembers'
 import AdminOrders from './pages/admin/AdminOrders'
 import AdminSales from './pages/admin/AdminSales'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminPopups from './pages/admin/AdminPopups'
-import AdminWaitings from './pages/admin/AdminWaitings'
+import AdminVisits from './pages/admin/AdminVisits.jsx'
+import AdminQnas from './pages/admin/AdminQnas.jsx'
+import ReservationCancelledDialog from './components/reservation/ReservationCancelledDialog.jsx'
 
 import ManagerCenter from './pages/manager/ManagerCenter.jsx'
 import Goods from './pages/Goods.jsx'
@@ -285,6 +287,7 @@ function App() {
   // 예약 정보
   const [reservation, setReservation] = useState(null)
   const [reservationError, setReservationError] = useState('')
+  const [cancelledNotice, setCancelledNotice] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [managing, setManaging] = useState(false)
@@ -447,7 +450,10 @@ function App() {
     setReservationError('')
     setQrVersion((previous) => previous + 1)
 
-    if (nextReservation.reservationStatus === 'CONFIRMED') {
+    if (nextReservation.reservationStatus === 'CANCELLED') {
+      setCancelledNotice(true)
+      navigate('/my-activities', { replace: true })
+    } else if (nextReservation.reservationStatus === 'CONFIRMED') {
       navigate(`/reservations/complete?reservationId=${nextReservation.reservationId}`, { replace: true })
     } else {
       navigate('/reservations/confirm', { replace: true })
@@ -520,6 +526,7 @@ function App() {
     startTime,
     endTime,
     autoConfirm = false,
+    reviewOnly = false,
   }) {
     if (requestLock.current) throw new Error('이전 예약 요청을 처리 중입니다.')
 
@@ -535,8 +542,26 @@ function App() {
       hasReservation &&
       reservation.reservationStatus === 'HOLD'
     ) {
+      const existing = reservation
+      if (existing.timeSlotId === timeSlotId && existing.peopleCount === peopleCount) {
+        const latest = mapReservation(await getReservation({ reservationId: existing.reservationId }), existing)
+        if (latest.reservationStatus === 'HOLD') {
+          if (reviewOnly) return latest
+          requestLock.current = true
+          try {
+            const response = await confirmReservation({ reservationId: latest.reservationId })
+            const next = mapReservation(response, latest)
+            applyReservation(next)
+            return next
+          } finally {
+            requestLock.current = false
+          }
+        }
+        applyReservation(latest)
+        return latest
+      }
       navigate('/reservations/confirm')
-      return
+      throw new Error('진행 중인 임시 예약을 먼저 확인해 주세요.')
     }
 
     if (uncertainCreation.current) {
@@ -579,6 +604,11 @@ function App() {
       if (currentUsername.current !== owner) return
 
       uncertainCreation.current = false
+      if (reviewOnly) {
+        setReservation(nextReservation)
+        setReservationError('')
+        return nextReservation
+      }
       if (autoConfirm && nextReservation.reservationStatus === 'HOLD') {
         // 생성된 번호를 보존하고 확정합니다. 실패해도 새 예약을 만들지 않습니다.
         const held = nextReservation
@@ -1097,18 +1127,21 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route
             path="reservations"
-            element={<AdminReservations />}
+            element={<Navigate to="/admin/visits?tab=reservations" replace />}
           />
           <Route path="members" element={<AdminMembers />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="sales" element={<AdminSales />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="popups" element={<AdminPopups />} />
-          <Route path="waiting" element={<AdminWaitings />} />
+          <Route path="waiting" element={<Navigate to="/admin/visits?tab=waiting" replace />} />
+          <Route path="visits" element={<AdminVisits />} />
+          <Route path="qnas" element={<AdminQnas />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
 
+      {cancelledNotice && <ReservationCancelledDialog onClose={() => setCancelledNotice(false)} />}
       {/* 공통 알림 */}
       <div className="toast-wrap">
         {app.toasts.map((toast) => (

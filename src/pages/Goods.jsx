@@ -321,7 +321,7 @@ export default function Goods() {
           </button>
         </div>
         <div className="gs-hero-stack">
-          {heroGoods.map((g) => (
+          {heroGoods.map(g => (
             <div key={g.id} className="gs-hero-img">
               <img src={g.image} alt={g.name} style={g.imageFit ? { objectFit: g.imageFit } : undefined} />
             </div>
@@ -348,7 +348,7 @@ export default function Goods() {
                   전체 <span>{goods.length}</span>
                 </button>
               </li>
-              {categories.map((c) => (
+              {categories.map(c => (
                 <li key={c.label}>
                   <button
                     type="button"
@@ -374,7 +374,7 @@ export default function Goods() {
                   전체 팝업
                 </button>
               </li>
-              {popups.map((p) => (
+              {popups.map(p => (
                 <li key={p.id}>
                   <button type="button" className={popup === p.id ? 'on' : ''} onClick={() => setPopup(p.id)}>
                     {p.name}

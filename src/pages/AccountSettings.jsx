@@ -34,11 +34,15 @@ export default function AccountSettings() {
   return <div className="container acc acc-refined">
     <header className="acc-heading"><span className="acc-eyebrow">ACCOUNT SETTINGS</span><h1>내 정보 보기</h1><p>나의 기본 정보를 확인하고 계정 설정을 변경하세요.</p></header>
     {!app.isAuthenticated && <p className="form-error" role="alert">데모 로그인 상태입니다. 정보를 저장하려면 서버 계정으로 로그인해 주세요.</p>}
-    {/* 정보와 비밀번호는 한 화면에 표시하되 각각 별도 요청으로 저장합니다. */}
     <div className="acc-settings-card" key={user.username || user.email}>
       <section className="acc-section" aria-label="기본 정보"><ProfileForm app={app} user={user} /></section>
-      <section className="acc-section" aria-label="비밀번호 변경"><PasswordForm app={app} /></section>
     </div>
+    <details className="acc-departure" key={user.username || user.email}>
+      <summary>비밀번호 변경</summary>
+      <div className="acc-settings-card acc-section">
+        <PasswordForm app={app} />
+      </div>
+    </details>
     {/* 탈퇴는 평소에는 접어 두고, 동의와 확인 문구 입력 후에만 요청합니다. */}
     <details className="acc-departure"><summary>회원 탈퇴 안내</summary><div className="acc-departure-body"><WithdrawForm app={app} /></div></details>
   </div>
@@ -133,7 +137,6 @@ function PasswordForm({ app }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>비밀번호 변경</h2>
       <p className="acc-section-description">새 비밀번호를 입력하고 아래 버튼을 눌러 변경해 주세요.</p>
       <div className="form-group">
         <label htmlFor="account-password">새 비밀번호</label>

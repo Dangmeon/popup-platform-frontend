@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import '../styles/Cart.css'
 import { useApp } from '../context/AppContext.jsx'
 import { getCart, deleteCartItem, updateCartItem } from '../api/cartApi'
-import { featuredGoods } from '../data/featuredPopups.js'
+import { getPopups, getPopupProducts } from '../api/popupApi.js'
 
 function getErrorMessage(error) {
   const status = error?.response?.status

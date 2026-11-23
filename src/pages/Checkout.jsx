@@ -65,12 +65,12 @@ export default function Checkout() {
     name: '', phone: '', zip: '', address: '', detail: '', memo: MEMOS[0],
   })
   const [paymentMethod, setPaymentMethod] = useState('toss')
-  const [selectedCoupon, setSelectedCoupon] = useState('5000') 
+  const [selectedCoupon, setSelectedCoupon] = useState('5000')
   const [usePoint, setUsePoint] = useState('')
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
   const [paying, setPaying] = useState(false)
-  
+
   const orderRef = useRef(null)
 
   const activeItems = useMemo(() => orderItems.filter(it => !it.exclude), [orderItems])
@@ -79,7 +79,7 @@ export default function Checkout() {
     return activeItems.reduce((sum, it) => sum + it.price * it.qty, 0)
   }, [activeItems])
 
-  const discount = Number(selectedCoupon) || 0 
+  const discount = Number(selectedCoupon) || 0
   const pointUsed = Number(usePoint) || 0
   const finalTotal = Math.max(0, activeProductTotal - discount - pointUsed)
   const count = activeItems.reduce((sum, it) => sum + it.qty, 0)
@@ -204,9 +204,9 @@ export default function Checkout() {
                   <div className="co-zip">
                     <input value={form.zip} readOnly placeholder="우편번호" />
                     {/* 💡 주소 검색 버튼을 초록 톤으로 맞춤 */}
-                    <button 
-                      type="button" 
-                      className="co-sub-btn" 
+                    <button
+                      type="button"
+                      className="co-sub-btn"
                       onClick={searchAddress}
                       style={{ backgroundColor: '#465235', color: '#fff', border: 'none' }}
                     >
@@ -244,9 +244,9 @@ export default function Checkout() {
               )}
               <ul className="co-items">
                 {orderItems.map(it => (
-                  <li 
-                    key={it.id} 
-                    className="co-item" 
+                  <li
+                    key={it.id}
+                    className="co-item"
                     style={{ opacity: it.exclude ? 0.5 : 1, background: it.isSoldOut ? '#fffaf6' : '#fff' }}
                   >
                     <div className="co-item-img">
@@ -287,9 +287,9 @@ export default function Checkout() {
               <div className="co-row">
                 <label>쿠폰 사용</label>
                 <div className="co-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <select 
-                    style={{ flex: 1 }} 
-                    value={selectedCoupon} 
+                  <select
+                    style={{ flex: 1 }}
+                    value={selectedCoupon}
                     onChange={e => setSelectedCoupon(e.target.value)}
                   >
                     <option value="0">사용안함</option>
@@ -330,7 +330,7 @@ export default function Checkout() {
                 <h2>결제 수단</h2>
               </div>
               <div className="co-payment-methods" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                <label 
+                <label
                   className={`co-pay-method-card ${paymentMethod === 'toss' ? 'active' : ''}`}
                   style={{
                     border: paymentMethod === 'toss' ? '2px solid #465235' : '1px solid #e5e8eb',
@@ -344,11 +344,11 @@ export default function Checkout() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                      type="radio" 
-                      name="paymentMethod" 
-                      checked={paymentMethod === 'toss'} 
-                      onChange={() => setPaymentMethod('toss')} 
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === 'toss'}
+                      onChange={() => setPaymentMethod('toss')}
                     />
                     <strong style={{ fontSize: '15px' }}>Toss Payments</strong>
                     <span style={{ background: '#465235', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>추천</span>
@@ -356,7 +356,7 @@ export default function Checkout() {
                   <span style={{ fontSize: '12px', color: '#6b7684', paddingLeft: '22px' }}>토스페이먼츠로 안전하고 간편한 결제</span>
                 </label>
 
-                <label 
+                <label
                   className={`co-pay-method-card ${paymentMethod === 'card' ? 'active' : ''}`}
                   style={{
                     border: paymentMethod === 'card' ? '2px solid #465235' : '1px solid #e5e8eb',
@@ -370,18 +370,18 @@ export default function Checkout() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                      type="radio" 
-                      name="paymentMethod" 
-                      checked={paymentMethod === 'card'} 
-                      onChange={() => setPaymentMethod('card')} 
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === 'card'}
+                      onChange={() => setPaymentMethod('card')}
                     />
                     <strong style={{ fontSize: '15px' }}>신용·체크카드</strong>
                   </div>
                   <span style={{ fontSize: '12px', color: '#6b7684', paddingLeft: '22px' }}>모든 카드로 결제</span>
                 </label>
 
-                <label 
+                <label
                   className={`co-pay-method-card ${paymentMethod === 'easy' ? 'active' : ''}`}
                   style={{
                     border: paymentMethod === 'easy' ? '2px solid #465235' : '1px solid #e5e8eb',
@@ -395,11 +395,11 @@ export default function Checkout() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                      type="radio" 
-                      name="paymentMethod" 
-                      checked={paymentMethod === 'easy'} 
-                      onChange={() => setPaymentMethod('easy')} 
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={paymentMethod === 'easy'}
+                      onChange={() => setPaymentMethod('easy')}
                     />
                     <strong style={{ fontSize: '15px' }}>간편결제</strong>
                   </div>
@@ -427,10 +427,10 @@ export default function Checkout() {
 
             {notice && <p className="co-notice">{notice}</p>}
 
-            <button 
-              type="button" 
-              className="co-pay" 
-              onClick={handlePay} 
+            <button
+              type="button"
+              className="co-pay"
+              onClick={handlePay}
               disabled={paying || activeItems.length === 0}
               style={{ backgroundColor: '#465235', opacity: activeItems.length === 0 ? 0.5 : 1 }}
             >

@@ -1,3 +1,4 @@
+import AdminDetailModal from '../../components/admin/AdminDetailModal.jsx'
 import { useEffect, useState } from 'react'
 import {
   getMembers,
@@ -253,7 +254,7 @@ function AdminMembers() {
                         className="member-admin-button"
                         aria-label={`${member.name} 회원 상세 보기`}
                         aria-expanded={selectedId === member.id}
-                        aria-controls="member-admin-detail"
+                        aria-haspopup="dialog"
                         onClick={() => setSelectedId(member.id)}
                       >
                         상세 보기
@@ -276,8 +277,9 @@ function AdminMembers() {
       </section>
 
       {/* 회원 상세 */}
-      <div id="member-admin-detail">
+
         {selectedId !== null && (
+          <AdminDetailModal title="회원 상세" onClose={() => setSelectedId(null)}>
           <section
             className="admin-panel member-admin-detail"
             aria-labelledby="member-admin-detail-title"
@@ -348,8 +350,8 @@ function AdminMembers() {
               </dl>
             )}
           </section>
+          </AdminDetailModal>
         )}
-      </div>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { useApp } from '../context/AppContext.jsx'
 import { useEffect, useState } from 'react'
 import {
   getPopups,
@@ -29,6 +30,7 @@ function useFetch(fetcher, deps, initial) {
     let cancelled = false
     setLoading(true)
     setError('')
+    setData(initial)
 
     fetcher()
       .then(result => { if (!cancelled) setData(result) })
@@ -44,7 +46,8 @@ function useFetch(fetcher, deps, initial) {
 
 // 팝업 목록: usePopups({ status: 'ONGOING' }) 또는 usePopups({ category: 'FOOD' })
 export function usePopups(params = {}) {
-  return useFetch(() => getPopups(params), [JSON.stringify(params)], [])
+  const { isAuthenticated } = useApp()
+  return useFetch(() => getPopups(params), [JSON.stringify(params), isAuthenticated], [])
 }
 
 // 팝업 상세

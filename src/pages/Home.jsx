@@ -1,24 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PopqIcon from '../components/common/PopqIcon.jsx'
+import PopupLoop from '../components/common/PopupLoop.jsx'
+import { getPopupStage } from '../utils/popupLifecycle.js'
 import HomeBanner from './HomeBanner.jsx'
-import HomeGoods from './HomeGoods.jsx'
 import HomeEvents from './HomeEvents.jsx'
-import { areaDemoPopups } from '../data/areaDemoPopups.js'
 import OpeningDayBadge from '../components/common/OpeningDayBadge.jsx'
-import { featuredCards, featuredGoods } from '../data/featuredPopups.js'
 import { usePopups } from '../hooks/usePopups'
 import '../styles/Home.css'
 import '../styles/FeaturedPopupDetail.css'
 import '../styles/HomeSections.css'
 import '../components/common/OpeningDayBadge.css'
 import '../styles/HomeRefresh.css'
+import '../styles/HomeMobile.css'
 
-// 메인에 표시할 굿즈
-const GOODS_IDS = [
-  'loopy-1', 'chiikawa-1', 'gal-1', 'kinetic-shoe',
-  'loopy-4', 'chiikawa-3', 'gal-6', 'kinetic-bag',
-]
 
 // 중간 바로가기
 const QUICK_MENUS = [
@@ -111,7 +106,7 @@ function SectionHeading({ eyebrow, title, to = '/popups', more = '전체 보기'
 }
 
 // 팝업 카드와 가운데 원형 D-DAY
-function PopupCard({ popup, today, rank }) {
+function PopupCard({ popup, today, rank, showStatus = true }) {
   return (
     <Link to={popup.isDemo ? `/nearby?area=${encodeURIComponent(popup.area)}` : `/popups/${popup.id}`} className="hm-card">
       <div className="hm-card-img">
@@ -125,7 +120,7 @@ function PopupCard({ popup, today, rank }) {
           <span className="hm-rank">{String(rank).padStart(2, '0')}</span>
         )}
 
-        <OpeningDayBadge startDate={popup.startDate} endDate={popup.endDate} today={today} />
+        {showStatus && <OpeningDayBadge startDate={popup.startDate} endDate={popup.endDate} today={today} />}
       </div>
 
       <div className="hm-card-body">
@@ -143,7 +138,7 @@ function PopupCard({ popup, today, rank }) {
 }
 
 export default function Home() {
-  const { data, loading, error } = usePopups({ status: 'ONGOING' })
+  const { data, loading, error } = usePopups()
   const [area, setArea] = useState('')
   const [today, setToday] = useState(getToday)
 
@@ -156,21 +151,15 @@ export default function Home() {
   const serverPopups = Array.isArray(data) ? data : []
   const seen = new Set()
 
-  // 추천 콘텐츠와 서버 목록의 중복 제거
-  const pool = [...featuredCards, ...serverPopups].filter((popup) => {
+  // 서버 목록의 중복 제거
+  const pool = serverPopups.filter((popup) => {
     const key = String(popup.id)
     if (seen.has(key)) return false
     seen.add(key)
     return true
   })
 
-  const recommended = pool
-    .filter((popup) => {
-      const end = getDate(popup.endDate)
-      const start = getDate(popup.startDate)
-      return (end === null || end >= today) && (start === null || start <= today + 30 * 86400000)
-    })
-    .slice(0, 5)
+  const recommended = pool.filter(popup => getPopupStage(popup, today) === 'ONGOING')
 
   // 행사 시작일 기준 오늘부터 30일 이내 오픈 예정 팝업
   const upcoming = pool
@@ -189,7 +178,7 @@ export default function Home() {
 
   const areaList = AREAS.map((item) => ({
     ...item,
-    items: [...pool, ...areaDemoPopups].filter((popup) => {
+    items: pool.filter((popup) => {
       const end = getDate(popup.endDate)
       return (
         (end === null || end >= today) &&
@@ -203,9 +192,6 @@ export default function Home() {
   const currentArea =
     areaList.find((item) => item.label === area) || areaList[0]
 
-  const goods = GOODS_IDS.map((id) =>
-    featuredGoods.find((item) => item.id === id)
-  ).filter(Boolean)
 
 
   function scrollToSection(id) {
@@ -223,7 +209,7 @@ export default function Home() {
     <div className="popq-home">
       <div className="container">
         {/* 팝업별 설명과 수동 배너 이동 */}
-        <HomeBanner />
+        <HomeBanner popups={serverPopups} />
 
         {/* 중간 아이콘 바로가기 */}
         <nav className="hm-quick" aria-label="주요 기능 바로가기">
@@ -254,23 +240,23 @@ export default function Home() {
           })}
         </nav>
 
-        {/* 추천 팝업 최대 5개 */}
+        {/* 전체 팝업 순환 목록 */}
         <section className="hm-sec">
           <SectionHeading eyebrow="POPQ PICKS" title="지금 눈여겨볼 팝업" />
-          <div className="hm-grid">
-            {recommended.map((popup, index) => (
+          <PopupLoop>
+            {recommended.map((popup) => (
               <PopupCard
                 key={popup.id}
                 popup={popup}
-                rank={index + 1}
+                showStatus={false}
                 today={today}
               />
             ))}
-          </div>
+          </PopupLoop>
           {loading && <p role="status">팝업을 불러오는 중이에요.</p>}
           {error && (
             <p role="alert" className="hm-data-message">
-              서버 팝업을 불러오지 못했어요. 현재 추천 콘텐츠를 표시합니다.
+              팝업을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.
             </p>
           )}
           {!loading && !error && recommended.length === 0 && (
@@ -387,16 +373,6 @@ export default function Home() {
           </section>
         )}
 
-        {/* 추천 굿즈 가로 한 줄 */}
-        <section className="hm-sec" id="hm-goods">
-          <SectionHeading
-            eyebrow=""
-            title="굿즈"
-            to="/goods"
-            more="굿즈샵 보기"
-          />
-          <HomeGoods goods={goods} />
-        </section>
       </div>
     </div>
   )

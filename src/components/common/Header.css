@@ -218,3 +218,39 @@
     display: none;
   }
 }
+/* 헤더 확장 및 작은 글자의 가독성 개선 */
+.header.pq-header .pq-header-inner { width:min(1400px,calc(100% - 64px)); min-height:100px; }
+.pq-header .pq-header-search input { font-size:13px; }.pq-header .pq-header-search input::placeholder { color:#646e59; }
+.pq-header .pq-header-action { width:46px; height:46px; }.pq-header .pq-header-action svg { width:24px; height:24px; }
+.pq-header .pq-menu-toggle { display:none; }.pq-header .pq-mobile-menu[hidden] { display:none; }
+.pq-header .pq-mobile-menu { display:none; }
+@media(max-width:768px) {
+  .header.pq-header .pq-header-inner { width:calc(100% - 32px); min-height:76px; display:flex; flex-wrap:wrap; gap:0 10px; padding-bottom:12px; }
+  .pq-header .pq-menu-toggle { display:flex; align-items:center; gap:6px; padding:8px 0; flex-shrink:0; background:none; border:0; color:#39462d; font:inherit; font-size:11px; font-weight:700; cursor:pointer; }
+  .pq-header .pq-header-logo { flex:0 0 90px; height:64px; margin-right:auto; }.pq-header .pq-header-logo img { width:90px; height:64px; }
+  .pq-header .pq-header-actions { margin-left:0; gap:3px; }.pq-header .pq-header-action { width:32px; height:38px; }.pq-header .pq-header-action svg { width:21px; height:21px; }
+  .pq-header .pq-header-actions>.pq-header-action:not(:last-child) { display:none; }
+  .pq-header .pq-header-search { flex:1 0 100%; order:3; height:40px; }.pq-header .pq-header-search button { height:38px; }
+  .pq-header .pq-header-tooltip { display:none; }
+  .pq-header .pq-mobile-menu:not([hidden]) { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:12px 16px 18px; border-top:1px solid #e5eadc; max-height:65vh; overflow-y:auto; background:white; box-shadow:0 12px 18px #2933230a; }
+  .pq-header .pq-mobile-menu a { display:flex; gap:12px; align-items:center; padding:14px 10px; border:1px solid #edf0e7; border-radius:12px; text-decoration:none; color:#39462d; min-width:0; }
+  .pq-header .pq-mobile-menu a:hover { background:#f2f5eb; }.pq-mobile-menu-icon { display:grid; place-items:center; width:34px; height:34px; flex-shrink:0; border-radius:10px; background:#f1f5e9; }
+  .pq-mobile-menu strong { display:block; font-size:12px; }.pq-mobile-menu small { display:block; font-size:10px; color:#667457; margin-top:6px; line-height:1.6; }.pq-mobile-menu-arrow { margin-left:auto; color:#82946b; font-size:20px; }
+}
+@media(max-width:420px) { .pq-header .pq-mobile-menu:not([hidden]) { grid-template-columns:1fr; }.pq-header .pq-menu-toggle { font-size:10px; } }
+
+/* 모바일 한 줄: 로고 / 권한별 관리 아이콘 / 전체 메뉴 */
+@media (max-width: 768px) {
+  .pq-header .pq-header-logo { order: 0; margin-right: auto; }
+  .pq-header .pq-header-actions { order: 1; margin-left: 0; }
+  .pq-header .pq-menu-toggle { order: 2; margin-left: 2px; }
+  .pq-header .pq-header-search { order: 3; }
+}
+/* 헤더의 불필요한 세로 여백 축소 */
+@media (min-width: 769px) {
+  .header.pq-header .pq-header-inner { min-height: 88px; }
+}
+@media (max-width: 768px) {
+  .pq-header .pq-header-logo, .pq-header .pq-header-logo img { height: 58px; }
+  .header.pq-header .pq-header-inner { padding-bottom: 8px; }
+}
