@@ -58,6 +58,7 @@ import './styles/toast.css'
 
 import Checkout from './pages/Checkout.jsx'
 import { PaymentSuccess, PaymentFail } from './pages/PaymentResult.jsx'
+import GoodsDetail from './pages/GoodsDetail.jsx'
 
 // 2. 페이지 이동 시 스크롤을 맨 위로 올려주는 공통 컴포넌트 추가
 function ScrollToTop() {
@@ -286,7 +287,7 @@ function App() {
   // 예약 정보
   const [reservation, setReservation] = useState(null)
   const [reservationError, setReservationError] = useState('')
-  const [cancelledNotice,setCancelledNotice] = useState(false)
+  const [cancelledNotice, setCancelledNotice] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(false)
   const [managing, setManaging] = useState(false)
@@ -451,7 +452,7 @@ function App() {
 
     if (nextReservation.reservationStatus === 'CANCELLED') {
       setCancelledNotice(true)
-      navigate('/my-activities', { replace:true })
+      navigate('/my-activities', { replace: true })
     } else if (nextReservation.reservationStatus === 'CONFIRMED') {
       navigate(`/reservations/complete?reservationId=${nextReservation.reservationId}`, { replace: true })
     } else {
@@ -543,16 +544,18 @@ function App() {
     ) {
       const existing = reservation
       if (existing.timeSlotId === timeSlotId && existing.peopleCount === peopleCount) {
-        const latest = mapReservation(await getReservation({reservationId:existing.reservationId}), existing)
+        const latest = mapReservation(await getReservation({ reservationId: existing.reservationId }), existing)
         if (latest.reservationStatus === 'HOLD') {
           if (reviewOnly) return latest
           requestLock.current = true
           try {
-            const response = await confirmReservation({reservationId:latest.reservationId})
+            const response = await confirmReservation({ reservationId: latest.reservationId })
             const next = mapReservation(response, latest)
             applyReservation(next)
             return next
-          } finally {requestLock.current = false}
+          } finally {
+            requestLock.current = false
+          }
         }
         applyReservation(latest)
         return latest
@@ -601,7 +604,11 @@ function App() {
       if (currentUsername.current !== owner) return
 
       uncertainCreation.current = false
-      if (reviewOnly) { setReservation(nextReservation); setReservationError(''); return nextReservation }
+      if (reviewOnly) {
+        setReservation(nextReservation)
+        setReservationError('')
+        return nextReservation
+      }
       if (autoConfirm && nextReservation.reservationStatus === 'HOLD') {
         // 생성된 번호를 보존하고 확정합니다. 실패해도 새 예약을 만들지 않습니다.
         const held = nextReservation
@@ -1102,6 +1109,7 @@ function App() {
           />
 
           <Route path="/goods" element={<Goods />} />
+          <Route path="/goods/:prdId" element={<GoodsDetail />} />
 
           {/* 주문·결제 */}
           <Route path="/checkout" element={<Checkout />} />
@@ -1133,7 +1141,7 @@ function App() {
         </Route>
       </Routes>
 
-      {cancelledNotice && <ReservationCancelledDialog onClose={()=>setCancelledNotice(false)} />}
+      {cancelledNotice && <ReservationCancelledDialog onClose={() => setCancelledNotice(false)} />}
       {/* 공통 알림 */}
       <div className="toast-wrap">
         {app.toasts.map((toast) => (

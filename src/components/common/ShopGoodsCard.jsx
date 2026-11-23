@@ -15,11 +15,95 @@ function normalize(g) {
     badge: g.badge ?? (g.limited ? 'LIMITED' : ''),
     stock: typeof g.stock === 'number' ? g.stock : null,
     saleStatus: g.saleStatus ?? null,
+    saleStart: g.saleStart ?? g.sale_start ?? null,
+    saleEnd: g.saleEnd ?? g.sale_end ?? null,
   }
 }
 
-// 판매중으로 보는 값 (서버 값이 다르면 여기에 추가)
-const ON_SALE = ['판매중', 'ON_SALE', 'SELLING']
+// 날짜/날짜시간 값을 로컬/KST 기준으로 파싱 (isEnd=true면 날짜만 있을 때 23:59:59.999)
+function parseDateMs(value, isEnd = false) {
+  if (!value) return NaN
+  if (typeof value === 'number') return value
+
+  const str = String(value).trim()
+
+  // 'YYYY-MM-DD' 또는 'YYYY-MM-DD HH:mm:ss' / 'YYYY-MM-DDTHH:mm:ss' 형태
+  const isoMatch = str.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?(?:Z|[+-]\d{2}:?\d{2})?$/
+  )
+  if (isoMatch) {
+    const year = Number(isoMatch[1])
+    const month = Number(isoMatch[2]) - 1
+    const day = Number(isoMatch[3])
+    const hasTime = isoMatch[4] !== undefined
+    const hour = hasTime ? Number(isoMatch[4]) : (isEnd ? 23 : 0)
+    const min = hasTime ? Number(isoMatch[5]) : (isEnd ? 59 : 0)
+    const sec = hasTime ? Number(isoMatch[6]) : (isEnd ? 59 : 0)
+    const ms = hasTime ? 0 : (isEnd ? 999 : 0)
+
+    // 타임존 표기가 명시된 ISO 문자열은 표준 Date 파싱 사용
+    if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(str)) {
+      const parsedWithTz = new Date(str).getTime()
+      return Number.isFinite(parsedWithTz) ? parsedWithTz : NaN
+    }
+    return new Date(year, month, day, hour, min, sec, ms).getTime()
+  }
+
+  // Oracle 기본 출력 형식 'YY/MM/DD' 또는 'YY/MM/DD HH:mm:ss' 형태
+  const yyMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{2})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (yyMatch) {
+    const year = 2000 + Number(yyMatch[1])
+    const month = Number(yyMatch[2]) - 1
+    const day = Number(yyMatch[3])
+    const hasTime = yyMatch[4] !== undefined
+    const hour = hasTime ? Number(yyMatch[4]) : (isEnd ? 23 : 0)
+    const min = hasTime ? Number(yyMatch[5]) : (isEnd ? 59 : 0)
+    const sec = hasTime ? Number(yyMatch[6]) : (isEnd ? 59 : 0)
+    const ms = hasTime ? 0 : (isEnd ? 999 : 0)
+    return new Date(year, month, day, hour, min, sec, ms).getTime()
+  }
+
+  const parsed = new Date(str).getTime()
+  return Number.isFinite(parsed) ? parsed : NaN
+}
+
+// 굿즈 판매 기간 및 재고에 따라 상태 결정
+function getSaleState(g) {
+  const now = Date.now()
+  const startMs = parseDateMs(g.saleStart, false)
+  const endMs = parseDateMs(g.saleEnd, true)
+  const rawStatus = String(g.saleStatus ?? '').trim().toUpperCase()
+
+  // 1. 재고 소진 우선 확인
+  if (g.stock !== null && g.stock <= 0) {
+    return { canPurchase: false, statusText: '품절', isSoldOut: true }
+  }
+
+  // 2. 판매 시작일 이전이면 '판매예정'
+  if (Number.isFinite(startMs) && now < startMs) {
+    return { canPurchase: false, statusText: '판매예정', isSoldOut: false }
+  }
+
+  // 3. 판매 종료일 이후면 '판매종료'
+  if (Number.isFinite(endMs) && now > endMs) {
+    return { canPurchase: false, statusText: '판매종료', isSoldOut: false }
+  }
+
+  // 4. 날짜 정보가 없을 때만 서버 상태 문자열 보조 반영
+  if (!Number.isFinite(startMs) && !Number.isFinite(endMs) && rawStatus) {
+    if (['UPCOMING', 'SCHEDULED', 'BEFORE_SALE', '판매예정'].includes(rawStatus)) {
+      return { canPurchase: false, statusText: '판매예정', isSoldOut: false }
+    }
+    if (['ENDED', 'CLOSED', '판매종료'].includes(rawStatus)) {
+      return { canPurchase: false, statusText: '판매종료', isSoldOut: false }
+    }
+    if (['SOLD_OUT', 'OUT_OF_STOCK', '품절'].includes(rawStatus)) {
+      return { canPurchase: false, statusText: '품절', isSoldOut: true }
+    }
+  }
+
+  return { canPurchase: true, statusText: null, isSoldOut: false }
+}
 
 function getErrorMessage(e) {
   const data = e?.response?.data
@@ -38,10 +122,9 @@ export default function ShopGoodsCard({ goods, to }) {
   const lockRef = React.useRef(false)
   const g = normalize(goods)
 
-  const soldOut = g.stock !== null && g.stock <= 0
-  const notOnSale = g.saleStatus !== null && !ON_SALE.includes(g.saleStatus)
-  const disabled = adding || soldOut || notOnSale
-  const label = soldOut ? '품절' : notOnSale ? g.saleStatus : adding ? '담는 중…' : '담기'
+  const saleState = getSaleState(g)
+  const disabled = adding || !saleState.canPurchase
+  const statusLabel = adding ? '담는 중…' : saleState.statusText
 
   async function handleAdd() {
     if (disabled || lockRef.current) return
@@ -53,7 +136,6 @@ export default function ShopGoodsCard({ goods, to }) {
     }
 
     const prdId = Number(g.id)
-    // 숫자 ID가 아니면 서버에 없는 임시 상품이다
     if (!Number.isSafeInteger(prdId) || prdId < 1) {
       app.showToast?.('아직 판매 준비 중인 상품이에요')
       return
@@ -78,32 +160,84 @@ export default function ShopGoodsCard({ goods, to }) {
     }
   }
 
+  function handleBuy() {
+    if (disabled || lockRef.current) return
+
+    if (!app.isAuthenticated) {
+      app.showToast?.('로그인 후 구매할 수 있어요')
+      nav('/login')
+      return
+    }
+
+    const prdId = Number(g.id)
+    if (!Number.isSafeInteger(prdId) || prdId < 1) {
+      app.showToast?.('아직 판매 준비 중인 상품이에요')
+      return
+    }
+
+    nav('/checkout', {
+      state: {
+        items: [
+          {
+            prdId,
+            quantity: 1,
+            name: g.name,
+            price: g.price ?? 0,
+            image: g.image,
+          },
+        ],
+      },
+    })
+  }
+
   return (
     <article className="sg-card">
       <Link to={to || '#'} className="sg-img">
-        {g.badge && <span className="sg-badge">{g.badge}</span>}
+        {saleState.statusText ? (
+          <span className="sg-badge">{saleState.statusText}</span>
+        ) : (
+          g.badge && <span className="sg-badge">{g.badge}</span>
+        )}
         {g.image ? <img src={g.image} alt={g.name} /> : <div className="sg-noimg">이미지 없음</div>}
       </Link>
 
       <div className="sg-body">
-        {g.popupName && <div className="sg-popup">{g.popupName}</div>}
+        <div className="sg-popup">{g.popupName || '\u00A0'}</div>
         <div className="sg-name">{g.name}</div>
         <div className="sg-price">{g.price !== null ? `${g.price.toLocaleString()}원` : '가격 미정'}</div>
-        {g.stock !== null && (
-          <div className={`sg-stock${soldOut ? ' is-out' : ''}`}>
-            {soldOut ? '품절' : `재고 ${g.stock}개`}
-          </div>
-        )}
+        <div className={`sg-stock${saleState.isSoldOut ? ' is-out' : ''}`}>
+          {g.stock !== null ? (saleState.isSoldOut ? '품절' : `재고 ${g.stock}개`) : '\u00A0'}
+        </div>
 
         <div className="sg-actions">
-          <Link to={to || '#'} className="sg-btn">상세보기</Link>
-          <button type="button" className="sg-btn sg-btn-cart" onClick={handleAdd} disabled={disabled}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M6 7h12l-1 13H7L6 7z" />
-              <path d="M9 7a3 3 0 0 1 6 0" />
-            </svg>
-            {label}
-          </button>
+          {saleState.canPurchase ? (
+            <>
+              <button
+                type="button"
+                className="sg-btn sg-btn-cart"
+                onClick={handleAdd}
+                disabled={disabled}
+              >
+                {adding ? '담는 중…' : '장바구니'}
+              </button>
+              <button
+                type="button"
+                className="sg-btn sg-btn-buy"
+                onClick={handleBuy}
+                disabled={disabled}
+              >
+                구매하기
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="sg-btn sg-btn-disabled"
+              disabled
+            >
+              {statusLabel}
+            </button>
+          )}
         </div>
       </div>
     </article>
