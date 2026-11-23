@@ -23,3 +23,11 @@ export async function assignManager(popId,managerEmail) {
   return normalizePopup((await http.patch(`/api/admin/popups/${id(popId)}/manager`,{managerEmail:managerEmail.trim()})).data)
 }
 export async function deletePopup(popId) { await http.delete(`/api/admin/popups/${id(popId)}`) }
+export async function changePopupOperation(popId, action) {
+  if (!['pause', 'resume', 'cancel'].includes(action)) throw new Error('운영 상태 변경 항목을 확인해 주세요.')
+  const { data } = await http.patch(`/api/admin/popups/${id(popId)}/${action}`)
+  if (data?.popId !== Number(popId) || !['OPEN', 'PAUSED', 'CANCELLED'].includes(data.opStatus)) {
+    throw new Error('변경 결과를 확인하지 못했습니다. 목록을 새로고침해 주세요.')
+  }
+  return normalizePopup(data)
+}
