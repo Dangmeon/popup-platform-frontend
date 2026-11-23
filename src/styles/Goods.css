@@ -133,7 +133,7 @@
   margin-top: 64px;
   scroll-margin-top: 90px;
 }
-.gs-side { align-self: start; position: sticky; top: 90px; }
+.gs-side { align-self: start; position: static; top: auto; }
 .gs-side-block { padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid #eadfd5; }
 .gs-side-block:last-child { border-bottom: 0; }
 .gs-side-title { font-size: 20px; font-weight: 800; color: #2b2118; margin-bottom: 14px; }

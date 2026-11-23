@@ -127,13 +127,22 @@ export default function Checkout() {
 
     setPaying(true)
     try {
-      const key = JSON.stringify(activeItems.map(it => [it.id, it.qty]))
+      const payload = {
+        items: activeItems.map(it => ({ prdId: it.id, quantity: it.qty })),
+        receiverName: form.name.trim(),
+        receiverPhone: form.phone.trim(),
+        receiverAddress: [form.zip.trim(), form.address.trim(), form.detail.trim()].filter(Boolean).join(' '),
+        deliveryMemo: form.memo.trim(),
+      }
+      const key = JSON.stringify(payload)
+      const previousOrder = orderRef.current
+      if (previousOrder && previousOrder.key !== key && (!previousOrder.order.expiresAt || new Date(previousOrder.order.expiresAt) > new Date())) {
+        throw new Error('결제 대기 중인 주문이 있습니다. 내 주문·배송에서 해당 주문을 취소한 뒤 변경된 정보로 다시 주문해 주세요.')
+      }
       let order = orderRef.current?.key === key ? orderRef.current.order : null
       if (order?.expiresAt && new Date(order.expiresAt) <= new Date()) order = null
       if (!order) {
-        order = await createOrder({
-          items: activeItems.map(it => ({ prdId: it.id, quantity: it.qty })),
-        })
+        order = await createOrder(payload)
         orderRef.current = { key, order }
       }
       const { tossOrderId, totalPrice } = order

@@ -9,14 +9,17 @@ export function getApiError(err, fallback = '요청에 실패했어요. 잠시 �
 
 // 화면에서 쓰는 값 → API 요청 필드로 바꾸는 곳
 // 명세: items[].prdId (Long, 필수), items[].quantity (Integer, 1 이상)
-// 배송 정보(받는 사람·주소·메모)는 명세에 없어서 보내지 않는다.
-// TODO: 서버가 배송 정보를 받게 되면 이 함수에 필드를 추가한다
+// 배송 정보는 OrderCreateRequest 필드명에 맞춰 전달합니다.
 function toOrderRequest(o) {
   return {
     items: (o.items || []).map(it => ({
       prdId: Number(it.prdId),
       quantity: Number(it.quantity),
     })),
+    receiverName: o.receiverName?.trim() || '',
+    receiverPhone: o.receiverPhone?.trim() || '',
+    receiverAddress: o.receiverAddress?.trim() || '',
+    deliveryMemo: o.deliveryMemo?.trim() || '',
   }
 }
 

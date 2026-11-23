@@ -1,3 +1,4 @@
+import { getProductSaleInfo } from '../../utils/productSaleState.js'
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { addCartItem } from '../../api/cartApi.js'
@@ -15,11 +16,10 @@ function normalize(g) {
     badge: g.badge ?? (g.limited ? 'LIMITED' : ''),
     stock: typeof g.stock === 'number' ? g.stock : null,
     saleStatus: g.saleStatus ?? null,
+    saleStart: g.saleStart ?? g.sale_start ?? null,
+    saleEnd: g.saleEnd ?? g.sale_end ?? null,
   }
 }
-
-// 판매중으로 보는 값 (서버 값이 다르면 여기에 추가)
-const ON_SALE = ['판매중', 'ON_SALE', 'SELLING']
 
 function getErrorMessage(e) {
   const data = e?.response?.data
@@ -31,17 +31,16 @@ function getErrorMessage(e) {
   return e?.message || '장바구니에 담지 못했어요'
 }
 
-export default function ShopGoodsCard({ goods, to }) {
+export default function ShopGoodsCard({ goods, to, state }) {
   const app = useApp()
   const nav = useNavigate()
   const [adding, setAdding] = React.useState(false)
   const lockRef = React.useRef(false)
   const g = normalize(goods)
 
-  const soldOut = g.stock !== null && g.stock <= 0
-  const notOnSale = g.saleStatus !== null && !ON_SALE.includes(g.saleStatus)
-  const disabled = adding || soldOut || notOnSale
-  const label = soldOut ? '품절' : notOnSale ? g.saleStatus : adding ? '담는 중…' : '담기'
+  const saleState = getProductSaleInfo(g)
+  const disabled = adding || !saleState.canPurchase
+  const statusLabel = adding ? '담는 중…' : saleState.statusText
 
   async function handleAdd() {
     if (disabled || lockRef.current) return
@@ -53,7 +52,6 @@ export default function ShopGoodsCard({ goods, to }) {
     }
 
     const prdId = Number(g.id)
-    // 숫자 ID가 아니면 서버에 없는 임시 상품이다
     if (!Number.isSafeInteger(prdId) || prdId < 1) {
       app.showToast?.('아직 판매 준비 중인 상품이에요')
       return
@@ -78,32 +76,84 @@ export default function ShopGoodsCard({ goods, to }) {
     }
   }
 
+  function handleBuy() {
+    if (disabled || lockRef.current) return
+
+    if (!app.isAuthenticated) {
+      app.showToast?.('로그인 후 구매할 수 있어요')
+      nav('/login')
+      return
+    }
+
+    const prdId = Number(g.id)
+    if (!Number.isSafeInteger(prdId) || prdId < 1) {
+      app.showToast?.('아직 판매 준비 중인 상품이에요')
+      return
+    }
+
+    nav('/checkout', {
+      state: {
+        items: [
+          {
+            prdId,
+            quantity: 1,
+            name: g.name,
+            price: g.price ?? 0,
+            image: g.image,
+          },
+        ],
+      },
+    })
+  }
+
   return (
     <article className="sg-card">
-      <Link to={to || '#'} className="sg-img">
-        {g.badge && <span className="sg-badge">{g.badge}</span>}
+      <Link to={to || '#'} state={state} className="sg-img">
+        {saleState.statusText ? (
+          <span className="sg-badge">{saleState.statusText}</span>
+        ) : (
+          g.badge && <span className="sg-badge">{g.badge}</span>
+        )}
         {g.image ? <img src={g.image} alt={g.name} /> : <div className="sg-noimg">이미지 없음</div>}
       </Link>
 
       <div className="sg-body">
-        {g.popupName && <div className="sg-popup">{g.popupName}</div>}
+        <div className="sg-popup">{g.popupName || '\u00A0'}</div>
         <div className="sg-name">{g.name}</div>
         <div className="sg-price">{g.price !== null ? `${g.price.toLocaleString()}원` : '가격 미정'}</div>
-        {g.stock !== null && (
-          <div className={`sg-stock${soldOut ? ' is-out' : ''}`}>
-            {soldOut ? '품절' : `재고 ${g.stock}개`}
-          </div>
-        )}
+        <div className={`sg-stock${saleState.isSoldOut ? ' is-out' : ''}`}>
+          {g.stock !== null ? (saleState.isSoldOut ? '품절' : `재고 ${g.stock}개`) : '\u00A0'}
+        </div>
 
         <div className="sg-actions">
-          <Link to={to || '#'} className="sg-btn">상세보기</Link>
-          <button type="button" className="sg-btn sg-btn-cart" onClick={handleAdd} disabled={disabled}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="M6 7h12l-1 13H7L6 7z" />
-              <path d="M9 7a3 3 0 0 1 6 0" />
-            </svg>
-            {label}
-          </button>
+          {saleState.canPurchase ? (
+            <>
+              <button
+                type="button"
+                className="sg-btn sg-btn-cart"
+                onClick={handleAdd}
+                disabled={disabled}
+              >
+                {adding ? '담는 중…' : '장바구니'}
+              </button>
+              <button
+                type="button"
+                className="sg-btn sg-btn-buy"
+                onClick={handleBuy}
+                disabled={disabled}
+              >
+                구매하기
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="sg-btn sg-btn-disabled"
+              disabled
+            >
+              {statusLabel}
+            </button>
+          )}
         </div>
       </div>
     </article>

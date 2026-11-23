@@ -57,6 +57,7 @@ import Goods from './pages/Goods.jsx'
 import './styles/toast.css'
 
 import Checkout from './pages/Checkout.jsx'
+import GoodsDetail from './pages/GoodsDetail.jsx'
 import { PaymentSuccess, PaymentFail } from './pages/PaymentResult.jsx'
 
 // 2. 페이지 이동 시 스크롤을 맨 위로 올려주는 공통 컴포넌트 추가
@@ -1102,6 +1103,7 @@ function App() {
           />
 
           <Route path="/goods" element={<Goods />} />
+          <Route path="/goods/:prdId" element={<GoodsDetail />} />
 
           {/* 주문·결제 */}
           <Route path="/checkout" element={<Checkout />} />

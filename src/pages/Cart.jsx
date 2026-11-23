@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import '../styles/Cart.css'
 import { useApp } from '../context/AppContext.jsx'
@@ -31,6 +31,15 @@ function lineTotal(item) {
   if (typeof item.itemTotalPrice === 'number') return item.itemTotalPrice
   if (typeof item.price === 'number') return item.price * item.quantity
   return 0
+}
+
+function pickRandomGoods(list, count = 4) {
+  const copy = [...list]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy.slice(0, count)
 }
 
 const isBuyable = (item) => item.purchasable !== false

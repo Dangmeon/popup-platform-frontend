@@ -1,3 +1,8 @@
+.order-detail-products { list-style:none; padding:0; margin:0; }
+.order-detail-products li { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid #edf0e7; }
+.order-detail-image { width:72px; height:72px; flex-shrink:0; border-radius:10px; background:#f3f5ee; overflow:hidden; display:grid; place-items:center; font-size:11px; color:#7d886f; }
+.order-detail-image img { width:100%; height:100%; object-fit:contain; }
+.order-detail-products p { font-size:13px; color:#7d886f; }
 /* 주문 관리 제목 */
 .admin-orders .admin-page-heading h2 {
   margin: 0 0 8px;

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   useParams,
   Link,
+  useNavigate,
 } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import GoodsCard from '../components/common/GoodsCard.jsx'
@@ -18,8 +19,17 @@ const TABS = [
   { key: 'map', label: '위치' },
 ]
 
+function resolveGoodsDetailId(item) {
+  const candidate = item?.prdId ?? item?.serverId ?? item?.productId ?? item?.id
+  if (candidate === undefined || candidate === null || candidate === '') return null
+  const num = typeof candidate === 'number' ? candidate : Number(candidate)
+  if (Number.isSafeInteger(num) && num >= 1) return num
+  return String(candidate)
+}
+
 function BasicPopupDetail({ onCreateHold }) {
   const { popupId } = useParams()
+  const navigate = useNavigate()
   const app = useApp()
 
   // 서버 팝업 및 굿즈
@@ -35,6 +45,21 @@ function BasicPopupDetail({ onCreateHold }) {
     : []
 
   const [tab, setTab] = useState('about')
+
+  const handleSelectGoods = (item) => {
+    const targetId = resolveGoodsDetailId(item)
+    if (!targetId) return
+
+    navigate(`/goods/${targetId}`, {
+      state: {
+        goods: {
+          ...item,
+          popupId: item.popupId ?? String(popup?.id ?? popupId),
+          popupName: item.popupName ?? popup?.title ?? popup?.name ?? '팝업스토어',
+        },
+      },
+    })
+  }
 
   if (loading) {
     return (
@@ -149,7 +174,15 @@ function BasicPopupDetail({ onCreateHold }) {
                 <p className="form-error" role="alert">{goodsError}</p>
               ) : popupGoods.length > 0 ? (
                 <div className="bpd-goods">
-                  {popupGoods.map(g => <GoodsCard key={g.id} item={g} />)}
+                  {popupGoods.map(g => (
+                    <GoodsCard
+                      key={g.id}
+                      item={g}
+                      goods={g}
+                      onSelect={() => handleSelectGoods(g)}
+                      onCardClick={() => handleSelectGoods(g)}
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="bpd-empty">아직 등록된 굿즈가 없어요</div>
