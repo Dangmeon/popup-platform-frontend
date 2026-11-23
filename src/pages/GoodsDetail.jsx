@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { getPopups, getPopupProducts } from '../api/popupApi.js'
+import { getPopup, getPopups, getPopupProducts, getProduct } from '../api/popupApi.js'
 import { useApp } from '../context/AppContext.jsx'
 import { addCartItem } from '../api/cartApi'
 
@@ -166,7 +166,7 @@ function parseSaleDateMs(value, isEnd = false) {
 }
 
 function getProductSaleInfo(g) {
-  if (!g) return { canPurchase: false, badge: null, buttonLabel: '구매 불가', statusText: '확인 필요' }
+  if (!g) return { phase: 'ENDED', canPurchase: false, badge: null, buttonLabel: '구매 불가', statusText: '확인 필요' }
   const now = Date.now()
   const rawStart = g.saleStart ?? g.sale_start ?? g.startDate ?? g.start_date
   const rawEnd = g.saleEnd ?? g.sale_end ?? g.endDate ?? g.end_date
@@ -180,7 +180,7 @@ function getProductSaleInfo(g) {
     (typeof g.stock === 'number' && g.stock <= 0)
 
   if (isSoldOut) {
-    return { canPurchase: false, badge: '품절', buttonLabel: '품절', statusText: '품절' }
+    return { phase: 'ENDED', canPurchase: false, badge: '품절', buttonLabel: '품절', statusText: '품절' }
   }
 
   if (
@@ -188,7 +188,7 @@ function getProductSaleInfo(g) {
       ? now < startMs
       : ['UPCOMING', 'SCHEDULED', 'BEFORE_SALE', '판매예정'].includes(status)
   ) {
-    return { canPurchase: false, badge: '판매예정', buttonLabel: '판매예정', statusText: '판매예정' }
+    return { phase: 'UPCOMING', canPurchase: false, badge: '판매예정', buttonLabel: '판매예정', statusText: '판매예정' }
   }
 
   if (
@@ -196,10 +196,10 @@ function getProductSaleInfo(g) {
       ? now > endMs
       : ['ENDED', 'CLOSED', '판매종료'].includes(status)
   ) {
-    return { canPurchase: false, badge: '판매종료', buttonLabel: '판매종료', statusText: '판매종료' }
+    return { phase: 'ENDED', canPurchase: false, badge: '판매종료', buttonLabel: '판매종료', statusText: '판매종료' }
   }
 
-  return { canPurchase: true, badge: null, buttonLabel: null, statusText: '판매중' }
+  return { phase: 'ON_SALE', canPurchase: true, badge: null, buttonLabel: null, statusText: '판매중' }
 }
 
 function getDetailContent(g) {
@@ -267,27 +267,69 @@ export default function GoodsDetail() {
   }, [prdId])
 
   useEffect(() => {
+    let alive = true
     setQty(1)
     setActiveTab('detail')
     setImageMode('full')
     setZoomHover(false)
-    if (stateGoods && String(resolveDbPrdId(stateGoods) ?? stateGoods.id) === String(prdId)) {
+
+    const hasMatchingState =
+      stateGoods && String(resolveDbPrdId(stateGoods) ?? stateGoods.id) === String(prdId)
+
+    if (hasMatchingState) {
       setGoods(stateGoods)
       setLoading(false)
       setError('')
+      return
+    }
+
+    setGoods(null)
+    setLoading(true)
+    setError('')
+
+    async function load() {
+      try {
+        const id = Number(prdId)
+        if (!Number.isSafeInteger(id) || id < 1) throw new Error('상품 번호를 확인해 주세요.')
+        const product = await getProduct(id)
+        if (Number(product.id) !== id) throw new Error('상품 정보를 확인하지 못했습니다.')
+        let popup = null
+        if (product.popupId) {
+          try {
+            popup = await getPopup(product.popupId)
+          } catch {
+            /* 상품 정보는 표시하고 팝업명은 대체 문구로 표시합니다. */
+          }
+        }
+        if (alive) {
+          setGoods({
+            ...product,
+            popupId: product.popupId ? String(product.popupId) : undefined,
+            popupName: product.popupName || popup?.title || '',
+          })
+        }
+      } catch (e) {
+        if (alive) {
+          setError(
+            e?.response?.status === 404
+              ? '상품을 찾을 수 없어요.'
+              : '상품 상세 정보를 불러오지 못했어요.'
+          )
+        }
+      } finally {
+        if (alive) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      alive = false
     }
   }, [prdId, stateGoods])
 
   useEffect(() => {
     let alive = true
-    const alreadyHaveCurrent =
-      goods && String(resolveDbPrdId(goods) ?? goods.id) === String(prdId)
-
-    async function loadGoodsData() {
-      if (!alreadyHaveCurrent) {
-        setLoading(true)
-        setError('')
-      }
+    async function loadRelatedPool() {
       try {
         const stores = await getPopups()
         const batches = await Promise.all(
@@ -299,36 +341,16 @@ export default function GoodsDetail() {
             }))
           )
         )
-        const flat = batches.flat()
-        if (!alive) return
-        setAllGoods(flat)
-
-        if (!alreadyHaveCurrent) {
-          const found = flat.find(
-            (item) => String(resolveDbPrdId(item) ?? item.id) === String(prdId)
-          )
-          if (found) {
-            setGoods(found)
-          } else {
-            setError('상품 정보를 찾을 수 없어요.')
-          }
-        }
+        if (alive) setAllGoods(batches.flat())
       } catch {
-        if (!alreadyHaveCurrent && alive) {
-          setError('상품 상세 정보를 불러오지 못했어요.')
-        }
-      } finally {
-        if (!alreadyHaveCurrent && alive) {
-          setLoading(false)
-        }
+        /* 추천 영역만 비워두고 상세 본문은 유지합니다. */
       }
     }
-
-    loadGoodsData()
+    loadRelatedPool()
     return () => {
       alive = false
     }
-  }, [prdId, goods])
+  }, [])
 
   const saleInfo = useMemo(() => getProductSaleInfo(goods), [goods])
   const detail = useMemo(() => getDetailContent(goods), [goods])
@@ -339,8 +361,8 @@ export default function GoodsDetail() {
     const others = allGoods.filter(
       (item) => String(resolveDbPrdId(item) ?? item.id) !== currentKey
     )
-    const samePopup = others.filter((item) => item.popupId && item.popupId === goods.popupId)
-    const diffPopup = others.filter((item) => item.popupId !== goods.popupId)
+    const samePopup = others.filter((item) => item.popupId && item.popupId === String(goods.popupId))
+    const diffPopup = others.filter((item) => item.popupId !== String(goods.popupId))
     return [...samePopup, ...diffPopup].slice(0, 4)
   }, [goods, allGoods])
 
@@ -655,7 +677,7 @@ export default function GoodsDetail() {
           {typeof goods.stock === 'number' && (
             <div style={{ fontSize: '14px', color: '#4b5563', marginBottom: '16px' }}>
               남은 재고: <strong style={{ color: '#293323' }}>{goods.stock > 0 ? `${goods.stock}개` : '품절'}</strong>
-              {maxSelectable < 99 && saleInfo.canPurchase ? ` · 1회 최대 ${maxSelectable}개` : ''}
+              {maxSelectable < 99 && saleInfo.canPurchase ? ` · 선택 가능 수량 최대 ${maxSelectable}개` : ''}
             </div>
           )}
 
