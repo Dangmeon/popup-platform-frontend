@@ -1,107 +1,43 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import PopupCard from '../components/common/PopupCard.jsx'
 import { usePopups } from '../hooks/usePopups'
 import { getPopupStage } from '../utils/popupLifecycle.js'
 
-const CATEGORY_LABELS = {
-  ENTERTAINMENT: '엔터테인먼트',
-  FOOD: '푸드',
-  CHARACTER: '캐릭터',
-  FASHION: '패션',
-}
+import { popupCategoryLabels as CATEGORY_LABELS } from '../utils/popupCategories.js'
 
-const DEFAULT_CATEGORIES = ['전체', 'ENTERTAINMENT', 'FOOD', 'CHARACTER', 'FASHION']
-
-function resolvePopupStage(popup, now) {
-  const rawStatus = String(
-    popup?.stage ?? popup?.status ?? popup?.popupStatus ?? popup?.state ?? ''
-  )
-    .trim()
-    .toUpperCase()
-
-  if (['ONGOING', 'OPEN', 'ACTIVE', 'RUNNING', '진행 중', '진행중'].includes(rawStatus)) {
-    return 'ONGOING'
-  }
-  if (['UPCOMING', 'SCHEDULED', 'READY', '진행 예정', '진행예정'].includes(rawStatus)) {
-    return 'UPCOMING'
-  }
-  if (['ENDED', 'CLOSED', 'FINISHED', '종료', '종료된 팝업'].includes(rawStatus)) {
-    return 'ENDED'
-  }
-
-  const fromUtil = getPopupStage(popup, now)
-  if (fromUtil === 'ONGOING' || fromUtil === 'UPCOMING' || fromUtil === 'ENDED') {
-    return fromUtil
-  }
-
-  return 'ONGOING'
-}
-
-function resolveCategoryKey(popup) {
-  const raw = String(
-    popup?.category ?? popup?.categoryName ?? popup?.categoryCode ?? popup?.genre ?? ''
-  ).trim()
-  if (!raw) return ''
-
-  const upper = raw.toUpperCase()
-  if (CATEGORY_LABELS[upper]) return upper
-
-  const matchedEntry = Object.entries(CATEGORY_LABELS).find(([, label]) => label === raw)
-  if (matchedEntry) return matchedEntry[0]
-
-  return raw
-}
+const categories = ['전체', ...Object.keys(CATEGORY_LABELS)]
 
 export default function PopupList() {
-  const { data, loading, error } = usePopups({})
   const location = useLocation()
   const [params] = useSearchParams()
   const q = params.get('q') || ''
   const [keyword, setKeyword] = useState(q)
   const [category, setCategory] = useState('전체')
   const [stage, setStage] = useState('ALL')
-  const [now, setNow] = useState(Date.now)
+  const [searchWord, setSearchWord] = useState(q)
 
-  useEffect(() => setKeyword(q), [q, location.key])
+  useEffect(() => { setKeyword(q); setSearchWord(q) }, [q, location.key])
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60000)
-    return () => clearInterval(timer)
-  }, [])
+    const timer = setTimeout(() => setSearchWord(keyword.trim()), 250)
+    return () => clearTimeout(timer)
+  }, [keyword])
 
-  const popups = useMemo(() => (Array.isArray(data) ? data : []), [data])
+  // 서버에서 팝업 검색 및 필터 적용
+  const { data, loading, error } = usePopups({
+    status: stage === 'ALL' ? '' : stage, category: ['전체', 'CHAR', 'ENT'].includes(category) ? '' : category, keyword: searchWord,
+  })
+  // 기존 카테고리 코드와 이전 서버의 단일 필터 응답 보정
+  const word = searchWord.toLowerCase()
+  const matches = data.filter(popup =>
+    (category === '전체' || popup.category === category) &&
+    (stage === 'ALL' || getPopupStage(popup) === stage) &&
+    (!word || (popup.title + ' ' + popup.location).toLowerCase().includes(word))
+  )
 
-  const categories = useMemo(() => {
-    const extraCategories = [
-      ...new Set(popups.map((p) => resolveCategoryKey(p)).filter(Boolean)),
-    ].filter(
-      (c) => !DEFAULT_CATEGORIES.includes(c) && !Object.values(CATEGORY_LABELS).includes(c)
-    )
-    return [...DEFAULT_CATEGORIES, ...extraCategories]
-  }, [popups])
-
-  const matches = useMemo(() => {
-    const word = keyword.trim().toLowerCase()
-    const selectedCatKey = category === '전체' ? '전체' : resolveCategoryKey({ category })
-
-    return popups.filter((p) => {
-      const itemCatKey = resolveCategoryKey(p)
-      const matchCat =
-        category === '전체' ||
-        itemCatKey === selectedCatKey ||
-        String(p.category || '').trim() === category
-
-      const matchWord =
-        !word || `${p.title || ''} ${p.location || ''}`.toLowerCase().includes(word)
-
-      const matchStage = stage === 'ALL' || resolvePopupStage(p, now) === stage
-
-      return matchCat && matchWord && matchStage
-    })
-  }, [popups, category, keyword, stage, now])
-
-  const resetFilters = () => {
+  function resetFilters() {
     setKeyword('')
+    setSearchWord('')
     setCategory('전체')
     setStage('ALL')
   }

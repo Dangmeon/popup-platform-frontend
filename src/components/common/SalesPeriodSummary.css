@@ -1,0 +1,125 @@
+/* 매출 조회 필터 */
+.pq-sales-summary { display: grid; gap: 22px; min-width: 0; margin-top: 16px; }
+.pq-sales-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #e1e7da;
+  border-radius: 16px;
+}
+.pq-sales-field { display: grid; gap: 6px; min-width: 0; color: #4e5a43; font-size: 12px; font-weight: 700; }
+.pq-sales-field:has(select) { width: min(320px, 100%); }
+.pq-sales-field :is(select, input) {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid #d8e1cf;
+  border-radius: 9px;
+  padding: 9px 12px;
+  background: #fbfcf9;
+  color: #283321;
+  font: inherit;
+  font-size: 14px;
+}
+.pq-sales-summary :is(select, input, button):focus-visible { outline: 2px solid #687a57; outline-offset: 3px; }
+.pq-sales-period { display: flex; align-items: stretch; min-height: 44px; border: 1px solid #d8e1cf; border-radius: 9px; background: #fbfcf9; }
+.pq-sales-period button { width: 36px; border: 0; background: transparent; color: #435037; font-size: 22px; cursor: pointer; }
+.pq-sales-period button:hover, .pq-sales-date:hover { background: #eff3ea; }
+.pq-sales-date { position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; padding: 0 10px; border-inline: 1px solid #e1e7da; color: #34452d; white-space: nowrap; }
+.pq-sales-date:focus-within { outline: 2px solid #687a57; outline-offset: -2px; }
+.pq-sales-date input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.pq-sales-date strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.pq-sales-filter-error { flex-basis: 100%; margin: 0; color: #8d3629; }
+
+/* 매출 요약 카드 */
+.pq-sales-metrics { display: grid; grid-template-columns: 1.2fr 1fr 1fr; overflow: hidden; border: 1px solid #e1e7da; border-radius: 16px; background: #fff; }
+.pq-sales-metric {
+  display: grid;
+  align-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  min-height: 132px;
+  box-sizing: border-box;
+  padding: 20px;
+  color: #35432c;
+}
+.pq-sales-metric + .pq-sales-metric { border-left: 1px solid #e1e7da; }
+.pq-sales-metric:first-child { background: #eef3e8; color: #293a23; }
+.pq-sales-metric-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700; }
+.pq-sales-metric-icon { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 10px; background: #eef2e9; }
+.pq-sales-metric:first-child .pq-sales-metric-icon { background: #dde8d5; }
+.pq-sales-metric > strong { font-size: clamp(24px, 3vw, 36px); font-variant-numeric: tabular-nums; line-height: 1.12; overflow-wrap: anywhere; }
+.pq-sales-metric small { margin-left: 5px; font-size: 13px; font-weight: 500; }
+.pq-sales-feedback { margin: 0; color: #4e5a43; font-size: 14px; }
+.pq-sales-feedback button { padding: 8px 12px; border: 1px solid #d8e1cf; border-radius: 8px; background: white; color: #34452d; cursor: pointer; }
+
+@media (max-width: 760px) {
+  .pq-sales-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pq-sales-metric:first-child { grid-column: 1 / -1; }
+  .pq-sales-field:has(select) { max-width: none; }
+  .pq-sales-metric:nth-child(2) { border-left: 0; }
+  .pq-sales-metric + .pq-sales-metric { border-top: 1px solid #e1e7da; }
+}
+@media (max-width: 420px) {
+  .pq-sales-toolbar { display: grid; }
+  .pq-sales-date { padding-inline: 5px; }
+  .pq-sales-date svg { display: none; }
+  .pq-sales-metric { padding: 14px; }
+}
+
+/* 일별 매출 그래프 */
+.pq-sales-chart { min-width: 0; padding: 20px; background: #fff; border: 1px solid #e1e7da; border-radius: 16px; }
+.pq-sales-chart header, .pq-dashboard-sales-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pq-sales-chart h3, .pq-dashboard-sales-heading h3 { margin: 0; color: #293a23; font-size: 16px; }
+.pq-sales-chart header span, .pq-sales-axis { color: #59634f; font-size: 11px; }
+.pq-sales-chart-body { display: flex; align-items: stretch; gap: 8px; margin-top: 20px; }
+.pq-sales-axis { display: flex; flex-direction: column; justify-content: space-between; align-items: end; height: 144px; }
+.pq-sales-columns { display: grid; grid-template-columns: repeat(var(--sales-days), minmax(0, 1fr)); flex: 1; min-width: 0; }
+.pq-sales-column { min-width: 0; text-align: center; }
+.pq-sales-bar-track { display: flex; align-items: end; justify-content: center; height: 144px; border-block: 1px solid #e8ede2; box-sizing: border-box; }
+.pq-sales-bar { width: 72%; max-width: 28px; min-height: 1px; border-radius: 4px 4px 0 0; background: #65794f; }
+.pq-sales-bar-track:hover .pq-sales-bar { background: #35472e; }
+.pq-sales-column > span { display: block; margin-top: 6px; font-size: 10px; white-space: nowrap; }
+.pq-sales-chart-empty { margin: 16px 0 0; color: #59634f; font-size: 14px; }
+.pq-sales-breakdown { margin-top: 16px; color: #435037; font-size: 13px; }
+.pq-sales-breakdown summary { cursor: pointer; }
+.pq-sales-breakdown table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+.pq-sales-breakdown :is(th, td) { padding: 8px 4px; border-bottom: 1px solid #e8ede2; text-align: left; }
+.pq-sales-breakdown :is(th, td):last-child { text-align: right; }
+.pq-dashboard-sales { margin-top: 26px; }
+.pq-dashboard-sales-heading a { color: #4f6142; font-size: 13px; }
+@media (max-width: 480px) {
+  .pq-sales-chart { padding: 14px; }
+}
+
+.pq-sales-forecast { padding: 4px 2px; color: #59634f; font-size: 11px; }
+
+.pq-sales-bar-forecast { background: repeating-linear-gradient(135deg, #92a382 0 4px, #c2cfb9 4px 8px); }
+
+/* 그래프 기간별 금액 안내 */
+.pq-sales-bar-track { position: relative; }
+.pq-sales-tooltip {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #293a23;
+  color: #fff;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.pq-sales-tooltip strong { font-size: 14px; }
+.pq-sales-bar-track:is(:hover, :focus-visible) .pq-sales-tooltip { display: grid; }
+.pq-sales-bar-track:focus-visible { outline: 2px solid #687a57; outline-offset: -2px; }
+.pq-sales-column:first-child .pq-sales-tooltip { left: 0; transform: none; }
+.pq-sales-column:last-child .pq-sales-tooltip { left: auto; right: 0; transform: none; }

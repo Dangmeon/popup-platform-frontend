@@ -293,6 +293,24 @@
   white-space: pre-wrap;
 }
 
+/* 온라인 재고와 입고 입력 */
+.product-admin-stock-detail,
+.product-admin-stock-actions .product-admin-form-grid {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-admin-stock-actions {
+  min-width: 0;
+  font-weight: 400;
+}
+
+.product-admin-stock-actions input {
+  width: min(110px, 100%);
+}
+
 /* 등록 영역 */
 .product-admin-create {
   margin-bottom: 24px;

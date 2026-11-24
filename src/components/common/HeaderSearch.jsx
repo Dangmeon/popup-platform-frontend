@@ -4,7 +4,7 @@ import { getPopups } from '../../api/popupApi.js'
 import PopqIcon from './PopqIcon.jsx'
 import './HeaderSearch.css'
 
-export default function HeaderSearch({ authenticated }) {
+export default function HeaderSearch() {
   const navigate = useNavigate()
   const location = useLocation()
   const [keyword, setKeyword] = useState('')
@@ -15,12 +15,13 @@ export default function HeaderSearch({ authenticated }) {
   const [error, setError] = useState('')
 
   const query = keyword.trim().toLowerCase()
-  const shouldLoad = authenticated && open && popups === null
+  const shouldLoad = open && popups === null
 
   useEffect(() => {
     setOpen(false)
   }, [location.key])
 
+  // 추천 팝업 조회
   useEffect(() => {
     if (!shouldLoad) return
     let active = true
@@ -36,14 +37,12 @@ export default function HeaderSearch({ authenticated }) {
     return () => { active = false }
   }, [shouldLoad])
 
+  // 검색어 추천과 팝업 추천
   const suggestions = []
   if (open && Array.isArray(popups)) {
-    const today = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
-    }).format(new Date())
     const candidates = query ? popups : popups
-      .filter(popup => popup.endDate >= today && !['PAUSED', 'CANCELLED'].includes(popup.opStatus))
-      .toSorted((a, b) => Number(a.startDate > today) - Number(b.startDate > today))
+      .filter(popup => ['ONGOING', 'UPCOMING'].includes(popup.status) && !['PAUSED', 'CANCELLED'].includes(popup.opStatus))
+      .sort((a, b) => Number(a.status === 'UPCOMING') - Number(b.status === 'UPCOMING'))
     const seen = new Set()
     for (const popup of candidates) {
       const title = popup.title?.trim()
@@ -55,6 +54,7 @@ export default function HeaderSearch({ authenticated }) {
     }
   }
 
+  // 검색 결과로 이동
   function search(value) {
     const term = value.trim()
     setKeyword(term)
@@ -67,10 +67,10 @@ export default function HeaderSearch({ authenticated }) {
     onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false) }}
     onKeyDown={event => { if (event.key === 'Escape') setOpen(false) }}>
     <input type="search" aria-label="팝업스토어 검색" placeholder="어떤 팝업을 찾으세요?"
-      value={keyword} onFocus={() => setOpen(true)}
+      value={keyword} onClick={() => setOpen(true)} onFocus={() => setOpen(true)}
       onChange={event => { setKeyword(event.target.value); setOpen(true) }} />
     <button type="submit" aria-label="검색" title="검색"><PopqIcon name="search" size={18} /></button>
-    {open && authenticated && (suggestions.length > 0 || loading || error) && (
+    {open && (suggestions.length > 0 || loading || error) && (
       <div className="pq-search-suggestions">
         {loading && !popups ? <p className="pq-search-message" role="status">팝업을 불러오고 있어요.</p>
           : error ? <p className="pq-search-message" role="status">{error}</p> : <>

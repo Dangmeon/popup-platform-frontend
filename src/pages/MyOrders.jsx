@@ -100,6 +100,7 @@ async function hydrateOrder(raw) {
   return normalizeOrder({...detail,items})
 }
 
+// 주문·배송 화면
 export default function MyOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -195,20 +196,6 @@ export default function MyOrders() {
 
   return (
     <div className="my-orders-container">
-      <div className="my-orders-header">
-        <div>
-          <h2>주문 내역</h2>
-          <p>주문한 상품과 결제 상태를 확인하세요.</p>
-        </div>
-        <button
-          type="button"
-          className="refresh-btn"
-          onClick={fetchOrders}
-          disabled={loading}
-        >
-          🔄 {loading ? '불러오는 중...' : '새로고침'}
-        </button>
-      </div>
 
       {loading ? (
         <div className="empty-orders" style={{ padding: '40px 0', textAlign: 'center', color: '#6b7280' }}>

@@ -159,7 +159,8 @@ export default function Home() {
     return true
   })
 
-  const recommended = pool.filter(popup => getPopupStage(popup, today) === 'ONGOING')
+  const { data: popularPopups, error: popularError } = usePopups({ status: 'ONGOING', sort: 'POPULAR' })
+  const recommended = popularError ? pool.filter(popup => getPopupStage(popup, today) === 'ONGOING') : popularPopups.filter(popup => getPopupStage(popup, today) === 'ONGOING')
 
   // 행사 시작일 기준 오늘부터 30일 이내 오픈 예정 팝업
   const upcoming = pool

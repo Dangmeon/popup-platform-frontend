@@ -68,7 +68,7 @@ export default function Header() {
           <img src="/logo.png" alt="POPQ" />
         </Link>
 
-        <HeaderSearch key={app.isAuthenticated ? app.currentUser.username : 'guest'} authenticated={app.isAuthenticated} />
+        <HeaderSearch />
 
         {/* 팝업·굿즈·예약·장바구니 메뉴 */}
         <nav className="pq-header-actions" aria-label="주요 메뉴">
