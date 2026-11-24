@@ -9,17 +9,28 @@ export function getApiError(err, fallback = '요청에 실패했어요. 잠시 �
 
 // 화면에서 쓰는 값 → API 요청 필드로 바꾸는 곳
 // 명세: items[].prdId (Long, 필수), items[].quantity (Integer, 1 이상)
-// 배송 정보는 OrderCreateRequest 필드명에 맞춰 전달합니다.
+// 배송 정보 및 쿠폰 정보는 OrderCreateRequest 필드명에 맞춰 전달합니다.
 function toOrderRequest(o) {
+  const deliveryAddress =
+    o.deliveryAddress?.trim() || o.receiverAddress?.trim() || ''
+  const deliveryAddressDetail =
+    o.deliveryAddressDetail?.trim() || o.receiverAddressDetail?.trim() || ''
+  const parsedUserCouponId =
+    o.userCouponId !== undefined && o.userCouponId !== null && o.userCouponId !== ''
+      ? Number(o.userCouponId)
+      : null
+
   return {
-    items: (o.items || []).map(it => ({
+    items: (o.items || []).map((it) => ({
       prdId: Number(it.prdId),
       quantity: Number(it.quantity),
     })),
     receiverName: o.receiverName?.trim() || '',
     receiverPhone: o.receiverPhone?.trim() || '',
-    receiverAddress: o.receiverAddress?.trim() || '',
+    deliveryAddress,
+    deliveryAddressDetail,
     deliveryMemo: o.deliveryMemo?.trim() || '',
+    userCouponId: Number.isFinite(parsedUserCouponId) ? parsedUserCouponId : null,
   }
 }
 
@@ -31,10 +42,16 @@ export async function createOrder(order) {
   return res.data?.data ?? res.data
 }
 
+// 최근 배송지 불러오기: GET /api/orders/recent-delivery
+// 응답: { receiverName, receiverPhone, deliveryAddress, deliveryAddressDetail, deliveryMemo }
+export async function getRecentDelivery() {
+  const res = await axiosInstance.get('/api/orders/recent-delivery')
+  return res.data?.data ?? res.data
+}
+
 // 결제 승인: POST /api/payments/confirm
 // 요청(명세): paymentKey (String), orderId (String, tossOrderId), amount (Integer, 원 단위)
 // 응답(명세): { paymentId, orderId(내부 주문 ID), paymentKey, amount, paymentStatus, paidAt, canceledAt }
-// 토스가 주소창으로 넘기는 amount 는 문자열이라 숫자로 바꿔서 보낸다
 export async function confirmPayment({ paymentKey, orderId, amount }) {
   const res = await axiosInstance.post('/api/payments/confirm', {
     paymentKey,
@@ -45,7 +62,6 @@ export async function confirmPayment({ paymentKey, orderId, amount }) {
 }
 
 // 주문 취소: PATCH /api/orders/{orderId}/cancel (orderId 는 tossOrderId 가 아니라 주문 생성 응답의 orderId)
-// TODO: 아직 어디서도 호출하지 않는다. 나중에 결제창 닫기·취소 처리에 붙인다
 export async function cancelOrder(orderId) {
   const res = await axiosInstance.patch(`/api/orders/${orderId}/cancel`)
   return res.data?.data ?? res.data

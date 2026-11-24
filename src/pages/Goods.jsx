@@ -19,6 +19,17 @@ function resolveDbPrdId(g) {
   return Number.isSafeInteger(num) && num >= 1 ? num : null
 }
 
+function resolveSalePhase(g) {
+  const info = getProductSaleInfo(g)
+  if (info?.phase === 'ON_SALE' || info?.phase === 'UPCOMING' || info?.phase === 'ENDED') {
+    return info.phase
+  }
+  const raw = String(g?.saleStatus ?? g?.status ?? g?.phase ?? '').trim().toUpperCase()
+  if (['UPCOMING', 'SCHEDULED', 'READY', '판매예정', '판매 예정'].includes(raw)) return 'UPCOMING'
+  if (['ENDED', 'SOLD_OUT', 'CLOSED', '판매종료', '판매 종료', '품절'].includes(raw)) return 'ENDED'
+  return 'ON_SALE'
+}
+
 function getAddCartErrorMessage(error) {
   const data = error?.response?.data
   if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -29,6 +40,50 @@ function getAddCartErrorMessage(error) {
   return error?.message || '장바구니에 담지 못했습니다. 다시 시도해 주세요.'
 }
 
+function pickDiverseGoods(pool, { mode = 'popup', excludeIds = new Set(), count = 3 } = {}) {
+  if (!Array.isArray(pool) || pool.length === 0) return []
+
+  const picked = []
+  const usedIds = new Set(excludeIds)
+  const usedGroups = new Set()
+
+  const groupKey = (item) =>
+    mode === 'category'
+      ? String(item.category || item.popupId || '')
+      : String(item.popupId || item.category || '')
+
+  // 1차: 서로 다른 팝업 또는 카테고리에서 1개씩 선택
+  for (const item of pool) {
+    if (picked.length >= count) break
+    if (usedIds.has(item.id)) continue
+    const gk = groupKey(item)
+    if (gk && usedGroups.has(gk)) continue
+    picked.push(item)
+    usedIds.add(item.id)
+    if (gk) usedGroups.add(gk)
+  }
+
+  // 2차: 부족하면 아직 안 뽑힌 상품 중 채우기
+  if (picked.length < count) {
+    for (const item of pool) {
+      if (picked.length >= count) break
+      if (usedIds.has(item.id)) continue
+      picked.push(item)
+      usedIds.add(item.id)
+    }
+  }
+
+  // 3차: 전체 상품 수가 적을 경우 기존 풀에서라도 count개 채우기
+  if (picked.length < count) {
+    for (const item of pool) {
+      if (picked.length >= count) break
+      picked.push(item)
+    }
+  }
+
+  return picked.slice(0, count)
+}
+
 export default function Goods() {
   const app = useApp()
   const navigate = useNavigate()
@@ -37,7 +92,7 @@ export default function Goods() {
   const [params, setParams] = useSearchParams()
   const popup = params.get('popup') || 'all'
   const [category, setCategory] = useState('전체')
-  const [saleFilter, setSaleFilter] = useState('ON_SALE')
+  const [saleFilter, setSaleFilter] = useState('ALL')
   const [bannerIdx, setBannerIdx] = useState(0)
   const [goods, setGoods] = useState([])
   const [loading, setLoading] = useState(true)
@@ -55,14 +110,17 @@ export default function Goods() {
     async function load() {
       try {
         const stores = await getPopups()
+        const storeList = Array.isArray(stores) ? stores : []
         const batches = await Promise.all(
-          stores.map(async (store) =>
-            (await getPopupProducts(store.id)).map((item) => ({
+          storeList.map(async (store) => {
+            const items = await getPopupProducts(store.id)
+            const listItems = Array.isArray(items) ? items : []
+            return listItems.map((item) => ({
               ...item,
               popupId: String(store.id),
               popupName: store.title,
             }))
-          )
+          })
         )
         if (alive) setGoods(batches.flat())
       } catch {
@@ -105,15 +163,17 @@ export default function Goods() {
     setPage(1)
   }
 
-  // 판매 상태 필터를 먼저 적용한 기준 상품 목록 (카테고리 카운트와 일치)
   const statusScopedGoods = useMemo(() => {
     if (saleFilter === 'ALL') return goods
-    return goods.filter((g) => getProductSaleInfo(g).phase === saleFilter)
+    return goods.filter((g) => resolveSalePhase(g) === saleFilter)
   }, [goods, saleFilter])
 
   const categories = useMemo(() => {
     const map = new Map()
-    statusScopedGoods.forEach((g) => map.set(g.category, (map.get(g.category) || 0) + 1))
+    statusScopedGoods.forEach((g) => {
+      if (!g.category) return
+      map.set(g.category, (map.get(g.category) || 0) + 1)
+    })
     return [...map.entries()].map(([label, count]) => ({ label, count }))
   }, [statusScopedGoods])
 
@@ -128,86 +188,91 @@ export default function Goods() {
     }))
   }, [goods])
 
-  const rescenePopup = useMemo(
-    () => popups.find((p) => p.name.includes('리센느') || p.name.toUpperCase().includes('RESCENE')),
-    [popups]
-  )
-
-  const heroGoods = useMemo(() => {
-    const onSalePool = goods.filter((g) => getProductSaleInfo(g).canPurchase)
-    const source = onSalePool.length > 0 ? onSalePool : goods
-    if (bannerIdx >= 1 && rescenePopup) {
-      const resceneItems = source.filter((g) => g.popupId === rescenePopup.id)
-      if (resceneItems.length > 0) return resceneItems.slice(0, 3)
-    }
-    const picked = popups
-      .slice(0, 3)
-      .map((p) => source.find((g) => g.popupId === p.id))
-      .filter(Boolean)
-    return picked.length > 0 ? picked : source.slice(0, 3)
-  }, [popups, goods, bannerIdx, rescenePopup])
-
   const banners = useMemo(
     () => [
       {
         eyebrow: "THIS WEEK'S DROP",
         title: '이번 주 인기 굿즈\n지금 바로 만나보세요',
-        sub: '팝업 종료 후에도\n온라인 판매는 계속됩니다.',
+        sub: '다양한 팝업스토어의\n주목할 만한 굿즈를 모았습니다.',
         period: null,
-        cta: '판매중 굿즈 보기 →',
+        cta: '전체 굿즈 보기 →',
         badgeTop: 'WEEKLY',
         badgeBottom: 'PICK',
         onAction: () => {
-          setSaleFilter('ON_SALE')
+          setSaleFilter('ALL')
           setPopup('all')
           setCategory('전체')
           document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         },
       },
       {
-        eyebrow: 'NOW OPEN',
-        title: '리센느 팝업 굿즈\n온라인 판매 시작',
-        sub: '현장에서 놓친 한정 굿즈를\n지금 온라인에서 만나보세요.',
+        eyebrow: 'CATEGORY PICKS',
+        title: '카테고리별 추천 굿즈\n취향대로 골라보세요',
+        sub: '패션·캐릭터·푸드·엔터테인먼트\n각 분야 인기 굿즈를 한눈에.',
         period: null,
-        cta: '리센느 굿즈 보러가기 →',
-        badgeTop: 'NOW',
-        badgeBottom: 'OPEN',
+        cta: '굿즈 목록 보기 →',
+        badgeTop: 'CURATED',
+        badgeBottom: 'ITEMS',
         onAction: () => {
-          setSaleFilter('ON_SALE')
+          setSaleFilter('ALL')
+          setPopup('all')
           setCategory('전체')
-          if (rescenePopup) setPopup(rescenePopup.id)
           document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         },
       },
       {
-        eyebrow: 'NOW OPEN',
-        title: '리센느 굿즈\n온라인 판매 시작',
-        sub: null,
+        eyebrow: 'NEW ARRIVALS',
+        title: '새롭게 만나는 굿즈\n지금 바로 확인하세요',
+        sub: '현장과 온라인에서 만나는\n다채로운 굿즈 라인업',
         period: '11.18 - 12.02',
         cta: '지금 쇼핑하기 →',
-        badgeTop: 'LIMITED',
-        badgeBottom: 'EDITION',
+        badgeTop: 'NEW',
+        badgeBottom: 'DROP',
         onAction: () => {
-          setSaleFilter('ON_SALE')
+          setSaleFilter('ALL')
+          setPopup('all')
           setCategory('전체')
-          if (rescenePopup) setPopup(rescenePopup.id)
           document.getElementById('gs-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         },
       },
     ],
-    [rescenePopup]
+    []
   )
 
   const currentBanner = banners[bannerIdx]
+
+  const heroGoods = useMemo(() => {
+    const onSalePool = goods.filter((g) => getProductSaleInfo(g).canPurchase)
+    const source = onSalePool.length >= 3 ? onSalePool : goods
+    if (!source.length) return []
+
+    const slide0 = pickDiverseGoods(source, { mode: 'popup', count: 3 })
+    if (bannerIdx === 0) return slide0
+
+    const slide0Ids = new Set(slide0.map((item) => item.id))
+    const slide1 = pickDiverseGoods(source, { mode: 'category', excludeIds: slide0Ids, count: 3 })
+    if (bannerIdx === 1) return slide1
+
+    const combinedExcluded = new Set([
+      ...slide0.map((item) => item.id),
+      ...slide1.map((item) => item.id),
+    ])
+    const reversedPool = [...source].reverse()
+    return pickDiverseGoods(reversedPool, {
+      mode: 'popup',
+      excludeIds: combinedExcluded,
+      count: 3,
+    })
+  }, [goods, bannerIdx])
 
   const list = useMemo(() => {
     let result = statusScopedGoods.filter(
       (g) =>
         (category === '전체' || g.category === category) &&
-        (popup === 'all' || g.popupId === popup)
+        (popup === 'all' || String(g.popupId) === String(popup))
     )
-    if (sort === 'low') result = [...result].sort((a, b) => a.price - b.price)
-    if (sort === 'high') result = [...result].sort((a, b) => b.price - a.price)
+    if (sort === 'low') result = [...result].sort((a, b) => (a.price || 0) - (b.price || 0))
+    if (sort === 'high') result = [...result].sort((a, b) => (b.price || 0) - (a.price || 0))
     return result
   }, [statusScopedGoods, category, popup, sort])
 
@@ -228,7 +293,7 @@ export default function Goods() {
   const resetAll = () => {
     setCategory('전체')
     setSort('default')
-    setSaleFilter('ON_SALE')
+    setSaleFilter('ALL')
     setPopup('all')
     setPage(1)
   }
@@ -316,17 +381,23 @@ export default function Goods() {
 
   return (
     <div className="container gs-page">
-      {/* 개편된 굿즈샵 배너 */}
-      <section className="gs-hero" style={{ position: 'relative' }}>
+      {/* 색상 통일 + 다양한 상품 노출 굿즈샵 배너 */}
+      <section
+        className="gs-hero"
+        style={{
+          position: 'relative',
+          background: 'linear-gradient(135deg, #eef2ea 0%, #dce4d4 100%)',
+        }}
+      >
         <div className="gs-hero-text">
           <div className="gs-eyebrow" style={{ color: '#68754B', fontWeight: 800 }}>
             {currentBanner.eyebrow}
           </div>
-          <h1 className="gs-hero-title" style={{ whiteSpace: 'pre-line' }}>
+          <h1 className="gs-hero-title" style={{ whiteSpace: 'pre-line', color: '#293323' }}>
             {currentBanner.title}
           </h1>
           {currentBanner.sub && (
-            <p className="gs-hero-sub" style={{ whiteSpace: 'pre-line' }}>
+            <p className="gs-hero-sub" style={{ whiteSpace: 'pre-line', color: '#525d49' }}>
               {currentBanner.sub}
             </p>
           )}
@@ -336,12 +407,13 @@ export default function Goods() {
                 display: 'inline-block',
                 padding: '6px 14px',
                 borderRadius: '999px',
-                backgroundColor: '#eef2ea',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cfd6c9',
                 color: '#293323',
                 fontWeight: 700,
-                fontSize: '14px',
+                fontSize: '13px',
                 letterSpacing: '0.04em',
-                marginBottom: '18px',
+                marginTop: '14px',
               }}
             >
               {currentBanner.period}
@@ -351,18 +423,37 @@ export default function Goods() {
             <button
               type="button"
               className="gs-hero-btn"
-              style={{ backgroundColor: '#293323', color: '#fff' }}
+              style={{ backgroundColor: '#293323', color: '#ffffff' }}
               onClick={currentBanner.onAction}
             >
               {currentBanner.cta}
             </button>
           </div>
 
-          {/* 배너 슬라이드 인디케이터 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '20px' }}>
+          {/* 배너 전환 + 인디케이터 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
+            <button
+              type="button"
+              aria-label="이전 배너"
+              onClick={() => setBannerIdx((prev) => (prev + 2) % 3)}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                border: '1px solid #cfd6c9',
+                backgroundColor: '#ffffff',
+                color: '#293323',
+                fontWeight: 800,
+                cursor: 'pointer',
+                lineHeight: 1,
+              }}
+            >
+              ‹
+            </button>
+
             {banners.map((b, idx) => (
               <button
-                key={b.title + idx}
+                key={b.eyebrow + idx}
                 type="button"
                 aria-label={`${idx + 1}번 배너 보기`}
                 onClick={() => setBannerIdx(idx)}
@@ -371,20 +462,39 @@ export default function Goods() {
                   height: '8px',
                   borderRadius: '999px',
                   border: 'none',
-                  backgroundColor: bannerIdx === idx ? '#68754B' : '#d1d5db',
+                  backgroundColor: bannerIdx === idx ? '#68754B' : '#c4ccbc',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   padding: 0,
                 }}
               />
             ))}
+
+            <button
+              type="button"
+              aria-label="다음 배너"
+              onClick={() => setBannerIdx((prev) => (prev + 1) % 3)}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                border: '1px solid #cfd6c9',
+                backgroundColor: '#ffffff',
+                color: '#293323',
+                fontWeight: 800,
+                cursor: 'pointer',
+                lineHeight: 1,
+              }}
+            >
+              ›
+            </button>
           </div>
         </div>
 
         <div className="gs-hero-stack">
           {heroGoods.map((g) => (
             <div
-              key={g.id}
+              key={`${bannerIdx}-${g.id}`}
               className="gs-hero-img"
               style={{ cursor: 'pointer' }}
               onClick={() => goToGoodsDetail(g)}
@@ -396,7 +506,7 @@ export default function Goods() {
               />
             </div>
           ))}
-          <span className="gs-hero-badge" style={{ backgroundColor: '#68754B' }}>
+          <span className="gs-hero-badge" style={{ backgroundColor: '#68754B', color: '#ffffff' }}>
             {currentBanner.badgeTop}
             <br />
             {currentBanner.badgeBottom}
@@ -431,7 +541,10 @@ export default function Goods() {
                     setPage(1)
                   }}
                 >
-                  전체 <span style={category === '전체' ? { color: '#68754B', fontWeight: 800 } : undefined}>{statusScopedGoods.length}</span>
+                  전체{' '}
+                  <span style={category === '전체' ? { color: '#68754B', fontWeight: 800 } : undefined}>
+                    {statusScopedGoods.length}
+                  </span>
                 </button>
               </li>
               {categories.map((c) => {
@@ -535,12 +648,12 @@ export default function Goods() {
                   : `${popups.find((p) => p.id === popup)?.name || '선택한 팝업'} 굿즈`}
               </h2>
               <span>
-                {list.length}개 / {saleStatusLabel} {statusScopedGoods.length}개 (페이지 {safePage}/{totalPages})
+                {list.length}개 / {saleStatusLabel} {statusScopedGoods.length}개 (페이지 {safePage}/
+                {totalPages})
               </span>
             </div>
 
             <div className="gs-tools" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {/* 판매 상태 셀렉트 필터 (기본값: 판매중) */}
               <select
                 aria-label="상품 판매 상태 필터"
                 className="gs-sort"
@@ -557,10 +670,10 @@ export default function Goods() {
                   fontWeight: 700,
                 }}
               >
+                <option value="ALL">전체 상태</option>
                 <option value="ON_SALE">판매중</option>
                 <option value="UPCOMING">판매예정</option>
                 <option value="ENDED">판매종료</option>
-                <option value="ALL">전체 상태</option>
               </select>
 
               <select
@@ -580,12 +693,29 @@ export default function Goods() {
           </div>
 
           {loading ? (
-            <div className="empty-state" role="status">상품을 불러오고 있어요.</div>
+            <div className="empty-state" role="status">
+              상품을 불러오고 있어요.
+            </div>
           ) : error ? (
             <div className="empty-state" role="alert">
               {error}
               <div>
-                <button type="button" className="gs-reset" onClick={() => setRetry((v) => v + 1)}>다시 시도</button>
+                <button
+                  type="button"
+                  className="gs-reset"
+                  style={{
+                    backgroundColor: '#68754B',
+                    color: '#ffffff',
+                    border: '1px solid #68754B',
+                    borderRadius: '10px',
+                    padding: '9px 18px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setRetry((v) => v + 1)}
+                >
+                  다시 시도
+                </button>
               </div>
             </div>
           ) : pagedList.length > 0 ? (
@@ -618,12 +748,19 @@ export default function Goods() {
                           </span>
                         ) : (
                           g.limited && (
-                            <span className="gs-badge" style={{ backgroundColor: '#68754B', color: '#fff' }}>
+                            <span
+                              className="gs-badge"
+                              style={{ backgroundColor: '#68754B', color: '#fff' }}
+                            >
                               한정판
                             </span>
                           )
                         )}
-                        <img src={g.image} alt={g.name} style={g.imageFit ? { objectFit: g.imageFit } : undefined} />
+                        <img
+                          src={g.image}
+                          alt={g.name}
+                          style={g.imageFit ? { objectFit: g.imageFit } : undefined}
+                        />
                       </div>
                       <div
                         className="gs-card-body"
@@ -793,7 +930,22 @@ export default function Goods() {
             <div className="empty-state">
               조건에 맞는 굿즈가 없어요
               <div style={{ marginTop: 12 }}>
-                <button type="button" className="gs-reset" onClick={resetAll}>필터 초기화</button>
+                <button
+                  type="button"
+                  className="gs-reset"
+                  style={{
+                    backgroundColor: '#68754B',
+                    color: '#ffffff',
+                    border: '1px solid #68754B',
+                    borderRadius: '10px',
+                    padding: '9px 18px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                  onClick={resetAll}
+                >
+                  필터 초기화
+                </button>
               </div>
             </div>
           )}
