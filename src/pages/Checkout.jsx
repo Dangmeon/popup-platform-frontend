@@ -1,6 +1,7 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { createOrder, getApiError } from '../api/orderApi.js'
+import axiosInstance from '../api/axiosInstance.js'
+import { createOrder, getApiError, getRecentDelivery } from '../api/orderApi.js'
 import { requestTossPayment } from '../api/tossPayments.js'
 import '../styles/Checkout.css'
 
@@ -25,6 +26,68 @@ function formatPhone(v) {
   if (d.length < 4) return d
   if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`
   return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`
+}
+
+// "54650 전북특별자치도 익산시 동서로5길 94" 형태의 문자열에서 우편번호와 기본 주소를 분리
+function splitZipAndAddress(fullAddress = '') {
+  const trimmed = String(fullAddress || '').trim()
+  const match = trimmed.match(/^(\d{5})\s+(.*)$/)
+  if (match) {
+    return { zip: match[1], address: match[2].trim() }
+  }
+  return { zip: '', address: trimmed }
+}
+
+function normalizeUserCoupons(rawData) {
+  const list = Array.isArray(rawData)
+    ? rawData
+    : Array.isArray(rawData?.data)
+    ? rawData.data
+    : Array.isArray(rawData?.content)
+    ? rawData.content
+    : Array.isArray(rawData?.coupons)
+    ? rawData.coupons
+    : []
+
+  const now = Date.now()
+
+  return list
+    .filter((item) => {
+      if (!item) return false
+      const isUsed = Boolean(item.isUsed ?? item.used ?? false)
+      if (isUsed) return false
+
+      const couponObj = item.coupon ?? item
+      const expiredAtRaw = couponObj?.expiredAt ?? item?.expiredAt
+      if (expiredAtRaw) {
+        const expTime = new Date(expiredAtRaw).getTime()
+        if (!Number.isNaN(expTime) && expTime < now) return false
+      }
+      return true
+    })
+    .map((item, idx) => {
+      const couponObj = item.coupon ?? item
+      const userCouponId = item.userCouponId ?? item.id ?? idx
+      const name =
+        couponObj?.name ??
+        couponObj?.couponName ??
+        couponObj?.title ??
+        item?.couponName ??
+        `할인 쿠폰 ${idx + 1}`
+      const discountAmount = Number(
+        couponObj?.discountAmount ?? item?.discountAmount ?? couponObj?.discountValue ?? 0
+      )
+      const expiredAt = couponObj?.expiredAt ?? item?.expiredAt ?? null
+
+      return {
+        key: String(userCouponId),
+        userCouponId: Number.isFinite(Number(userCouponId)) ? Number(userCouponId) : null,
+        name,
+        discountAmount: Math.max(0, Math.round(discountAmount)),
+        expiredAt,
+      }
+    })
+    .filter((c) => c.userCouponId !== null && c.discountAmount > 0)
 }
 
 function loadPostcode() {
@@ -65,13 +128,47 @@ export default function Checkout() {
     name: '', phone: '', zip: '', address: '', detail: '', memo: MEMOS[0],
   })
   const [paymentMethod, setPaymentMethod] = useState('toss')
-  const [selectedCoupon, setSelectedCoupon] = useState('5000')
+  const [coupons, setCoupons] = useState([])
+  const [loadingCoupons, setLoadingCoupons] = useState(false)
+  const [selectedCouponKey, setSelectedCouponKey] = useState('')
   const [usePoint, setUsePoint] = useState('')
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
   const [paying, setPaying] = useState(false)
+  const [loadingRecent, setLoadingRecent] = useState(false)
 
   const orderRef = useRef(null)
+
+  // 내 사용 가능 쿠폰 목록 조회
+  useEffect(() => {
+    let alive = true
+    async function fetchMyCoupons() {
+      setLoadingCoupons(true)
+      const candidates = [
+        '/api/coupons/my',
+        '/api/coupons/me',
+        '/api/user-coupons/my',
+        '/api/user-coupons',
+      ]
+      for (const url of candidates) {
+        try {
+          const res = await axiosInstance.get(url)
+          const parsed = normalizeUserCoupons(res.data)
+          if (alive) {
+            setCoupons(parsed)
+          }
+          break
+        } catch {
+          // 다른 경로 시도
+        }
+      }
+      if (alive) setLoadingCoupons(false)
+    }
+    fetchMyCoupons()
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const activeItems = useMemo(() => orderItems.filter(it => !it.exclude), [orderItems])
 
@@ -79,14 +176,66 @@ export default function Checkout() {
     return activeItems.reduce((sum, it) => sum + it.price * it.qty, 0)
   }, [activeItems])
 
-  const discount = Number(selectedCoupon) || 0
-  const pointUsed = Number(usePoint) || 0
-  const finalTotal = Math.max(0, activeProductTotal - discount - pointUsed)
+  const selectedCoupon = useMemo(
+    () => coupons.find(c => c.key === selectedCouponKey) || null,
+    [coupons, selectedCouponKey]
+  )
+
+  const couponDiscount = useMemo(() => {
+    if (!selectedCoupon || activeProductTotal <= 0) return 0
+    return Math.min(activeProductTotal, selectedCoupon.discountAmount)
+  }, [selectedCoupon, activeProductTotal])
+
+  const pointUsed = useMemo(() => {
+    const raw = Number(usePoint) || 0
+    return Math.min(raw, Math.max(0, activeProductTotal - couponDiscount))
+  }, [usePoint, activeProductTotal, couponDiscount])
+
+  const finalTotal = Math.max(0, activeProductTotal - couponDiscount - pointUsed)
   const count = activeItems.reduce((sum, it) => sum + it.qty, 0)
 
   function setField(key, value) {
     setForm(f => ({ ...f, [key]: value }))
     setErrors(e => ({ ...e, [key]: '' }))
+  }
+
+  async function handleLoadRecentDelivery() {
+    if (loadingRecent || paying) return
+    setNotice('')
+    setLoadingRecent(true)
+    try {
+      const recent = await getRecentDelivery()
+      if (!recent) {
+        setNotice('불러올 최근 배송지 정보가 없어요.')
+        return
+      }
+
+      const { zip, address } = splitZipAndAddress(recent.deliveryAddress)
+      const matchedMemo = recent.deliveryMemo
+        ? MEMOS.includes(recent.deliveryMemo)
+          ? recent.deliveryMemo
+          : recent.deliveryMemo
+        : MEMOS[0]
+
+      setForm(prev => ({
+        ...prev,
+        name: recent.receiverName ?? '',
+        phone: formatPhone(recent.receiverPhone ?? ''),
+        zip,
+        address,
+        detail: recent.deliveryAddressDetail ?? '',
+        memo: matchedMemo,
+      }))
+      setErrors({})
+    } catch (err) {
+      if (err?.response?.status === 404) {
+        setNotice('최근 주문 배송지가 아직 없어요.')
+      } else {
+        setNotice(getApiError(err, '최근 배송지를 불러오지 못했어요.'))
+      }
+    } finally {
+      setLoadingRecent(false)
+    }
   }
 
   async function searchAddress() {
@@ -127,12 +276,18 @@ export default function Checkout() {
 
     setPaying(true)
     try {
+      const deliveryAddress = [form.zip.trim(), form.address.trim()].filter(Boolean).join(' ')
+      const deliveryAddressDetail = form.detail.trim()
+      const deliveryMemo = form.memo === MEMOS[0] ? '' : form.memo.trim()
+
       const payload = {
         items: activeItems.map(it => ({ prdId: it.id, quantity: it.qty })),
         receiverName: form.name.trim(),
         receiverPhone: form.phone.trim(),
-        receiverAddress: [form.zip.trim(), form.address.trim(), form.detail.trim()].filter(Boolean).join(' '),
-        deliveryMemo: form.memo.trim(),
+        deliveryAddress,
+        deliveryAddressDetail,
+        deliveryMemo,
+        userCouponId: selectedCoupon ? selectedCoupon.userCouponId : null,
       }
       const key = JSON.stringify(payload)
       const previousOrder = orderRef.current
@@ -182,8 +337,23 @@ export default function Checkout() {
           <div className="co-main">
             {/* 배송 정보 */}
             <section className="co-card">
-              <div className="co-card-head">
+              <div className="co-card-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2>배송 정보</h2>
+                <button
+                  type="button"
+                  className="co-sub-btn"
+                  onClick={handleLoadRecentDelivery}
+                  disabled={loadingRecent || paying}
+                  style={{
+                    backgroundColor: '#eef2ea',
+                    color: '#293323',
+                    border: '1px solid #68754B',
+                    fontWeight: 700,
+                    cursor: loadingRecent || paying ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {loadingRecent ? '불러오는 중…' : '최근 배송지 불러오기'}
+                </button>
               </div>
 
               <div className="co-row">
@@ -212,7 +382,6 @@ export default function Checkout() {
                 <div className="co-field">
                   <div className="co-zip">
                     <input value={form.zip} readOnly placeholder="우편번호" />
-                    {/* 💡 주소 검색 버튼을 초록 톤으로 맞춤 */}
                     <button
                       type="button"
                       className="co-sub-btn"
@@ -226,7 +395,7 @@ export default function Checkout() {
                   <input
                     value={form.detail}
                     onChange={e => setField('detail', e.target.value)}
-                    placeholder="상세주소를 입력하세요. (예: 1004호)"
+                    placeholder="상세주소를 입력하세요. (예: 101동 1203호)"
                   />
                   {errors.address && <p className="co-error">{errors.address}</p>}
                 </div>
@@ -237,19 +406,22 @@ export default function Checkout() {
                 <div className="co-field">
                   <select value={form.memo} onChange={e => setField('memo', e.target.value)}>
                     {MEMOS.map(m => <option key={m} value={m}>{m}</option>)}
+                    {form.memo && !MEMOS.includes(form.memo) && (
+                      <option value={form.memo}>{form.memo}</option>
+                    )}
                   </select>
                 </div>
               </div>
             </section>
 
-            {/* 주문 상품 (💡 불필요한 '주문 완료' 뱃지 제거 및 품절 상태만 명시) */}
+            {/* 주문 상품 */}
             <section className="co-card">
               <div className="co-card-head">
                 <h2>주문 상품</h2>
                 <span className="co-req">총 {orderItems.length}개 상품 중 결제 대상 {activeItems.length}개</span>
               </div>
               {isSample && (
-                <p className="co-sample">장바구니에서 넘어온 상품이 없어요. 임시 상품을 보여 주고 있어요.</p>
+                <p className="co-sample">장바구니에서 담은 상품이 없어요. 임시 상품을 보여 주고 있어요.</p>
               )}
               <ul className="co-items">
                 {orderItems.map(it => (
@@ -295,15 +467,30 @@ export default function Checkout() {
               </div>
               <div className="co-row">
                 <label>쿠폰 사용</label>
-                <div className="co-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="co-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <select
-                    style={{ flex: 1 }}
-                    value={selectedCoupon}
-                    onChange={e => setSelectedCoupon(e.target.value)}
+                    value={selectedCouponKey}
+                    onChange={e => setSelectedCouponKey(e.target.value)}
+                    disabled={loadingCoupons}
                   >
-                    <option value="0">사용안함</option>
-                    <option value="5000">사용 가능한 쿠폰 1개 (₩5,000 할인)</option>
+                    <option value="">
+                      {loadingCoupons
+                        ? '쿠폰 불러오는 중…'
+                        : coupons.length > 0
+                        ? '사용안함'
+                        : '사용 가능한 쿠폰이 없어요'}
+                    </option>
+                    {coupons.map(c => (
+                      <option key={c.key} value={c.key}>
+                        {c.name} (-{won(c.discountAmount)})
+                      </option>
+                    ))}
                   </select>
+                  {selectedCoupon && (
+                    <span style={{ fontSize: '12px', color: '#465235', fontWeight: 600 }}>
+                      선택된 쿠폰 할인: -{won(couponDiscount)}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="co-row">
@@ -427,7 +614,7 @@ export default function Checkout() {
             </div>
             <div className="co-sum-row">
               <span>할인 금액</span>
-              <span style={{ color: '#e11d48' }}>-{won(discount + pointUsed)}</span>
+              <span style={{ color: '#e11d48' }}>-{won(couponDiscount + pointUsed)}</span>
             </div>
             <div className="co-sum-total">
               <span>총 결제 금액</span>
