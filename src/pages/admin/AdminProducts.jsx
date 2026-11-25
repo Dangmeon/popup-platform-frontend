@@ -223,7 +223,10 @@ function AdminProducts() {
   }
 
   const visibleProducts = lowStockOnly
-    ? products.filter(product => Number.isFinite(product.stock) && product.stock >= 0 && product.stock <= 5)
+    ? products.filter(product =>
+      Number.isFinite(product.stock) && product.stock >= 0 && product.stock <= 5 &&
+      product.popupOpStatus !== 'CANCELLED' && product.saleStatus !== 'ENDED'
+    )
         .sort((a, b) => a.stock - b.stock)
     : products
 

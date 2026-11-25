@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getMonthlySalesForecast, getSalesSummary } from '../../api/admin/salesApi.js'
+import { getMonthlySalesForecast, getSalesSummary, getSalesTrend } from '../../api/admin/salesApi.js'
 import PopqIcon from './PopqIcon.jsx'
 import './SalesPeriodSummary.css'
 
@@ -23,23 +23,6 @@ function weekLabel(value) {
   return [monday, sunday].map(date => date.toISOString().slice(0, 10)).join(' ~ ')
 }
 
-// 비교할 매출 기간 계산
-function salesPeriods(period, weekly) {
-  const count = 4
-  return Array.from({ length: count }, (_, index) => {
-    const offset = index - count + 1
-    const day = new Date((weekly ? period : period + '-01') + 'T00:00:00Z')
-    if (weekly) {
-      day.setUTCDate(day.getUTCDate() + offset * 7 - (day.getUTCDay() + 6) % 7)
-    } else {
-      day.setUTCMonth(day.getUTCMonth() + offset)
-    }
-    const date = day.toISOString().slice(0, weekly ? 10 : 7)
-    const label = weekly ? date.slice(5).replace('-', '.') : Number(date.slice(5)) + '월'
-    return { date, label, range: weekly ? weekLabel(date) : date }
-  })
-}
-
 function salesMonthAfter(month) {
   const date = new Date(month + '-01T00:00:00Z')
   date.setUTCMonth(date.getUTCMonth() + 1)
@@ -47,7 +30,7 @@ function salesMonthAfter(month) {
 }
 
 // 주별·월별 매출 비교 그래프
-function PeriodSalesChart({ rows, weekly, status }) {
+function PeriodSalesChart({ rows, weekly }) {
   const title = weekly ? '주간 매출 추이' : '월간 매출 추이'
   if (!rows) {
     return <div className="pq-sales-chart"><h3>{title}</h3><p role="status">매출 추이를 불러오고 있어요.</p></div>
@@ -59,11 +42,9 @@ function PeriodSalesChart({ rows, weekly, status }) {
   const max = Math.max(0, ...rows.map(row => row.sales ?? 0))
   const format = value => value.toLocaleString('ko-KR')
   const amount = value => value == null ? '—' : format(value) + '원'
-  const hasForecast = rows.some(row => row.forecast)
   return <section className="pq-sales-chart" aria-label={title}>
     <header><h3>{title}</h3><span>단위 원</span></header>
-    {status && <p role="status">{status}</p>}
-    {max === 0 && !hasForecast ? <p className="pq-sales-chart-empty">선택한 기간에 매출이 없습니다.</p> :
+
       <div className="pq-sales-chart-body">
         <div className="pq-sales-axis" aria-hidden="true"><span>{max > 0 ? format(max) : ''}</span><span>0</span></div>
         <div className="pq-sales-columns" style={{ '--sales-days': rows.length }}>
@@ -82,151 +63,117 @@ function PeriodSalesChart({ rows, weekly, status }) {
             </div>
           ))}
         </div>
-      </div>}
-    {(max > 0 || hasForecast) && <details className="pq-sales-breakdown">
+      </div>
+    <details className="pq-sales-breakdown">
       <summary>기간별 금액 보기</summary>
       <table><thead><tr><th scope="col">기간</th><th scope="col">매출</th></tr></thead>
         <tbody>{rows.map(({ date, sales, range }) => <tr key={date}><td>{range}</td><td>{amount(sales)}</td></tr>)}</tbody>
       </table>
-    </details>}
+    </details>
   </section>
 }
 
 export default function SalesPeriodSummary({ popId, refresh, children, filterError, dashboard = false }) {
-  const [month, setMonth] = useState(() => todayInSeoul().slice(0, 7))
   const [weekDate, setWeekDate] = useState(todayInSeoul)
   const [retry, setRetry] = useState(0)
-  const [result, setResult] = useState(null)
+  const [summary, setSummary] = useState(null)
   const [trend, setTrend] = useState(null)
   const [forecast, setForecast] = useState(null)
   const weekly = Boolean(popId)
-  const period = weekly ? weekDate : month
-  const scope = weekly ? '주간' : '월간'
-  const requestKey = JSON.stringify([popId, period, refresh, retry])
-  const current = result?.key === requestKey ? result : null
+  const summaryKey = JSON.stringify([popId, refresh, retry])
+  const requestKey = JSON.stringify([summaryKey, weekly ? weekDate : 'monthly'])
+  const current = summary?.key === summaryKey ? summary : null
+  const history = trend?.key === requestKey ? trend : null
+  const nextMonth = weekly ? '' : salesMonthAfter(todayInSeoul().slice(0, 7))
 
-  // 기간별 매출 조회
+  // 누적 매출과 기간별 그래프를 독립적으로 조회
   useEffect(() => {
-    if (!period) return
     const controller = new AbortController()
-    const params = weekly ? { weekDate: period } : { month: period }
-    getSalesSummary({ popId, ...params, signal: controller.signal })
+    const { signal } = controller
+    getSalesSummary({ popId, signal })
+      .then(data => { if (!signal.aborted) setSummary({ key: summaryKey, data }) })
+      .catch(() => { if (!signal.aborted) setSummary({ key: summaryKey, error: true }) })
+    return () => controller.abort()
+  }, [popId, summaryKey])
+
+  useEffect(() => {
+    if (weekly && !weekDate) return
+    const controller = new AbortController()
+    const { signal } = controller
+    getSalesTrend({ popId, date: weekDate, signal })
       .then(data => {
-        if (!controller.signal.aborted) setResult({ key: requestKey, data })
+        if (signal.aborted) return
+        const rows = data.map(row => weekly ? {
+          date: row.weekStart, label: row.weekStart.slice(5).replace('-', '.'),
+          range: row.weekStart + ' ~ ' + row.weekEnd, sales: row.totalSales,
+        } : {
+          date: row.month, label: Number(row.month.slice(5)) + '월',
+          range: row.month, sales: row.totalSales,
+        })
+        setTrend({ key: requestKey, rows })
       })
-      .catch(error => {
-        if (!controller.signal.aborted) setResult({ key: requestKey, error: ['월별 매출 집계가 확인되지 않았습니다.', '주별 매출 집계가 확인되지 않았습니다.'].includes(error.message) ? error.message : '매출을 불러오지 못했습니다.' })
-      })
+      .catch(() => { if (!signal.aborted) setTrend({ key: requestKey, rows: [] }) })
     return () => controller.abort()
-  }, [period, popId, requestKey, weekly])
+  }, [popId, requestKey, weekDate, weekly])
 
-  // 이전 기간의 매출 합계 조회
-  const selectedSales = current?.data?.totalSales
+  // 다음 달 예상 매출은 별도 API로 조회
   useEffect(() => {
-    if (!period || selectedSales == null) return
+    if (!nextMonth) return
     const controller = new AbortController()
-    const periods = salesPeriods(period, weekly)
-    const count = periods.length
-    Promise.all(periods.map(async (row, index) => {
-      if (index === count - 1) return { ...row, sales: selectedSales }
-      const params = weekly ? { weekDate: row.date } : { month: row.date }
-      const data = await getSalesSummary({ popId, ...params, signal: controller.signal })
-      return { ...row, sales: data.totalSales }
-    })).then(rows => {
-      if (!controller.signal.aborted) setTrend({ key: requestKey, rows })
-    }).catch(() => {
-      if (!controller.signal.aborted) setTrend({ key: requestKey, rows: [] })
-    })
+    const { signal } = controller
+    getMonthlySalesForecast(nextMonth, signal)
+      .then(sales => { if (!signal.aborted) setForecast({ key: requestKey, sales }) })
+      .catch(() => { if (!signal.aborted) setForecast({ key: requestKey }) })
     return () => controller.abort()
-  }, [period, popId, requestKey, selectedSales, weekly])
+  }, [nextMonth, requestKey])
 
-  // 이전·다음 집계 기간 이동
-  function movePeriod(direction) {
-    const date = new Date((weekly ? weekDate || todayInSeoul() : (month || todayInSeoul().slice(0, 7)) + '-01') + 'T00:00:00Z')
-    if (weekly) {
-      date.setUTCDate(date.getUTCDate() + direction * 7)
-      setWeekDate(date.toISOString().slice(0, 10))
-    } else {
-      date.setUTCMonth(date.getUTCMonth() + direction)
-      setMonth(date.toISOString().slice(0, 7))
-    }
+  function moveWeek(direction) {
+    const date = new Date((weekDate || todayInSeoul()) + 'T00:00:00Z')
+    date.setUTCDate(date.getUTCDate() + direction * 7)
+    setWeekDate(date.toISOString().slice(0, 10))
   }
 
-  // 월간 그래프의 마지막 칸은 선택한 달의 다음 달
-  const trendRows = trend?.key === requestKey ? trend.rows : null
-  const nextMonth = !weekly && period ? salesMonthAfter(period) : ''
-  const forecastMonth = nextMonth === salesMonthAfter(todayInSeoul().slice(0, 7)) ? nextMonth : ''
-
-  useEffect(() => {
-    if (!forecastMonth) return
-    const controller = new AbortController()
-    getMonthlySalesForecast(forecastMonth, controller.signal)
-      .then(sales => {
-        if (!controller.signal.aborted) setForecast({ month: forecastMonth, refresh, sales })
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setForecast({ month: forecastMonth, refresh })
-      })
-    return () => controller.abort()
-  }, [forecastMonth, refresh])
-
-  let monthlyRows
-  if (nextMonth) {
-    const actualRows = trendRows?.length ? trendRows : salesPeriods(period, false)
-    const prediction = forecast?.month === nextMonth && forecast.refresh === refresh ? forecast : null
-    monthlyRows = [...actualRows, {
-      date: nextMonth,
-      range: nextMonth + ' 예상',
-      label: Number(nextMonth.slice(5)) + '월 예상',
-      forecast: true,
-      sales: prediction?.sales,
-      pending: Boolean(forecastMonth && !prediction),
-    }]
-  }
-
-  // 매출 필터와 요약 카드
-  const range = !period ? '' : weekly ? weekLabel(period).replaceAll('-', '.').replace(' ~ ', ' – ') :
-    new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(period + '-01T00:00:00Z'))
-  return <section className="pq-sales-summary" aria-label={scope + ' 매출'} aria-busy={Boolean(period && !current)}>
-    {!dashboard && <div className="pq-sales-toolbar">
+  // 매출 요약과 최근 기간 그래프
+  const prediction = forecast?.key === requestKey ? forecast : null
+  const chartRows = nextMonth && history?.rows.length ? [...history.rows, {
+    date: nextMonth, range: nextMonth + ' 예상', label: Number(nextMonth.slice(5)) + '월 예상',
+    forecast: true, sales: prediction?.sales, pending: !prediction,
+  }] : history?.rows
+  const range = weekDate ? weekLabel(weekDate).replaceAll('-', '.').replace(' ~ ', ' – ') : ''
+  return <section className="pq-sales-summary" aria-label={weekly ? '팝업 매출' : '전체 매출'} aria-busy={!current}>
+    {(!dashboard || weekly) && <div className="pq-sales-toolbar">
       {children}
-      <div className="pq-sales-field">
-        <span>{weekly ? '조회 주간' : '조회 월'}</span>
+      {weekly && <div className="pq-sales-field">
+        <span>조회 주간</span>
         <div className="pq-sales-period">
-          <button type="button" aria-label={weekly ? '이전 주' : '이전 달'} onClick={() => movePeriod(-1)}>‹</button>
+          <button type="button" aria-label="이전 주" onClick={() => moveWeek(-1)}>‹</button>
           <label className="pq-sales-date">
             <PopqIcon name="calendar" size={16} />
             <strong>{range || '기간 선택'}</strong>
-            <input type={weekly ? 'date' : 'month'} value={period}
-              aria-label={weekly ? '조회할 주의 날짜' : '조회 월'}
+            <input type="date" value={weekDate} aria-label="조회할 주의 날짜"
               onClick={event => event.currentTarget.showPicker?.()}
-              onChange={event => weekly ? setWeekDate(event.target.value) : setMonth(event.target.value)} />
+              onChange={event => setWeekDate(event.target.value)} />
           </label>
-          <button type="button" aria-label={weekly ? '다음 주' : '다음 달'} onClick={() => movePeriod(1)}>›</button>
+          <button type="button" aria-label="다음 주" onClick={() => moveWeek(1)}>›</button>
         </div>
-      </div>
+      </div>}
       {filterError && <p className="pq-sales-filter-error" role="alert">{filterError}</p>}
     </div>}
 
-    {current?.error ? <div className="pq-sales-feedback" role="alert">
-      <p>{current.error}</p>
-      <button type="button" onClick={() => setRetry(value => value + 1)}>다시 불러오기</button>
-    </div> : <>
-      {!period || !current ? <p className="pq-sales-feedback" role="status">{period ? '매출을 불러오고 있어요.' : '조회 기간을 선택해 주세요.'}</p> : null}
+    {current?.error ? <p className="pq-sales-feedback" role="alert">누적 매출을 불러오지 못했습니다.</p> :
       <div className="pq-sales-metrics">
         {metrics.map(([label, field, unit, icon]) => <article className="pq-sales-metric" key={field}>
           <div className="pq-sales-metric-label">
-            <span>{field === 'totalSales' ? scope + ' ' + label : label}</span>
+            <span>{'누적 ' + label}</span>
             <span className="pq-sales-metric-icon"><PopqIcon name={icon} size={19} /></span>
           </div>
           <strong>{current?.data ? current.data[field].toLocaleString('ko-KR') : '—'}{current?.data && <small>{unit}</small>}</strong>
         </article>)}
-      </div>
-      {weekly && current?.data && <PeriodSalesChart weekly rows={trendRows} />}
-    </>}
-    {monthlyRows && <PeriodSalesChart
-      rows={monthlyRows}
-      status={current?.error || trendRows?.length ? '' : trendRows ? '매출 추이를 불러오지 못했습니다.' : '매출 추이를 불러오고 있어요.'}
-    />}
+      </div>}
+    {weekly && !weekDate ? <p role="status">조회할 날짜를 선택해 주세요.</p> :
+      <PeriodSalesChart weekly={weekly} rows={chartRows} />}
+    {(current?.error || history?.rows.length === 0) && <div className="pq-sales-feedback">
+      <button type="button" onClick={() => setRetry(value => value + 1)}>다시 불러오기</button>
+    </div>}
   </section>
 }
