@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import PopqIcon from '../components/common/PopqIcon.jsx'
+import { getMyCoupons } from '../api/mypageApi.js'
 import MyOrders from './MyOrders.jsx'
 import QnaCenter from '../components/common/QnaCenter.jsx'
 import { MyPageFrame } from './MyPageHome.jsx'
@@ -23,13 +24,55 @@ export default function MyPageServices({ section }) {
 }
 function ServiceContent({section}) {
   return <div className="ms-page"><header className="ms-heading"><h2>{headings[section]}</h2></header>
-    {section==='orders'&&<MyOrders />}{section==='coupons'&&<p role="status">표시할 쿠폰이 없습니다.</p>}{section==='recent'&&<Recent />}{section==='faq'&&<Faq />}{section==='inquiries'&&<Inquiries />}
+    {section==='orders'&&<MyOrders />}{section==='coupons'&&<Coupons />}{section==='recent'&&<Recent />}{section==='faq'&&<Faq />}{section==='inquiries'&&<Inquiries />}
   </div>
 }
 function Filter({items,value,onChange,label}) {
   return <div className="ms-filters" aria-label={label}>{items.map(([key,text])=><button type="button" key={key} aria-pressed={value===key} onClick={()=>onChange(key)}>{text}</button>)}</div>
 }
 function Empty({text}) {return <div className="ms-empty"><PopqIcon name="bag" size={30}/><p>{text}</p></div>}
+// 쿠폰함 화면
+function Coupons() {
+  const [attempt, setAttempt] = useState(0)
+  const [result, setResult] = useState({ status: 'loading' })
+
+  useEffect(() => {
+    const controller = new AbortController()
+    getMyCoupons(controller.signal)
+      .then(rows => {
+        if (!controller.signal.aborted) setResult({ status: 'ready', rows, fetchedAt: Date.now() })
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setResult({ status: 'error' })
+      })
+    return () => controller.abort()
+  }, [attempt])
+
+  if (result.status === 'loading') return <p role="status">쿠폰을 불러오는 중입니다.</p>
+  if (result.status === 'error') {
+    return <div>
+      <p role="alert">쿠폰을 불러오지 못했습니다.</p>
+      <button type="button" className="ms-action" onClick={() => {
+        setResult({ status: 'loading' })
+        setAttempt(previous => previous + 1)
+      }}>다시 불러오기</button>
+    </div>
+  }
+  if (!result.rows.length) return <Empty text="쿠폰이 없습니다." />
+
+  return <div className="ms-coupons">
+    {result.rows.map(coupon => {
+      const used = coupon.used ?? coupon.isUsed
+      const expired = new Date(coupon.expiredAt).getTime() <= result.fetchedAt
+      return <article key={coupon.userCouponId} className="ms-order">
+        <header><h3>{coupon.name}</h3><strong>{used ? '사용 완료' : expired ? '기간 만료' : '사용 가능'}</strong></header>
+        <div className="ms-coupon-amount">{coupon.discountAmount.toLocaleString('ko-KR')}원 할인</div>
+        <footer>유효기간 <time dateTime={coupon.expiredAt}>{coupon.expiredAt.replace('T', ' ').slice(0, 16)}</time>까지</footer>
+      </article>
+    })}
+  </div>
+}
+
 // 최근 본 팝업 화면
 function Recent() {
   const [rows,setRows]=useState(demoRecent)

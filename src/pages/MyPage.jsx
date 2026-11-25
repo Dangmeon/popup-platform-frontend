@@ -4,7 +4,7 @@ import { useRealtimeTopics } from '../hooks/useRealtimeTopics.js'
 import { useApp } from '../context/AppContext.jsx'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import { getMyReservations } from '../api/mypageApi'
-import { getWaiting, cancelWaiting } from '../api/waitingApi'
+import { createWaitingPoll, cancelWaiting } from '../api/waitingApi'
 import { getPopups } from '../api/popupApi'
 import { loadWaitingIds } from '../utils/waitingStore'
 import '../styles/MyActivities.css'
@@ -77,13 +77,14 @@ function ActivityPage({ owner }) {
   useEffect(() => {
     if (!owner) return
     let active=true, running=false, timer, queued=false
+    const pollWaiting = createWaitingPoll()
     async function refresh() {
       if (!active || document.hidden) return
       if (running || cancelLock.current) { queued=true; return }
       clearTimeout(timer); running=true; queued=false
       const version=mutationVersion.current
       try {
-        const results=await Promise.allSettled(loadWaitingIds(owner).map(id=>getWaiting(id)))
+        const results=await Promise.allSettled(loadWaitingIds(owner).map(pollWaiting))
         if (!active || version!==mutationVersion.current) return
         const rows=results.filter(result=>result.status==='fulfilled').map(result=>result.value)
         if (rows.some(row=>!Number.isSafeInteger(row?.waitingId)||typeof row?.status!=='string')) throw new Error('Invalid response')

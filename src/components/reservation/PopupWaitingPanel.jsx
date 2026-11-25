@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useRealtimeTopics } from '../../hooks/useRealtimeTopics.js'
 import { useApp } from '../../context/AppContext.jsx'
-import { createWaiting, getWaiting, cancelWaiting } from '../../api/waitingApi.js'
+import { createWaiting, createWaitingPoll, cancelWaiting } from '../../api/waitingApi.js'
 import { getPopup } from '../../api/popupApi.js'
 import { loadWaitingIds, addWaitingId } from '../../utils/waitingStore.js'
 import { getWaitingUnavailableReason, getWaitingOpeningState } from '../../utils/popupWaitingAvailability.js'
@@ -34,6 +34,7 @@ export default function PopupWaitingPanel({popup,popId,demo}) {
   useEffect(()=>{
     if(demo || !owner)return
     let alive=true,timer,running=false
+    const pollWaiting = createWaitingPoll()
     async function refresh(){
       if(!alive || running || document.hidden)return
       if(lock.current){timer=setTimeout(refresh,1000);return}
@@ -42,7 +43,7 @@ export default function PopupWaitingPanel({popup,popId,demo}) {
       try {
         const saved=JSON.parse(sessionStorage.getItem(key) || 'null')
         const ids=[...new Set([...loadWaitingIds(owner), ...(saved?.waitingId ? [saved.waitingId] : [])])]
-        const results=await Promise.allSettled(ids.map(id=>getWaiting(id)))
+        const results=await Promise.allSettled(ids.map(pollWaiting))
         const failure=results.find(result=>result.status==='rejected')
         const rows=results.filter(result=>result.status==='fulfilled').map(result=>result.value)
         if(rows.some(row=>!Number.isSafeInteger(row?.waitingId)||typeof row?.status!=='string'))throw new Error('Invalid response')

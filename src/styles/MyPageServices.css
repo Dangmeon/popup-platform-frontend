@@ -45,3 +45,8 @@
 .ms-empty {display:flex;flex-direction:column;align-items:center;gap:10px;padding:55px 20px;border:1px dashed #dce4d0;border-radius:15px;color:#91a17b;}.ms-empty p {font-size:13px;}
 @media(max-width:700px) {.pq-my-tiles.pq-my-service-tiles {gap:12px;}.pq-my-service-tiles>a {padding:20px;min-height:180px;}.pq-my-service-tiles h3 {font-size:16px;}.pq-my-sidebar nav a {flex:1 1 auto;justify-content:center;padding:12px;font-size:12px;}.pq-my-sidebar nav a>span:last-child {display:none;}.pq-my-content .ms-heading h2 {font-size:25px;}.ms-demo {align-items:flex-start;}.ms-order-product {flex-wrap:wrap;padding:20px;}.ms-order-product>b {flex-basis:100%;text-align:right;}.ms-recent {gap:12px;}.ms-recent img {height:150px;}.ms-recent article>a>div {padding:13px;}.ms-recent h3 {font-size:13px;}.ms-faq summary {gap:10px;}.ms-faq summary>span {flex-basis:60px;}.ms-help {padding:18px;}.ms-inquiries summary {padding:16px;gap:10px;}}
 @media(max-width:380px) {.pq-my-tiles.pq-my-service-tiles {grid-template-columns:1fr;}.ms-recent {grid-template-columns:1fr;}}
+
+/* 쿠폰함 */
+.ms-coupons {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin-top:20px;}
+.ms-coupons h3 {margin:0;font-size:15px;overflow-wrap:anywhere;}
+.ms-coupon-amount {padding:18px 22px;font-size:22px;font-weight:700;}

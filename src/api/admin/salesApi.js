@@ -1,23 +1,31 @@
 import http from '../axiosInstance.js'
 import { id } from './liveUtils.js'
 
-export async function getSalesSummary({ popId, month, weekDate, signal } = {}) {
+const validAmount = value => Number.isSafeInteger(value) && value >= 0
+
+// 주문 건수와 판매 수량을 포함한 누적 매출 조회
+export async function getSalesSummary({ popId, signal } = {}) {
   const path = popId ? `/api/admin/popups/${id(popId)}/sales` : '/api/admin/sales'
-  const { data } = await http.get(path, { params: popId ? { weekDate } : { month }, signal })
-  if (!data || ['totalSales', 'totalOrderCount', 'totalQuantity'].some(key => !Number.isSafeInteger(data[key]) || data[key] < 0)) {
-    throw new Error('매출 응답을 확인하지 못했습니다.')
-  }
-  if (month && data.month !== month) {
-    throw new Error('월별 매출 집계가 확인되지 않았습니다.')
-  }
-  if (popId && weekDate) {
-    const monday = new Date(weekDate + 'T00:00:00Z')
-    monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() + 6) % 7)
-    if (data.weekStart !== monday.toISOString().slice(0, 10)) {
-      throw new Error('주별 매출 집계가 확인되지 않았습니다.')
-    }
+  const { data } = await http.get(path, { signal })
+  if (['totalSales', 'totalOrderCount', 'totalQuantity'].some(key => !validAmount(data?.[key]))) {
+    throw new Error('누적 매출 응답을 확인하지 못했습니다.')
   }
   return data
+}
+
+// 최근 4개월 또는 선택 주를 포함한 4주 매출 조회
+export async function getSalesTrend({ popId, date, signal }) {
+  const path = popId ? `/api/admin/popups/${id(popId)}/weekly` : '/api/admin/monthly'
+  const { data } = await http.get(path, { signal, params: popId ? { date } : undefined })
+  const periodKey = popId ? 'weekStart' : 'month'
+  const pattern = popId ? /^\d{4}-\d{2}-\d{2}$/ : /^\d{4}-(0[1-9]|1[0-2])$/
+  if (!Array.isArray(data) || data.length !== 4 ||
+      data.some(row => !pattern.test(row?.[periodKey]) || !validAmount(row?.totalSales) ||
+        (popId && !pattern.test(row?.weekEnd))) ||
+      new Set(data.map(row => row[periodKey])).size !== 4) {
+    throw new Error('기간별 매출 응답을 확인하지 못했습니다.')
+  }
+  return [...data].sort((a, b) => a[periodKey].localeCompare(b[periodKey]))
 }
 
 // 다음 달 예상 매출 조회

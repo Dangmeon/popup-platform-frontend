@@ -136,7 +136,7 @@ export default function PopupSlotManager({ popId, refresh = 0, onBusyChange }) {
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {editor && <form onSubmit={save}>
-      <h4>{editor.type === 'generate' ? '회차 자동 생성' : editor.type === 'edit' ? '회차 상세·수정' : '회차 등록'}</h4>
+      <h4>{editor.type === 'generate' ? '회차 자동 생성' : editor.type === 'edit' ? (editor.values.slotStatus === 'CANCELLED' ? '회차 상세' : '회차 상세·수정') : '회차 등록'}</h4>
       {editor.type === 'generate' && <p>비워 둔 항목은 팝업 설정을 사용합니다.</p>}
       {editor.type === 'edit' && <p>예약 {editor.values.reservedCount} / {editor.values.capacity}명 · {editor.values.slotStatus === 'CANCELLED' ? '취소' : '운영'}</p>}
       {editor.type === 'edit' && hasSlotHistory(editor.values) && <p>예약 이력이 있어 정원만 수정할 수 있습니다.</p>}
@@ -145,7 +145,7 @@ export default function PopupSlotManager({ popId, refresh = 0, onBusyChange }) {
           const value = editor.values[key] ?? ''
           const history = editor.type === 'edit' && hasSlotHistory(editor.values)
           return <label key={key}>{label}<input type={type} min={type === 'number' ? (key === 'capacity' && history ? Math.max(min, editor.values.reservedCount ?? 0) : min) : undefined}
-            required={editor.type !== 'generate'} readOnly={history && key !== 'capacity'}
+            required={editor.type !== 'generate'} readOnly={editor.values.slotStatus === 'CANCELLED' || (history && key !== 'capacity')}
             value={type === 'time' ? value.slice(0, 5) : value} disabled={busy}
             onChange={event => setEditor(previous => ({ ...previous, values: { ...previous.values, [key]: event.target.value } }))} /></label>
         })}
