@@ -6,38 +6,6 @@
   color: #111827;
 }
 
-.my-orders-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 24px;
-}
-
-.my-orders-header h2 {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.my-orders-header p {
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.refresh-btn {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.refresh-btn:hover {
-  background: #e5e7eb;
-}
-
 .orders-list {
   display: flex;
   flex-direction: column;

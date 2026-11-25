@@ -1,3 +1,5 @@
+import { toImageUrl } from '../utils/imageUrl.js'
+import { popupCategoryCode } from '../utils/popupCategories.js'
 import axiosInstance from './axiosInstance'
 
 // ─────────────────────────────────────────────
@@ -26,11 +28,11 @@ function toPopup(raw) {
   return {
     id: pick(raw, ['popId', 'id']),
     title: pick(raw, ['title', 'name', 'popName', 'popupName']),
-    category: pick(raw, ['category', 'categoryName']),
+    category: popupCategoryCode(pick(raw, ['category', 'categoryName'])),
     location: pick(raw, ['location', 'address', 'place']),
     startDate: toDate(pick(raw, ['startDate', 'startAt', 'openDate'])),
     endDate: toDate(pick(raw, ['endDate', 'endAt', 'closeDate'])),
-    image: pick(raw, ['image', 'imageUrl', 'thumbnailUrl', 'posterUrl', 'storeImg']),
+    image: toImageUrl(pick(raw, ['image', 'imageUrl', 'thumbnailUrl', 'posterUrl', 'storeImg'])),
     description: pick(raw, ['description', 'content', 'detail']),
     reserved: Number(pick(raw, ['reserved', 'reservedCount'], 0)),
     capacity: Number(pick(raw, ['capacity', 'maxCapacity'], 0)),
@@ -52,7 +54,7 @@ function toProduct(raw) {
     name,
     title: name,
     price: Number(pick(raw, ['price', 'prdPrice'], 0)),
-    image: pick(raw, ['productImg', 'image', 'imageUrl', 'thumbnailUrl']),
+    image: toImageUrl(pick(raw, ['productImg', 'image', 'imageUrl', 'thumbnailUrl'])),
     stock: Number(pick(raw, ['stock', 'stockQuantity'], 0)),
     category: pick(raw, ['category']),
     description: pick(raw, ['productDesc']),
@@ -67,7 +69,9 @@ function toProduct(raw) {
 export async function getPopups(params = {}) {
   const query = {}
   if (params.status) query.status = params.status
-  if (params.category) query.category = params.category
+  if (params.category) query.category = popupCategoryCode(params.category)
+  if (params.keyword?.trim()) query.keyword = params.keyword.trim()
+  if (params.sort) query.sort = params.sort
   const res = await axiosInstance.get('/api/popups', { params: query })
   return toList(res.data).map(toPopup)
 }

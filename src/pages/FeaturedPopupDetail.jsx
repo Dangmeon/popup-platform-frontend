@@ -152,7 +152,7 @@ export default function FeaturedPopupDetail({ popup, onCreateHold }) {
         {/* 위치 */}
         {tab === 'map' && (
           <div className="fpd-map">
-            <p className="fpd-map-place">📍 {p.location}</p>
+            <p className="fpd-map-place">{p.location}</p>
             <Link className="btn btn-outline" to={`/nearby?popup=${encodeURIComponent(p.id)}`}>
                   POPQ 지도에서 보기
                 </Link>

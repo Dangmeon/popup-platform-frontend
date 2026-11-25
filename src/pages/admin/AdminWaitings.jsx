@@ -1,3 +1,4 @@
+import SearchablePopupSelect from '../../components/admin/SearchablePopupSelect.jsx'
 import { useEffect, useState } from 'react'
 import { getPopups } from '../../api/admin/popupApi'
 import {
@@ -181,8 +182,8 @@ function AdminWaitings() {
   }, [selectedId, detailRetryKey])
 
   // 팝업 변경
-  function handlePopupChange(event) {
-    setPopId(event.target.value)
+  function handlePopupChange(value) {
+    setPopId(value)
     setSelectedId(null)
     setKeyword('')
     setStatus('')
@@ -227,23 +228,9 @@ function AdminWaitings() {
       {/* 팝업 선택 및 검색 */}
       <section className="admin-panel" aria-label="웨이팅 검색">
         <div className="waiting-admin-filters">
-          <label>
-            팝업 선택
-            <select
-              value={popId}
-              onChange={handlePopupChange}
-              disabled={popupLoading || Boolean(popupError)}
-            >
-              <option value="">
-                {popupLoading ? '팝업 불러오는 중…' : '팝업을 선택하세요'}
-              </option>
-              {popups.map((popup) => (
-                <option key={popup.popId} value={popup.popId}>
-                  {popup.title}
-                </option>
-              ))}
-            </select>
-          </label>
+          <SearchablePopupSelect popups={popups} value={popId} onChange={handlePopupChange}
+            disabled={popupLoading || Boolean(popupError)}
+            emptyLabel={popupLoading ? '팝업 불러오는 중…' : '팝업을 선택하세요'} />
 
           <label>
             대기번호 / 체크인 코드

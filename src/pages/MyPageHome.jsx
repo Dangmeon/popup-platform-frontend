@@ -6,7 +6,7 @@ import '../styles/AccountRefine.css'
 import '../styles/MyPageServices.css'
 import { myPageMenus } from '../data/myPageDemo.js'
 
-// 마이페이지 공통 프로필·사이드바. 로그아웃은 사이드바 최하단에 배치합니다.
+// 마이페이지 공통 화면
 export function MyPageFrame({ children }) {
   const app = useApp()
   const navigate = useNavigate()
@@ -17,7 +17,7 @@ export function MyPageFrame({ children }) {
   return <div className="pq-my container">
     <header className="pq-my-profile">
       <span className="pq-my-avatar">{name.slice(0, 1)}</span>
-      <div><span className="pq-my-eyebrow">MY POPQ</span><h1>안녕하세요, {name}님</h1><p>나의 팝업 경험을 한곳에서 관리하세요.</p></div>
+      <div><h1>안녕하세요, {name}님</h1></div>
     </header>
     <div className="pq-my-grid">
       <aside className="pq-my-sidebar"><nav aria-label="마이페이지 메뉴">
@@ -29,7 +29,7 @@ export function MyPageFrame({ children }) {
   </div>
 }
 
-// 회원 정보와 이용 서비스 바로가기. 예약·웨이팅은 헤더 티켓 메뉴를 유지합니다.
+// 마이페이지 홈
 export default function MyPageHome() {
   return <MyPageFrame>
     <h2>나의 POPQ</h2>

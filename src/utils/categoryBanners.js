@@ -1,6 +1,6 @@
 const categories = [
-  ['ENTERTAINMENT', '엔터테인먼트'], ['FOOD', '푸드'],
-  ['CHARACTER', '캐릭터'], ['FASHION', '패션'],
+  ['ENT', '엔터테인먼트'], ['FOOD', '푸드'],
+  ['CHAR', '캐릭터'], ['FASHION', '패션'],
 ]
 export function selectCategoryBanners(popups, now = new Date()) {
   const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}).format(now)

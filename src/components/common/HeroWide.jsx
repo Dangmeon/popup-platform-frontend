@@ -48,7 +48,7 @@ export default function HeroWide({ slides = [], interval = 5000 }) {
                 {s.tag && <span className="hw-tag">{s.tag}</span>}
                 <h2 className="hw-title">{s.title}</h2>
                 <ul className="hw-meta">
-                  {s.place && <li>📍 {s.place}</li>}
+                  {s.place && <li>{s.place}</li>}
                   {s.period && <li>📅 {s.period}</li>}
                 </ul>
                 <span className="hw-btn">자세히 보기 →</span>

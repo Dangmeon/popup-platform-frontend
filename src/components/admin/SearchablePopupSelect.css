@@ -1,0 +1,17 @@
+/* 관리자 팝업 선택과 검색 */
+.pq-popup-select { position: relative; display: grid; gap: 6px; min-width: 0; color: #4e5a43; font-size: 13px; }
+.pq-popup-select > button { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 42px; padding: 8px 12px; text-align: left; }
+.pq-popup-select > button, .pq-popup-select .pq-popup-options input { width: 100%; box-sizing: border-box; border: 1px solid #d8e1cf; border-radius: 9px; background: #fff; color: #283321; font: inherit; }
+.pq-popup-select > button:disabled { opacity: .6; cursor: not-allowed; }
+.pq-popup-select button { cursor: pointer; }
+.pq-popup-select :is(button, input):focus-visible { outline: 2px solid #687a57; outline-offset: 2px; }
+.pq-popup-options { position: absolute; top: calc(100% + 5px); inset-inline: 0; z-index: 30; padding: 8px; border: 1px solid #d8e1cf; border-radius: 12px; background: #fff; box-shadow: 0 8px 22px #27322220; }
+.pq-popup-select .pq-popup-options input { min-height: 38px; padding: 7px 9px; }
+.pq-popup-options ul { max-height: 220px; overflow: auto; padding: 0; margin: 6px 0 0; list-style: none; }
+.pq-popup-options li button { width: 100%; padding: 8px 9px; border: 0; border-radius: 6px; background: #fff; color: inherit; font: inherit; text-align: left; }
+.pq-popup-options li button:is(:hover, [aria-current]) { background: #eef3e8; }
+.pq-popup-options p { margin: 8px 4px 2px; }
+.pq-sales-toolbar > .pq-popup-select { width: min(320px, 100%); }
+
+.pq-popup-select > button > span:first-child, .pq-popup-options li button { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pq-popup-select > button > span:last-child { flex-shrink: 0; }

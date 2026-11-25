@@ -1,26 +1,24 @@
-import {
-  getMockMembers,
-  getMockMember,
-} from './mockMembers'
+import http from '../axiosInstance.js'
 
-// 회원 목록 조회
-export async function getMembers(params = {}) {
-  // 나중에 바꿀 부분: 실제 관리자 회원 목록 API 호출
-  const response = await getMockMembers(params)
-
-  // 나중에 바꿀 부분: 서버의 페이지 응답을 화면 형식으로 변환
-  return {
-    items: response.items,
-    total: response.total,
-    totalAll: response.totalAll,
-  }
-}
-
-// 회원 상세 조회
-export async function getMember(id) {
-  // 나중에 바꿀 부분: 팀 명세에 맞는 회원 상세 조회 방식으로 교체
-  const response = await getMockMember(id)
-
-  // 나중에 바꿀 부분: 실제 서버 응답을 화면의 회원 필드로 변환
-  return response
+// 관리자 회원 목록을 페이지 단위로 조회
+export async function getMembers({ signal } = {}) {
+  const members = new Map()
+  let page = 0
+  let totalPages
+  do {
+    const { data } = await http.get('/api/admin/members', { params: { page, size: 50 }, signal })
+    if (!Array.isArray(data?.content) || data.number !== page ||
+        !Number.isSafeInteger(data.totalPages) || data.totalPages < 0) {
+      throw new Error('회원 목록 응답을 확인하지 못했습니다.')
+    }
+    for (const member of data.content) {
+      if (!Number.isSafeInteger(member?.memberId) || member.memberId < 1) {
+        throw new Error('회원 정보 응답을 확인하지 못했습니다.')
+      }
+      members.set(member.memberId, member)
+    }
+    totalPages = data.totalPages
+    page += 1
+  } while (page < totalPages)
+  return [...members.values()]
 }

@@ -1,8 +1,9 @@
+import { popupCategoryCode } from '../../utils/popupCategories.js'
 import http from '../axiosInstance.js'
 import {filterRows,id,rows} from './liveUtils.js'
 
 export function normalizePopup(raw) {
-  return {...raw,status:['PAUSED','CANCELLED'].includes(raw.opStatus)?raw.opStatus:raw.status || 'UNKNOWN'}
+  return {...raw,category:popupCategoryCode(raw.category),status:['PAUSED','CANCELLED'].includes(raw.opStatus)?raw.opStatus:raw.status || 'UNKNOWN'}
 }
 export async function getPopups({keyword='',status=''} = {}) {
   const data=rows((await http.get('/api/admin/popups')).data).map(normalizePopup)

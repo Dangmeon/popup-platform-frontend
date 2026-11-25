@@ -130,7 +130,7 @@ function BasicPopupDetail({ onCreateHold }) {
             </div>
             <h1 className="bpd-title">{popup.title}</h1>
             <ul className="bpd-meta">
-              <li>📍 {popup.location}</li>
+              <li>{popup.location}</li>
               <li>🗓 {popup.startDate} ~ {popup.endDate}</li>
             </ul>
           </div>
@@ -212,7 +212,7 @@ function BasicPopupDetail({ onCreateHold }) {
 
             {tab === 'map' && (
               <div className="bpd-map">
-                <p className="bpd-map-place">📍 {popup.location}</p>
+                <p className="bpd-map-place">{popup.location}</p>
                 <Link className="btn btn-outline" to={`/nearby?popup=${encodeURIComponent(popup.id)}`}>
                   POPQ 지도에서 보기
                 </Link>

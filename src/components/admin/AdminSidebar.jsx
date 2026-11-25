@@ -15,7 +15,7 @@ const menus = [
 export default function AdminSidebar() {
   return <aside className="admin-sidebar">
     {/* 로고는 사용자 메인으로 연결 */}
-    <div className="admin-brand"><Link to="/" className="admin-logo-link" aria-label="POPQ 메인으로 이동"><img src="/logo.png" alt="POPQ" /><span>ADMIN CENTER</span></Link></div>
+    <div className="admin-brand"><Link to="/" className="admin-logo-link" aria-label="POPQ 메인으로 이동"><img src="/logo.png" alt="POPQ" /><span>관리자 페이지</span></Link></div>
     <div className="admin-scope"><span>관리 범위</span><strong>전체 서비스 운영</strong></div>
     <nav className="admin-nav" aria-label="총관리자 메뉴">{menus.map(menu => <NavLink key={menu.path} to={menu.path} end={menu.end} className={({isActive}) => `admin-nav-link${isActive ? ' active' : ''}`}><PopqIcon name={menu.icon} size={20} />{menu.name}</NavLink>)}</nav>
     <div className="admin-sidebar-footer"><Link to="/">사용자 메인으로 돌아가기 →</Link></div>

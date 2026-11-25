@@ -1,0 +1,8 @@
+/* 운영 대시보드 목록과 그래프 */
+.admin-dashboard .admin-chart-bar { min-height: 0; }
+.admin-dashboard .admin-crowding-list { max-height: 265px; overflow-y: auto; padding: 2px 8px 2px 2px; scrollbar-gutter: stable; }
+.admin-dashboard .admin-panel-header a { color: #53634b; font-size: 13px; white-space: nowrap; }
+.admin-dashboard .admin-table :is(td, th):is(:first-child, :nth-child(3), :last-child) { white-space: nowrap; }
+.admin-dashboard .pq-dashboard-ranking { list-style: none; margin: 0; padding: 0; }
+.admin-dashboard .admin-popular-item strong { min-width: 0; overflow-wrap: anywhere; }
+.admin-dashboard .admin-popular-item > span:last-child { margin-left: auto; white-space: nowrap; }

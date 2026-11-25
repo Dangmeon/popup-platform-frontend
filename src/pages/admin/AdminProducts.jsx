@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   getProducts,
   getProduct,
+  deleteProduct,
   addProductStock,
 } from '../../api/admin/productApi'
 import AdminProductForm from '../../components/admin/AdminProductForm'
@@ -44,7 +45,7 @@ function formatDateTime(value) {
 // 재고 안내
 function getStockNotice(stock) {
   if (stock === 0) return '재고 없음'
-  if (stock < 3) return '재고 부족'
+  if (stock <= 5) return '재고 부족'
   return ''
 }
 
@@ -65,7 +66,6 @@ function AdminProducts() {
   // 상품 상세
   const [selectedId, setSelectedId] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
-  const [showStockForm, setShowStockForm] = useState(false)
   const [stockQuantity, setStockQuantity] = useState('')
   const [stockBusy, setStockBusy] = useState(false)
   const [stockMessage, setStockMessage] = useState('')
@@ -75,6 +75,7 @@ function AdminProducts() {
   const [detailError, setDetailError] = useState('')
 
   // 상품 등록
+  const [editing, setEditing] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [notice, setNotice] = useState('')
 
@@ -83,12 +84,13 @@ function AdminProducts() {
   const [detailRetryKey, setDetailRetryKey] = useState(0)
 
   useEffect(() => {
-    setShowStockForm(false)
+    setEditing(false)
     setStockQuantity('')
     setStockError('')
     setStockMessage('')
   }, [selectedId])
 
+  // 입고 수량 저장
   async function handleAddStock(event) {
     event.preventDefault()
     if (stockLock.current) return
@@ -106,10 +108,26 @@ function AdminProducts() {
       setSelectedProduct(previous => ({...previous, ...updated, popupName: previous.popupName, description: updated.productDesc || previous.description}))
       setStockMessage(`재고 ${quantity.toLocaleString()}개가 추가되었습니다.`)
       setStockQuantity('')
-      setShowStockForm(false)
       setListRetryKey(previous => previous + 1)
     } catch (error) {
       setStockError(error.response?.data?.message || '재고 추가 결과를 확인하지 못했습니다. 상품 정보를 다시 조회한 뒤 재고를 확인해 주세요.')
+    } finally {
+      stockLock.current = false
+      setStockBusy(false)
+    }
+  }
+
+  // 상품 삭제 확인 및 목록 갱신
+  async function handleDelete() {
+    if (stockLock.current || !window.confirm('이 상품을 삭제하시겠습니까?')) return
+    stockLock.current = true
+    setStockBusy(true)
+    try {
+      await deleteProduct(selectedId)
+      setSelectedId(null)
+      setListRetryKey(value => value + 1)
+    } catch (error) {
+      setStockError(error.response?.data?.message || '상품을 삭제하지 못했습니다.')
     } finally {
       stockLock.current = false
       setStockBusy(false)
@@ -205,7 +223,7 @@ function AdminProducts() {
   }
 
   const visibleProducts = lowStockOnly
-    ? products.filter(product => Number.isFinite(product.stock) && product.stock >= 0 && product.stock < 3)
+    ? products.filter(product => Number.isFinite(product.stock) && product.stock >= 0 && product.stock <= 5)
         .sort((a, b) => a.stock - b.stock)
     : products
 
@@ -295,7 +313,7 @@ function AdminProducts() {
       <nav className="product-admin-stock-tabs" aria-label="상품 재고 분류">
         <button type="button" aria-current={!lowStockOnly ? 'page' : undefined} onClick={() => changeStockSection(false)}>전체 상품</button>
         <button type="button" aria-current={lowStockOnly ? 'page' : undefined} onClick={() => changeStockSection(true)}>재고 부족</button>
-        {lowStockOnly && <span>재고 3개 미만 · 품절 포함</span>}
+        {lowStockOnly && <span>재고 5개 이하 · 품절 포함</span>}
       </nav>
       <section className="admin-panel" aria-label="상품 검색">
         <div className="product-admin-filters">
@@ -443,20 +461,8 @@ function AdminProducts() {
           <AdminDetailModal title="상품 상세" busy={stockBusy} onClose={() => setSelectedId(null)}>
           <section
             className="admin-panel product-admin-detail"
-            aria-labelledby="product-admin-detail-title"
             aria-busy={detailLoading}
           >
-            <div className="admin-panel-header">
-              <h3 id="product-admin-detail-title">상품 상세</h3>
-              <button
-                type="button"
-                className="product-admin-button"
-                disabled={stockBusy}
-                onClick={() => setSelectedId(null)}
-              >
-                닫기
-              </button>
-            </div>
 
             {detailLoading && (
               <p role="status">상품 정보를 불러오는 중입니다.</p>
@@ -477,26 +483,45 @@ function AdminProducts() {
               </div>
             )}
 
-            {!detailLoading && !detailError && selectedProduct && (
+            {!detailLoading && !detailError && selectedProduct && (editing ?
+              <AdminProductForm product={selectedProduct} onBusyChange={setStockBusy} onCancel={() => setEditing(false)} onSuccess={() => {
+                setEditing(false)
+                setDetailRetryKey(value => value + 1)
+                setListRetryKey(value => value + 1)
+              }} /> :
               <>
+                <div className="product-admin-heading-actions">
+                  <button type="button" className="product-admin-button" disabled={stockBusy} onClick={() => setEditing(true)}>상품 수정</button>
+                  <button type="button" className="product-admin-button" disabled={stockBusy} onClick={handleDelete}>상품 삭제</button>
+                </div>
                 <dl className="product-admin-info">
                   {detailRows.map(([label, value]) => (
                     <div key={label}>
                       <dt>{label}</dt>
-                      <dd>{value}</dd>
+                      <dd className={label === '온라인 재고' ? 'product-admin-stock-detail' : undefined}>
+                        <span>{value}</span>
+                        {label === '온라인 재고' && (
+                          <div className="product-admin-stock-actions">
+                            {stockMessage && <p role="status">{stockMessage}</p>}
+                            {stockError && <div role="alert"><p>{stockError}</p><button type="button" className="product-admin-button" disabled={stockBusy} onClick={() => { setDetailRetryKey(v => v + 1); setListRetryKey(v => v + 1) }}>상품 정보 다시 조회</button></div>}
+                            <form className="product-admin-form-grid" onSubmit={handleAddStock}>
+                              <input
+                                type="number" min="1" max="2147483647" step="1" required
+                                aria-label="입고 수량" placeholder="입고 수량"
+                                value={stockQuantity} disabled={stockBusy}
+                                onChange={event => setStockQuantity(event.target.value)}
+                              />
+                              <button type="submit" className="product-admin-button primary" disabled={stockBusy || !stockQuantity}>
+                                {stockBusy ? '저장 중…' : '재고 추가'}
+                              </button>
+                            </form>
+                          </div>
+                        )}
+                      </dd>
                     </div>
                   ))}
                 </dl>
 
-                {stockMessage && <p role="status">{stockMessage}</p>}
-                {stockError && <div role="alert"><p>{stockError}</p><button type="button" className="product-admin-button" disabled={stockBusy} onClick={() => { setShowStockForm(false); setDetailRetryKey(v => v + 1); setListRetryKey(v => v + 1) }}>상품 정보 다시 조회</button></div>}
-                {showStockForm ? <form onSubmit={handleAddStock}>
-                  <label htmlFor="product-stock-quantity">입고 수량</label>
-                  <input id="product-stock-quantity" type="number" min="1" max="2147483647" step="1" required value={stockQuantity} disabled={stockBusy} onChange={e => setStockQuantity(e.target.value)} />
-                  <p>현재 재고에 입력한 수량을 추가합니다.</p>
-                  <button type="submit" className="product-admin-button primary" disabled={stockBusy}>{stockBusy ? '저장 중…' : '재고 추가 저장'}</button>{' '}
-                  <button type="button" className="product-admin-button" disabled={stockBusy} onClick={() => setShowStockForm(false)}>취소</button>
-                </form> : <button type="button" className="product-admin-button primary" disabled={stockBusy} onClick={() => { setShowStockForm(true); setStockMessage(''); setStockError('') }}>재고 추가</button>}
               </>
             )}
           </section>

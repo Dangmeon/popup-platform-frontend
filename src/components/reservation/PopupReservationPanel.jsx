@@ -28,6 +28,7 @@ function message(error) {
   return error.response?.data?.message || error.message || '회차를 불러오지 못했습니다.'
 }
 
+// 예약 화면 UI
 export default function PopupReservationPanel({ popup, onCreateHold }) {
   const app = useApp()
   const id = popup.popId ?? popup.id
@@ -83,6 +84,7 @@ function Panel({ popup, popId, demo, onCreateHold }) {
     if (!selected || reason) {setSlotId(null);setReview(false);setNotice(`${reason || '회차가 변경되었습니다.'} 다른 회차를 선택해 주세요.`)}
   },[selected,reason,slotId,busy,loading,error])
 
+  // 예약 임시 선점
   async function prepareReview() {
     if (lock.current) return
     if (reviewHold) {setReview(true);return}
@@ -97,6 +99,7 @@ function Panel({ popup, popId, demo, onCreateHold }) {
     finally{lock.current=false;if(alive.current)setBusy(false)}
   }
 
+  // 예약 확정 처리
   async function confirm() {
     if(lock.current || (!selected && !reviewHold?.slot) || demo) return
     const latestReason=reviewHold?.reservationStatus==='HOLD' ? '' : getSlotUnavailableReason(selected,people,Date.now())

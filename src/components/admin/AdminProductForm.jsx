@@ -1,6 +1,7 @@
+import SearchablePopupSelect from './SearchablePopupSelect.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { getPopups } from '../../api/admin/popupApi'
-import { createProduct, uploadProductImage } from '../../api/admin/productApi'
+import { createProduct, updateProduct, uploadProductImage } from '../../api/admin/productApi'
 import AdminSaleDatePicker from './AdminSaleDatePicker'
 
 // 초기 입력값
@@ -23,9 +24,25 @@ function createInitialForm() {
   }
 }
 
-function AdminProductForm({ onSuccess, onCancel }) {
+// 상품 등록·수정 입력값
+function editForm(product) {
+  const dateFields = (prefix, value) => ({
+    [prefix + 'Date']: value?.slice(0, 10) || '',
+    [prefix + 'Hour']: value?.slice(11, 13) || '00',
+    [prefix + 'Minute']: value?.slice(14, 16) || '00',
+  })
+  return {
+    ...createInitialForm(),
+    popId: String(product.popId), productName: product.productName, category: product.category || '',
+    productImg: product.productImg || '', description: product.description || '',
+    price: String(product.price), stock: String(product.stock), maxQty: String(product.maxQty ?? ''),
+    ...dateFields('start', product.saleStart), ...dateFields('end', product.saleEnd),
+  }
+}
+
+function AdminProductForm({ onSuccess, onCancel, product, onBusyChange }) {
   // 입력 정보
-  const [form, setForm] = useState(createInitialForm)
+  const [form, setForm] = useState(() => product ? editForm(product) : createInitialForm())
 
   // 소속 팝업
   const [popups, setPopups] = useState([])
@@ -125,18 +142,14 @@ function AdminProductForm({ onSuccess, onCancel }) {
     }
 
     if (
-      !form.stock.trim() ||
-      !Number.isSafeInteger(stock) ||
-      stock < 0
+      !product && (!form.stock.trim() || !Number.isSafeInteger(stock) || stock < 0)
     ) {
       setSaveError('초기 재고는 0 이상의 정수로 입력해 주세요.')
       return
     }
 
     if (
-      !form.maxQty.trim() ||
-      !Number.isSafeInteger(maxQty) ||
-      maxQty < 1
+      (!product || form.maxQty.trim()) && (!Number.isSafeInteger(maxQty) || maxQty < 1)
     ) {
       setSaveError('회원 누적 구매 제한은 1 이상의 정수로 입력해 주세요.')
       return
@@ -167,6 +180,7 @@ function AdminProductForm({ onSuccess, onCancel }) {
 
     submitting.current = true
     setSaving(true)
+    onBusyChange?.(true)
 
     let createdProduct
 
@@ -176,26 +190,28 @@ function AdminProductForm({ onSuccess, onCancel }) {
         if (!uploadedImage.current) uploadedImage.current = await uploadProductImage(imageFile)
         productImg = uploadedImage.current
       }
-      createdProduct = await createProduct({
+      const payload = {
         category:form.category.trim(),
         productImg,
         popId,
         productName: form.productName.trim(),
         price,
         stock,
-        maxQty,
+        maxQty: form.maxQty.trim() ? maxQty : null,
         saleStart: saleStart.toISOString(),
         saleEnd: saleEnd.toISOString(),
         description: form.description.trim(),
-      })
+      }
+      createdProduct = product ? await updateProduct(product.prdId, payload) : await createProduct(payload)
     } catch (error) {
       setSaveError(
-        error.message || '상품을 등록하지 못했습니다.'
+        error.response?.data?.message || '상품을 저장하지 못했습니다.'
       )
       return
     } finally {
       submitting.current = false
       setSaving(false)
+      onBusyChange?.(false)
     }
 
     onSuccess(createdProduct)
@@ -209,7 +225,7 @@ function AdminProductForm({ onSuccess, onCancel }) {
     >
       <div className="admin-panel-header">
         <div>
-          <h3 id="product-admin-create-title">굿즈 등록</h3>
+          <h3 id="product-admin-create-title">{product ? '굿즈 수정' : '굿즈 등록'}</h3>
           <p>상품 정보와 초기 온라인 재고를 입력해 주세요.</p>
         </div>
       </div>
@@ -227,28 +243,10 @@ function AdminProductForm({ onSuccess, onCancel }) {
 
           {/* 기본 정보 */}
           <div className="product-admin-form-grid">
-            <label>
-              소속 팝업
-              <select
-                name="popId"
-                value={form.popId}
-                onChange={handleChange}
-                disabled={popupLoading || Boolean(popupError)}
-                required
-              >
-                <option value="">
-                  {popupLoading
-                    ? '팝업 불러오는 중…'
-                    : '팝업을 선택하세요'}
-                </option>
-
-                {popups.map((popup) => (
-                  <option key={popup.popId} value={popup.popId}>
-                    {popup.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <SearchablePopupSelect label="소속 팝업" popups={popups} value={form.popId}
+              onChange={value => updateField('popId', value)}
+              disabled={Boolean(product) || popupLoading || Boolean(popupError)}
+              emptyLabel={popupLoading ? '팝업 불러오는 중…' : '팝업을 선택하세요'} />
 
             <label>
               상품명
@@ -279,7 +277,7 @@ function AdminProductForm({ onSuccess, onCancel }) {
               초기 온라인 재고
               <input
                 type="number"
-                name="stock"
+                name="stock" disabled={Boolean(product)}
                 value={form.stock}
                 onChange={handleChange}
                 placeholder="예: 5"
@@ -417,7 +415,7 @@ function AdminProductForm({ onSuccess, onCancel }) {
               popups.length === 0
             }
           >
-            {saving ? '등록 중…' : '데모 상품 등록'}
+            {saving ? '저장 중…' : product ? '수정 저장' : '상품 등록'}
           </button>
         </div>
       </form>
