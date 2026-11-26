@@ -25,7 +25,7 @@ export function PaymentSuccess() {
   const orderId = params.get('orderId')
   const amount = Number(params.get('amount'))
 
-  const [state, setState] = useState('loading') // loading | done | error
+  const [state, setState] = useState('loading') // loading | done | error | pending
   const [result, setResult] = useState(null)
   const [message, setMessage] = useState('')
   const called = useRef(false) // 승인 요청이 두 번 가지 않게
@@ -55,20 +55,81 @@ export function PaymentSuccess() {
 
     confirmPayment({ paymentKey, orderId, amount })
       .then(res => {
-        if (res?.paymentStatus && res.paymentStatus !== 'PAID') {
-          setMessage(`결제 상태가 완료가 아니에요. (${res.paymentStatus})`)
-          setState('error')
-          return
-        }
+          if (res?.paymentStatus !== 'PAID') {
+              setMessage('결제 완료 여부를 확인할 수 없어요. 잠시 후 주문 내역을 확인해 주세요.')
+              setState('pending')
+              return
+          }
         sessionStorage.removeItem('popq_pending_order')
         setResult(res)
         setState('done')
       })
-      .catch(err => {
-        setMessage(getApiError(err, '결제 승인에 실패했어요. 잠시 후 다시 시도해 주세요.'))
-        setState('error')
-      })
+        .catch(err => {
+            const code = err?.response?.data?.code
+            const status = err?.response?.status
+
+            if (
+                code === 'PAYMENT_PROCESSING' ||
+                code === 'PAYMENT_CONNECTION_ERROR' ||
+                code === 'TOSS_SERVER_ERROR' ||
+                code === 'TOSS_PAYMENT_FAILED' ||
+                !err?.response ||
+                status >= 500
+            ) {
+                setMessage(
+                    '결제 결과를 확인 중이에요. 중복 결제를 방지하기 위해 다시 주문하지 말고 잠시 후 주문 내역을 확인해 주세요.'
+                )
+                setState('pending')
+                return
+            }
+
+            setMessage(
+                getApiError(err, '결제 승인에 실패했어요. 주문 내역을 확인해 주세요.')
+            )
+            setState('error')
+        })
   }, [paymentKey, orderId, amount])
+
+  if (state === 'pending') {
+    return (
+        <div className="pr-page">
+          <div className="pr-card">
+            <div
+                className="pr-icon"
+                style={{
+                  background: '#FFF3CD',
+                  color: '#856404'
+                }}
+            >
+              !
+            </div>
+
+            <h1 className="pr-title">
+              결제 결과를 확인 중이에요
+            </h1>
+
+            <p className="pr-desc">{message}</p>
+
+            <div className="pr-actions">
+              <Link
+                  to="/mypage"
+                  className="pr-btn pr-btn-primary"
+                  style={{
+                    background: '#465235',
+                    borderColor: '#465235'
+                  }}
+              >
+                주문 내역 확인
+              </Link>
+
+              <Link to="/" className="pr-btn">
+                홈으로
+              </Link>
+            </div>
+          </div>
+        </div>
+    )
+  }
 
   if (state === 'loading') {
     return (
@@ -90,7 +151,16 @@ export function PaymentSuccess() {
           <h1 className="pr-title">결제를 완료하지 못했어요</h1>
           <p className="pr-desc">{message}</p>
           <div className="pr-actions">
-            <Link to="/cart" className="pr-btn pr-btn-primary" style={{ backgroundColor: '#465235 !important', background: '#465235', borderColor: '#465235' }}>장바구니로</Link>
+              <Link
+                  to="/mypage"
+                  className="pr-btn pr-btn-primary"
+                  style={{
+                      background: '#465235',
+                      borderColor: '#465235'
+                  }}
+              >
+                  주문 내역 확인
+              </Link>
             <Link to="/" className="pr-btn">홈으로</Link>
           </div>
         </div>
