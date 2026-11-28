@@ -6,7 +6,7 @@ import AdminDetailModal from '../../components/admin/AdminDetailModal.jsx'
 import './AdminOrders.css'
 
 const statuses = { PENDING: '결제 대기', PAID: '결제 완료', CANCELLED: '주문 취소', EXPIRED: '기한 만료' }
-const activeStatuses = { PENDING: statuses.PENDING }
+const orderSections = ['PENDING', 'PAID']
 const money = value => Number.isFinite(value) ? `${value.toLocaleString('ko-KR')}원` : '—'
 const date = value => value ? value.replace('T', ' ').slice(0, 19) : '—'
 function ProductImage({ url, name }) {
@@ -20,7 +20,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true)
   const [retry, setRetry] = useState(0)
   const [selected, setSelected] = useState(null)
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState('PENDING')
   const [detail, setDetail] = useState(null)
   const [detailError, setDetailError] = useState('')
   const [detailLoading, setDetailLoading] = useState(false)
@@ -47,7 +47,7 @@ export default function AdminOrders() {
       setLoading(true); setError('')
       try {
         const result = rows((await http.get('/api/admin/orders')).data)
-          .filter(row => Object.hasOwn(activeStatuses, row.status))
+          .filter(row => orderSections.includes(row.status))
         if (active) { setOrders(result); setSelected(previous => previous ? result.find(row => row.orderId === previous.orderId) || null : null) }
       } catch { if (active) { setError('주문 목록을 불러오지 못했습니다.'); setOrders(null) } }
       finally { if (active) setLoading(false) }
@@ -58,13 +58,20 @@ export default function AdminOrders() {
   }, [retry])
   // 주문번호 오름차순
   const filtered = (orders || [])
-    .filter(row => !status || row.status === status)
+    .filter(row => row.status === status)
     .sort((a, b) => a.orderId - b.orderId)
   return <section>
-    <div className="admin-page-heading"><div><h2>주문 관리</h2><p>진행 중인 주문을 확인하세요.</p></div><button className="admin-chart-select" disabled={loading} onClick={() => setRetry(v => v + 1)}>새로고침</button></div>
-    <div className="admin-panel"><div className="order-admin-filters"><label>주문 상태<select value={status} onChange={e => setStatus(e.target.value)}><option value="">진행 중 전체</option>{Object.entries(activeStatuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div></div>
+    <div className="admin-page-heading"><div><h2>주문 관리</h2><p>결제 대기와 결제 완료 주문을 확인하세요.</p></div><button className="admin-chart-select" disabled={loading} onClick={() => setRetry(v => v + 1)}>새로고침</button></div>
+    {/* 주문 상태별 목록 전환 */}
+    <div className="order-admin-sections" role="group" aria-label="주문 상태">
+      {orderSections.map(value => (
+        <button key={value} type="button" aria-pressed={status === value} onClick={() => setStatus(value)}>
+          {statuses[value]}
+        </button>
+      ))}
+    </div>
     <div className="admin-panel" aria-busy={loading}>
-      {error ? <p role="alert">{error}</p> : orders === null ? <p role="status">주문을 불러오고 있어요.</p> : <div className="admin-table-wrapper"><table className="admin-table"><thead><tr><th>주문번호</th><th>주문자</th><th>금액</th><th>상태</th><th>주문 일시</th><th>관리</th></tr></thead><tbody>{filtered.map(row => <tr key={row.orderId}><td>{row.orderId}</td><td>{row.userName}<br />{row.userEmail}</td><td>{money(row.totalPrice)}</td><td>{statuses[row.status] || row.status}</td><td>{date(row.orderedAt)}</td><td><button className="admin-chart-select" aria-haspopup="dialog" onClick={() => setSelected(row)}>상세 보기</button></td></tr>)}{!filtered.length && <tr><td colSpan={6}>표시할 진행 중 주문이 없습니다.</td></tr>}</tbody></table></div>}
+      {error ? <p role="alert">{error}</p> : orders === null ? <p role="status">주문을 불러오고 있어요.</p> : <div className="admin-table-wrapper"><table className="admin-table"><thead><tr><th>주문번호</th><th>주문자</th><th>금액</th><th>상태</th><th>주문 일시</th><th>관리</th></tr></thead><tbody>{filtered.map(row => <tr key={row.orderId}><td>{row.orderId}</td><td>{row.userName}<br />{row.userEmail}</td><td>{money(row.totalPrice)}</td><td>{statuses[row.status] || row.status}</td><td>{date(row.orderedAt)}</td><td><button className="admin-chart-select" aria-haspopup="dialog" onClick={() => setSelected(row)}>상세 보기</button></td></tr>)}{!filtered.length && <tr><td colSpan={6}>{statuses[status]} 주문이 없습니다.</td></tr>}</tbody></table></div>}
     </div>
     {selected && <AdminDetailModal title="주문 상세" onClose={() => setSelected(null)}>
       {detailLoading && <p role="status">주문 상세를 불러오고 있어요.</p>}
