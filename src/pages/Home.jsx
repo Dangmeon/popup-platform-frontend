@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import PopupLoop from '../components/common/PopupLoop.jsx'
 import { getPopupStage } from '../utils/popupLifecycle.js'
+import PopupFavoriteButton from '../components/common/PopupFavoriteButton.jsx'
 import HomeBanner from './HomeBanner.jsx'
 import HomeEvents from './HomeEvents.jsx'
 import OpeningDayBadge from '../components/common/OpeningDayBadge.jsx'
@@ -107,33 +108,38 @@ function SectionHeading({ eyebrow, title, to = '/popups', more = '전체 보기'
 
 // 팝업 카드와 가운데 원형 D-DAY
 function PopupCard({ popup, today, rank, showStatus = true }) {
+  const canFavorite = popup.image && !popup.isDemo && popup.opStatus !== 'PAUSED'
+    && ['ONGOING', 'UPCOMING'].includes(getPopupStage(popup))
   return (
-    <Link to={popup.isDemo ? `/nearby?area=${encodeURIComponent(popup.area)}` : `/popups/${popup.id}`} className="hm-card">
-      <div className="hm-card-img">
-        {popup.image ? (
-          <img src={popup.image} alt={popup.title} loading="lazy" />
-        ) : (
-          <div className="hm-card-noimg">POPQ</div>
-        )}
+    <div className="pq-favorite-card">
+      <Link to={popup.isDemo ? `/nearby?area=${encodeURIComponent(popup.area)}` : `/popups/${popup.id}`} className="hm-card">
+        <div className="hm-card-img">
+          {popup.image ? (
+            <img src={popup.image} alt={popup.title} loading="lazy" />
+          ) : (
+            <div className="hm-card-noimg">POPQ</div>
+          )}
 
-        {rank && (
-          <span className="hm-rank">{String(rank).padStart(2, '0')}</span>
-        )}
+          {rank && (
+            <span className="hm-rank">{String(rank).padStart(2, '0')}</span>
+          )}
 
-        {showStatus && <OpeningDayBadge startDate={popup.startDate} endDate={popup.endDate} today={today} />}
-      </div>
+          {showStatus && <OpeningDayBadge startDate={popup.startDate} endDate={popup.endDate} today={today} />}
+        </div>
 
-      <div className="hm-card-body">
-        <span className="hm-card-cat">{popup.isDemo ? '예시 팝업' : (popup.category || '팝업스토어')}</span>
-        <h3 className="hm-card-title">{popup.title}</h3>
-        <p className="hm-card-sub">{popup.location || '장소 안내 예정'}</p>
-        {getDate(popup.startDate) !== null && getDate(popup.endDate) !== null && (
-          <p className="hm-card-date">
-            {formatDate(popup.startDate)} — {formatDate(popup.endDate)}
-          </p>
-        )}
-      </div>
-    </Link>
+        <div className="hm-card-body">
+          <span className="hm-card-cat">{popup.isDemo ? '예시 팝업' : (popup.category || '팝업스토어')}</span>
+          <h3 className="hm-card-title">{popup.title}</h3>
+          <p className="hm-card-sub">{popup.location || '장소 안내 예정'}</p>
+          {getDate(popup.startDate) !== null && getDate(popup.endDate) !== null && (
+            <p className="hm-card-date">
+              {formatDate(popup.startDate)} — {formatDate(popup.endDate)}
+            </p>
+          )}
+        </div>
+      </Link>
+      {canFavorite && <PopupFavoriteButton popup={popup} />}
+    </div>
   )
 }
 
@@ -279,22 +285,25 @@ export default function Home() {
               className="hm-soon"
               style={upcoming.length === 1 ? { gridTemplateColumns: '1fr' } : undefined}
             >
-              <Link to={`/popups/${upcoming[0].id}`} className="hm-soon-hero">
-                {upcoming[0].image && (
-                  <img
-                    className="hm-soon-bg"
-                    src={upcoming[0].image}
-                    alt=""
-                    loading="lazy"
-                  />
-                )}
-                <OpeningDayBadge startDate={upcoming[0].startDate} endDate={upcoming[0].endDate} today={today} />
-                <h3 className="hm-soon-title">{upcoming[0].title}</h3>
-                <p className="hm-soon-sub">{upcoming[0].location}</p>
-                <span className="hm-soon-btn">
-                  팝업 둘러보기 <PopqIcon name="arrow" size={18} />
-                </span>
-              </Link>
+              <div className="pq-favorite-card">
+                <Link to={`/popups/${upcoming[0].id}`} className="hm-soon-hero">
+                  {upcoming[0].image && (
+                    <img
+                      className="hm-soon-bg"
+                      src={upcoming[0].image}
+                      alt=""
+                      loading="lazy"
+                    />
+                  )}
+                  <OpeningDayBadge startDate={upcoming[0].startDate} endDate={upcoming[0].endDate} today={today} />
+                  <h3 className="hm-soon-title">{upcoming[0].title}</h3>
+                  <p className="hm-soon-sub">{upcoming[0].location}</p>
+                  <span className="hm-soon-btn">
+                    팝업 둘러보기 <PopqIcon name="arrow" size={18} />
+                  </span>
+                </Link>
+                {upcoming[0].image && upcoming[0].opStatus !== 'PAUSED' && <PopupFavoriteButton popup={upcoming[0]} />}
+              </div>
 
               {upcoming.length > 1 && (
                 <div className="hm-soon-list">

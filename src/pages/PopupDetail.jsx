@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   useParams,
   Link,
   useNavigate,
 } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
+import PopupFavoriteButton from '../components/common/PopupFavoriteButton.jsx'
 import GoodsCard from '../components/common/GoodsCard.jsx'
 import { usePopup, usePopupProducts } from '../hooks/usePopups'
+import { rememberPopup } from '../utils/recentPopups.js'
 import './PopupDetail.css'
 import PopupLifecycleBadge from '../components/common/PopupLifecycleBadge.jsx'
 import PopupReservationPanel from '../components/reservation/PopupReservationPanel.jsx'
@@ -45,6 +47,12 @@ function BasicPopupDetail({ onCreateHold }) {
     : []
 
   const [tab, setTab] = useState('about')
+  const owner = app.currentUser?.username || app.currentUser?.email
+
+  // 최근 본 팝업 기록
+  useEffect(() => {
+    if (String(popup?.id) === String(popupId)) rememberPopup(owner, popup)
+  }, [owner, popup, popupId])
 
   const handleSelectGoods = (item) => {
     const targetId = resolveGoodsDetailId(item)
@@ -107,20 +115,23 @@ function BasicPopupDetail({ onCreateHold }) {
         {/* 왼쪽: 정보 */}
         <div className="bpd-main">
           {/* 이미지 */}
-          {images.length > 0 ? (
-            <div className={'bpd-gallery' + galleryClass}>
-              {images.slice(0, 3).map((src, i) => (
-                <img
-                  key={src + i}
-                  src={src}
-                  alt={i === 0 ? popup.title : `${popup.title} ${i + 1}`}
-                  className={i === 0 ? 'bpd-gallery-main' : 'bpd-gallery-sub'}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="bpd-gallery-empty">이미지 준비 중이에요</div>
-          )}
+          <div className="bpd-favorite-gallery">
+            {images.length > 0 ? (
+              <div className={'bpd-gallery' + galleryClass}>
+                {images.slice(0, 3).map((src, i) => (
+                  <img
+                    key={src + i}
+                    src={src}
+                    alt={i === 0 ? popup.title : `${popup.title} ${i + 1}`}
+                    className={i === 0 ? 'bpd-gallery-main' : 'bpd-gallery-sub'}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bpd-gallery-empty">이미지 준비 중이에요</div>
+            )}
+            <PopupFavoriteButton key={popup.id} popup={popup} />
+          </div>
 
           {/* 제목 영역 */}
           <div className="bpd-head">

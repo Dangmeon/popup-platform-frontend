@@ -34,7 +34,7 @@ export default function PopupWaitingPanel({popup,popId,demo}) {
   useEffect(()=>{
     if(demo || !owner)return
     let alive=true,timer,running=false
-    const pollWaiting = createWaitingPoll()
+    const pollWaiting = createWaitingPoll(owner)
     async function refresh(){
       if(!alive || running || document.hidden)return
       if(lock.current){timer=setTimeout(refresh,1000);return}
@@ -45,15 +45,19 @@ export default function PopupWaitingPanel({popup,popId,demo}) {
         const ids=[...new Set([...loadWaitingIds(owner), ...(saved?.waitingId ? [saved.waitingId] : [])])]
         const results=await Promise.allSettled(ids.map(pollWaiting))
         const failure=results.find(result=>result.status==='rejected')
-        const rows=results.filter(result=>result.status==='fulfilled').map(result=>result.value)
+        const rows=results.filter(result=>result.status==='fulfilled').map(result=>result.value).filter(row=>row!==null)
         if(rows.some(row=>!Number.isSafeInteger(row?.waitingId)||typeof row?.status!=='string'))throw new Error('Invalid response')
         const mine=rows.find(row=>Number(row.popId)===popId && isActive(row))
         const latestPopup=await getPopup(popId)
         if(!alive || lock.current || version!==mutationVersion.current)return
         setCurrentPopup(latestPopup)
+        const savedIndex=ids.indexOf(saved?.waitingId)
+        if(results[savedIndex]?.status==='fulfilled' && results[savedIndex].value===null) {
+          sessionStorage.removeItem(key)
+        }
         if(mine){setRecord(mine);setUncertain(false);sessionStorage.setItem(key,JSON.stringify({waitingId:mine.waitingId}))}
         else if(saved?.pending){setUncertain(true)}
-        else {setRecord(previous=>previous && rows.find(row=>row.waitingId===previous.waitingId) || previous)}
+        else if(!failure){setRecord(null)}
         setReady(!failure)
         setError(failure ? '일부 접수 내역을 확인하지 못했습니다. 중복 접수 방지를 위해 다시 확인해 주세요.' : '')
       } catch(requestError){if(alive){setReady(false);setError(errorText(requestError))}}
@@ -117,10 +121,10 @@ export default function PopupWaitingPanel({popup,popId,demo}) {
     {!owner && !demo ? <div className="rp-login"><p>내 대기 내역을 관리하려면 먼저 로그인해 주세요.</p><Link className="rp-primary" to="/login">로그인하기</Link></div> : <>
       {!isActive(record) && !opening.isOpen && <div className="rp-opening" role="timer" aria-label="현장 웨이팅 오픈까지 남은 시간"><span>현장 웨이팅 · 오후 3시 오픈</span>{opening.showCountdown ? <strong>{opening.countdown}</strong> : <strong>15:00</strong>}<small>{opening.showCountdown ? '잠시 후 접수가 열려요' : '오후 2시 50분부터 카운트다운이 시작돼요'}</small></div>}
       {reason && !isActive(record) && (opening.isOpen || String(currentPopup.opStatus || "").toUpperCase() !== "OPEN") && <p className="rp-message">{reason}</p>}
-      {record ? <section className="rp-waiting-ticket"><span>{labels[record.status] || record.status}</span><strong>{record.queueNumber}번</strong><p>방문 인원 {record.peopleCount}명</p>{record.status==='WAITING'&&<dl><div><dt>앞 대기</dt><dd>{record.teamsAhead??'—'}팀</dd></div><div><dt>예상 대기</dt><dd>{record.estimatedWaitMins??'—'}분</dd></div></dl>}{record.status==='CALLED'&&<p role="alert" className="rp-called">입장 호출을 받았어요. 현장 직원에게 확인해 주세요.</p>}<small>체크인 코드 {record.checkInCode || '확인 필요'}</small>{record.status==='WAITING'&&<button type="button" disabled={busy} className="rp-secondary rp-full" onClick={cancel}>{busy?'처리 중…':'대기 취소'}</button>}</section> : <form onSubmit={register}>
+      {isActive(record) ? <section className="rp-waiting-ticket"><span>{labels[record.status] || record.status}</span><strong>{record.queueNumber}번</strong><p>방문 인원 {record.peopleCount}명</p>{record.status==='WAITING'&&<dl><div><dt>앞 대기</dt><dd>{record.teamsAhead??'—'}팀</dd></div><div><dt>예상 대기</dt><dd>{record.estimatedWaitMins??'—'}분</dd></div></dl>}{record.status==='CALLED'&&<p role="alert" className="rp-called">입장 호출을 받았어요. 현장 직원에게 확인해 주세요.</p>}<small>체크인 코드 {record.checkInCode || '확인 필요'}</small>{record.status==='WAITING'&&<button type="button" disabled={busy} className="rp-secondary rp-full" onClick={cancel}>{busy?'처리 중…':'대기 취소'}</button>}</section> : <form onSubmit={register}>
         <label htmlFor="rp-wait-phone">휴대폰 번호</label><input id="rp-wait-phone" type="tel" autoComplete="tel" placeholder="010-1234-5678" value={phone} disabled={busy||demo} onChange={e=>setPhone(e.target.value)} required />
         <label htmlFor="rp-wait-people">방문 인원</label><input id="rp-wait-people" type="number" min="1" step="1" value={people} disabled={busy||demo} onChange={e=>setPeople(Number(e.target.value))} required />
-        <button type="submit" className="rp-primary rp-full" disabled={busy||demo||Boolean(reason)||!ready||uncertain}>{busy?'접수 중…':!opening.isOpen?'오후 3시에 접수가 열려요':demo?'접수 준비 중':!ready?'접수 상태 확인 중':'대기번호 발급받기'}</button>
+        <button type="submit" className="rp-primary rp-full" disabled={busy||demo||Boolean(reason)||!ready||uncertain}>{busy?'접수 중…':!opening.isOpen?'오후 3시에 접수가 열려요':demo?'접수 준비 중':!ready?(error?'접수 상태 확인 필요':'접수 상태 확인 중'):'대기번호 발급받기'}</button>
       </form>}
       {notice&&<p className="rp-message" role="status">{notice}</p>}{error&&<div className="rp-error" role="alert">{error}<button type="button" className="rp-secondary" disabled={busy} onClick={()=>setRetry(v=>v+1)}>상태 다시 확인</button></div>}
       <Link to="/my-activities" className="rp-waiting-link">내 예약·웨이팅에서 확인 →</Link>

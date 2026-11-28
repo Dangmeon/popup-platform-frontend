@@ -343,7 +343,7 @@ function AdminWaitings() {
               </thead>
 
               <tbody>
-                {waitings.map((waiting) => (
+                {[...waitings].sort((a, b) => a.queueNumber - b.queueNumber).map((waiting) => (
                   <tr key={waiting.waitingId}>
                     <td>{waiting.queueNumber}</td>
                     <td>{waiting.checkInCode || '—'}</td>

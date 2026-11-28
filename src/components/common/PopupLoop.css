@@ -12,7 +12,7 @@
   gap: var(--loop-gap, 20px);
   padding-right: var(--loop-gap, 20px);
 }
-.pq-popup-loop-group > .hm-card {
+.pq-popup-loop-group > :is(.hm-card, .pq-favorite-card) {
   width: var(--loop-card-width, 232px);
   flex: 0 0 var(--loop-card-width, 232px);
   min-width: 0;

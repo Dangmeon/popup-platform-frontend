@@ -1,9 +1,8 @@
-import { featuredPopups } from './featuredPopups.js'
-
 // 모든 항목은 시연용입니다. 주문·쿠폰·문의 API 연결 시 이 모듈 대신 서버 응답을 사용합니다.
 export const myPageMenus = [
   {path:'/mypage/orders',title:'내 주문·배송',description:'구매한 굿즈와 배송 현황 확인',icon:'bag'},
   {path:'/mypage/coupons',title:'쿠폰함',description:'내 쿠폰 확인',icon:'ticket'},
+  {path:'/mypage/favorites',title:'찜 목록',description:'찜한 팝업 확인',icon:'heart'},
   {path:'/mypage/recent',title:'최근 본 목록',description:'눈여겨본 팝업 다시 살펴보기',icon:'clock'},
   {path:'/mypage/faq',title:'FAQ',description:'자주 묻는 질문을 빠르게 확인',icon:'search'},
   {path:'/mypage/inquiries',title:'내 문의',description:'문의 내용과 답변 확인',icon:'user'},
@@ -12,7 +11,6 @@ export const demoOrders = [
   {id:'DEMO-ORDER-002',date:'2026.11.16',name:'POPQ 데일리 토트백',quantity:1,price:24000,status:'배송 중',step:2,image:'/promo/rescene.png'},
   {id:'DEMO-ORDER-001',date:'2026.11.12',name:'POPQ 아크릴 키링',quantity:2,price:16000,status:'배송 완료',step:3,image:'/promo/chimchakman.png'},
 ]
-export const demoRecent = featuredPopups.filter(p=>['aespa','chimchakman','rescene','squid-game'].includes(p.id)).slice(0,4)
 export const demoInquiries = [
   {id:'demo-inquiry-1',category:'주문·배송',title:'배송 상태는 어디에서 확인하나요?',date:'2026.11.16',answered:true,body:'주문한 굿즈의 배송 현황을 확인하고 싶어요.',answer:'내 주문·배송에서 주문별 배송 상태를 확인해 주세요.'},
   {id:'demo-inquiry-2',category:'쿠폰',title:'생일 쿠폰 연장 방법이 궁금해요.',date:'2026.11.17',answered:false,body:'만료 전에 쿠폰 유효기간을 연장할 수 있나요?',answer:null},

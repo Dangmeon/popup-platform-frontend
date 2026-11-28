@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance'
+import { removeWaitingId } from '../utils/waitingStore.js'
 
 // 현장 웨이팅 등록
 export async function createWaiting({ popId, phone, peopleCount }) {
@@ -13,14 +14,23 @@ export async function getWaiting(waitingId) {
 }
 
 // 자동 조회에서 거절된 번호는 사용자가 다시 조회할 때까지 재요청하지 않음
-export function createWaitingPoll() {
+export function createWaitingPoll(owner) {
   const blocked = new Map()
   return async function pollWaiting(waitingId) {
     if (blocked.has(waitingId)) throw blocked.get(waitingId)
     try {
       return await getWaiting(waitingId)
     } catch (error) {
-      if ([400, 401, 403, 404].includes(error.response?.status)) blocked.set(waitingId, error)
+      const { status, data } = error.response ?? {}
+      const unavailable =
+        (status === 400 && data?.message === `해당 대기열 정보를 찾을 수 없습니다. ID: ${waitingId}`) ||
+        (status === 404 && data?.code === 'WAITING_NOT_FOUND') ||
+        (status === 403 && data?.code === 'FORBIDDEN_WAITING_ACCESS')
+      if (unavailable) {
+        removeWaitingId(waitingId, owner)
+        return null
+      }
+      if ([400, 401, 403, 404].includes(status)) blocked.set(waitingId, error)
       throw error
     }
   }

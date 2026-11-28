@@ -52,7 +52,9 @@ export function usePopups(params = {}) {
 
 // 팝업 상세
 export function usePopup(popId) {
-  return useFetch(() => getPopup(popId), [popId], null)
+  const { currentUser } = useApp()
+  const owner = currentUser?.username ?? currentUser?.email
+  return useFetch(() => getPopup(popId), [popId, owner], null)
 }
 
 // 팝업의 굿즈 목록

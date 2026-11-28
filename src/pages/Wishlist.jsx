@@ -1,30 +1,38 @@
-import React from 'react'
-import { useApp } from '../context/AppContext.jsx'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import PopupCard from '../components/common/PopupCard.jsx'
-import GoodsCard from '../components/common/GoodsCard.jsx'
+import { getPopups } from '../api/popupApi.js'
 
-export default function Wishlist(){
-  const app = useApp()
-  const likedPopupList = app.popups.filter(p => app.likedPopups.includes(p.id))
-  const likedProductList = app.products.filter(p => app.likedProducts.includes(p.id))
+// 찜 목록 화면
+export default function Wishlist() {
+  const [attempt, setAttempt] = useState(0)
+  const [result, setResult] = useState({ status: 'loading' })
 
-  return (
-    <div className="container">
-      <div className="page-title">마이플리</div>
+  useEffect(() => {
+    let active = true
+    getPopups()
+      .then(popups => {
+        if (popups.some(popup => typeof popup.isFavorite !== 'boolean')) throw new Error('찜 여부 조회 실패')
+        if (active) setResult({ status: 'ready', rows: popups.filter(popup => popup.isFavorite) })
+      })
+      .catch(() => { if (active) setResult({ status: 'error' }) })
+    return () => { active = false }
+  }, [attempt])
 
-      <div className="section-title">찜한 팝업</div>
-      {likedPopupList.length === 0 ? (
-        <div className="empty-state">찜한 팝업이 없어요.</div>
-      ) : (
-        <div className="grid-4">{likedPopupList.map(p => <PopupCard key={p.id} popup={p} />)}</div>
-      )}
+  if (result.status === 'loading') return <p role="status">찜 목록을 불러오는 중입니다.</p>
+  if (result.status === 'error') return <div>
+    <p role="alert">찜 목록을 불러오지 못했습니다.</p>
+    <button type="button" className="ms-action" onClick={() => {
+      setResult({ status: 'loading' })
+      setAttempt(previous => previous + 1)
+    }}>다시 불러오기</button>
+  </div>
+  if (!result.rows.length) return <div className="ms-empty">
+    <p>찜한 팝업이 없습니다.</p>
+    <Link to="/popups">팝업 둘러보기</Link>
+  </div>
 
-      <div className="section-title">찜한 굿즈</div>
-      {likedProductList.length === 0 ? (
-        <div className="empty-state">찜한 굿즈가 없어요.</div>
-      ) : (
-        <div className="grid-4">{likedProductList.map(p => <GoodsCard key={p.id} item={p} />)}</div>
-      )}
-    </div>
-  )
+  return <div className="ms-favorites">
+    {result.rows.map(popup => <PopupCard key={popup.id} popup={popup} />)}
+  </div>
 }
