@@ -7,7 +7,7 @@
   .popq-home .hm-quick { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin-top:24px; }
   .popq-home .hm-quick-item { min-width:0; padding:3px; }.popq-home .hm-quick-label { font-size:11px; text-align:center; white-space:nowrap; }.popq-home .hm-quick-icon { width:48px; height:48px; border-radius:15px; }
   .popq-home .hm-grid { display:grid; grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:calc((100% - 24px)/2.5); gap:12px; overflow-x:auto; scroll-snap-type:x proximity; scrollbar-width:none; padding:3px 0 10px; }
-  .popq-home .hm-grid::-webkit-scrollbar { display:none; }.popq-home .hm-grid>.hm-card { scroll-snap-align:start; min-width:0; }
+  .popq-home .hm-grid::-webkit-scrollbar { display:none; }.popq-home .hm-grid>.pq-favorite-card { scroll-snap-align:start; min-width:0; }
   .popq-home .hm-mobile-slide-controls { display:flex; align-items:center; gap:8px; margin:-8px 0 15px; }
   .popq-home .hm-mobile-slide-controls span { font-size:10px; color:#5e6a50; margin-right:auto; }
   .popq-home .hm-mobile-slide-controls button { border:1px solid #dbe3ce; border-radius:50%; background:white; color:#465235; width:29px; height:29px; line-height:1; font-size:21px; cursor:pointer; }

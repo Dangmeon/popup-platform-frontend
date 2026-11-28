@@ -50,3 +50,7 @@
 .ms-coupons {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin-top:20px;}
 .ms-coupons h3 {margin:0;font-size:15px;overflow-wrap:anywhere;}
 .ms-coupon-amount {padding:18px 22px;font-size:22px;font-weight:700;}
+
+/* 찜 목록 */
+.ms-favorites {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:16px;}
+.ms-favorites > .popup-card {width:100%;max-width:260px;min-width:0;}

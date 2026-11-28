@@ -3,15 +3,18 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import PopqIcon from '../components/common/PopqIcon.jsx'
 import { getMyCoupons } from '../api/mypageApi.js'
+import Wishlist from './Wishlist.jsx'
 import MyOrders from './MyOrders.jsx'
 import QnaCenter from '../components/common/QnaCenter.jsx'
 import { MyPageFrame } from './MyPageHome.jsx'
-import { demoRecent, faqItems } from '../data/myPageDemo.js'
+import { faqItems } from '../data/myPageDemo.js'
+import { readRecentPopups, writeRecentPopups } from '../utils/recentPopups.js'
 import '../styles/MyPageServices.css'
 
 const headings = {
   orders:'내 주문·배송',
   coupons:'쿠폰함',
+  favorites:'찜 목록',
   recent:'최근 본 목록',
   faq:'자주 묻는 질문',
   inquiries:'내 문의',
@@ -24,7 +27,7 @@ export default function MyPageServices({ section }) {
 }
 function ServiceContent({section}) {
   return <div className="ms-page"><header className="ms-heading"><h2>{headings[section]}</h2></header>
-    {section==='orders'&&<MyOrders />}{section==='coupons'&&<Coupons />}{section==='recent'&&<Recent />}{section==='faq'&&<Faq />}{section==='inquiries'&&<Inquiries />}
+    {section==='orders'&&<MyOrders />}{section==='coupons'&&<Coupons />}{section==='favorites'&&<Wishlist />}{section==='recent'&&<Recent />}{section==='faq'&&<Faq />}{section==='inquiries'&&<Inquiries />}
   </div>
 }
 function Filter({items,value,onChange,label}) {
@@ -75,8 +78,15 @@ function Coupons() {
 
 // 최근 본 팝업 화면
 function Recent() {
-  const [rows,setRows]=useState(demoRecent)
-  return <><div className="ms-list-toolbar"><span>팝업 {rows.length}개</span><button type="button" disabled={!rows.length} onClick={()=>{if(window.confirm('목록을 모두 비울까요?'))setRows([])}}>목록 비우기</button></div><div className="ms-recent">{rows.map(row=><article key={row.id}><Link to={`/popups/${row.id}`}><img src={row.poster} alt={row.title}/><div><small>{row.category||'팝업스토어'}</small><h3>{row.title}</h3><p>{row.location}</p><span>{row.period}</span></div></Link><button type="button" aria-label={`${row.title} 목록에서 삭제`} onClick={()=>setRows(previous=>previous.filter(item=>item.id!==row.id))}>×</button></article>)}</div>{!rows.length&&<Empty text="목록을 모두 비웠어요."/>}</>
+  const { currentUser } = useApp()
+  const owner = currentUser?.username || currentUser?.email
+  const [rows, setRows] = useState(() => readRecentPopups(owner))
+
+  function updateRows(nextRows) {
+    setRows(nextRows)
+    writeRecentPopups(owner, nextRows)
+  }
+  return <><div className="ms-list-toolbar"><span>팝업 {rows.length}개</span><button type="button" disabled={!rows.length} onClick={()=>{if(window.confirm('목록을 모두 비울까요?'))updateRows([])}}>목록 비우기</button></div><div className="ms-recent">{rows.map(row=><article key={row.id}><Link to={`/popups/${row.id}`}>{row.poster && <img src={row.poster} alt=""/>}<div><small>{row.category||'팝업스토어'}</small><h3>{row.title}</h3><p>{row.location}</p><span>{row.period}</span></div></Link><button type="button" aria-label={`${row.title} 목록에서 삭제`} onClick={()=>updateRows(rows.filter(item=>item.id!==row.id))}>×</button></article>)}</div>{!rows.length&&<Empty text="최근 본 팝업이 없습니다."/>}</>
 }
 // 자주 묻는 질문 화면
 function Faq() {

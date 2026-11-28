@@ -27,6 +27,7 @@ function toList(data) {
 function toPopup(raw) {
   return {
     id: pick(raw, ['popId', 'id']),
+    isFavorite: raw?.isFavorite,
     title: pick(raw, ['title', 'name', 'popName', 'popupName']),
     category: popupCategoryCode(pick(raw, ['category', 'categoryName'])),
     location: pick(raw, ['location', 'address', 'place']),
@@ -92,4 +93,11 @@ export async function getPopupProducts(popId) {
 export async function getProduct(prdId) {
   const res = await axiosInstance.get(`/api/products/${prdId}`)
   return toProduct(res.data?.data ?? res.data)
+}
+// 팝업 찜 등록 및 취소
+export async function setPopupFavorite(popId, favorite) {
+  const url = `/api/popups/${encodeURIComponent(popId)}/favorites`
+  const { data } = await (favorite ? axiosInstance.post(url) : axiosInstance.delete(url))
+  if (typeof data?.isFavorite !== 'boolean') throw new Error('찜 상태 확인 실패')
+  return data.isFavorite
 }

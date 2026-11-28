@@ -32,11 +32,11 @@ function AdminMembers() {
     return () => controller.abort()
   }, [listRetryKey])
 
-  // 이름과 이메일 검색
+  // 이름·이메일 검색 및 회원번호 정렬
   const query = keyword.trim().toLowerCase()
   const members = allMembers.filter(({name, email}) =>
     String(name ?? '').toLowerCase().includes(query) || String(email ?? '').toLowerCase().includes(query)
-  )
+  ).sort((a, b) => a.memberId - b.memberId)
 
   // 회원 관리 화면
   return (

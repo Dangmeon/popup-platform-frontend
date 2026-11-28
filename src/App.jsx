@@ -1085,6 +1085,7 @@ function App() {
           <Route path="/mypage" element={<MyPageHome />} />
           <Route path="/mypage/orders" element={<MyPageServices section="orders" />} />
           <Route path="/mypage/coupons" element={<MyPageServices section="coupons" />} />
+          <Route path="/mypage/favorites" element={<MyPageServices section="favorites" />} />
           <Route path="/mypage/recent" element={<MyPageServices section="recent" />} />
           <Route path="/mypage/faq" element={<MyPageServices section="faq" />} />
           <Route path="/mypage/inquiries" element={<MyPageServices section="inquiries" />} />

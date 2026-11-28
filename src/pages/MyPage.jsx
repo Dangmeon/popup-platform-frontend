@@ -77,7 +77,7 @@ function ActivityPage({ owner }) {
   useEffect(() => {
     if (!owner) return
     let active=true, running=false, timer, queued=false
-    const pollWaiting = createWaitingPoll()
+    const pollWaiting = createWaitingPoll(owner)
     async function refresh() {
       if (!active || document.hidden) return
       if (running || cancelLock.current) { queued=true; return }
@@ -86,7 +86,7 @@ function ActivityPage({ owner }) {
       try {
         const results=await Promise.allSettled(loadWaitingIds(owner).map(pollWaiting))
         if (!active || version!==mutationVersion.current) return
-        const rows=results.filter(result=>result.status==='fulfilled').map(result=>result.value)
+        const rows=results.filter(result=>result.status==='fulfilled').map(result=>result.value).filter(row=>row!==null)
         if (rows.some(row=>!Number.isSafeInteger(row?.waitingId)||typeof row?.status!=='string')) throw new Error('Invalid response')
         setWaitings(rows.filter(row=>['WAITING','CALLED'].includes(row.status)))
         const failure=results.find(result=>result.status==='rejected')

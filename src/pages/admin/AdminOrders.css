@@ -225,3 +225,27 @@
     text-align: left;
   }
 }
+
+/* 주문 상태별 목록 전환 */
+.order-admin-sections {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #dce3d2;
+}
+
+.order-admin-sections button {
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #59634e;
+  font: inherit;
+  cursor: pointer;
+}
+
+.order-admin-sections button[aria-pressed="true"] {
+  border-bottom-color: #68764b;
+  color: #465235;
+  font-weight: 700;
+}

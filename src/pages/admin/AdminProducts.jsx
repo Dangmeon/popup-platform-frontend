@@ -227,8 +227,8 @@ function AdminProducts() {
       Number.isFinite(product.stock) && product.stock >= 0 && product.stock <= 5 &&
       product.popupOpStatus !== 'CANCELLED' && product.saleStatus !== 'ENDED'
     )
-        .sort((a, b) => a.stock - b.stock)
-    : products
+        .sort((a, b) => a.stock - b.stock || a.prdId - b.prdId)
+    : [...products].sort((a, b) => a.prdId - b.prdId)
 
   // 등록 화면 열기
   function handleOpenCreate() {

@@ -47,3 +47,9 @@ export function addWaitingId(id, username) {
     localStorage.setItem(key, JSON.stringify([id, ...ids]))
   }
 }
+
+// 조회할 수 없게 된 웨이팅 번호 정리
+export function removeWaitingId(id, username) {
+  const key = getStorageKey(username)
+  localStorage.setItem(key, JSON.stringify(loadWaitingIds(username).filter(saved => saved !== id)))
+}
